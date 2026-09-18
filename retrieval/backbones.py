@@ -9,6 +9,8 @@ import numpy as np
 import torch
 from PIL import Image
 
+from .normalize import autocrop_to_content
+
 
 def get_device() -> torch.device:
     if torch.backends.mps.is_available():
@@ -24,6 +26,8 @@ class Backbone:
     model: object
     processor: object
     device: torch.device
+    variant: str = "raw"     # "raw" (CLS/pooler) | "mean" (dinov2 patch-mean)
+    crop: bool = False       # применить autocrop_to_content перед энкодингом
 
     @torch.no_grad()
     def encode(self, image: Image.Image) -> np.ndarray:
@@ -32,17 +36,18 @@ class Backbone:
     @torch.no_grad()
     def encode_batch(self, images: list[Image.Image]) -> np.ndarray:
         images = [im.convert("RGB") for im in images]
-        if self.name == "dinov2":
+        if self.crop:
+            images = [autocrop_to_content(im) for im in images]
+
+        arch = self.name.split("_")[0]  # "dinov2" | "siglip2"
+        if arch == "dinov2":
             inputs = self.processor(images=images, return_tensors="pt").to(self.device)
             out = self.model(**inputs)
-            # CLS token эмбеддинг
-            emb = out.last_hidden_state[:, 0, :]
-        elif self.name == "dinov2_mean":
-            inputs = self.processor(images=images, return_tensors="pt").to(self.device)
-            out = self.model(**inputs)
-            # среднее по патч-токенам (без CLS) — альтернативный pooling для retrieval
-            emb = out.last_hidden_state[:, 1:, :].mean(dim=1)
-        elif self.name == "siglip2":
+            if self.variant == "mean":
+                emb = out.last_hidden_state[:, 1:, :].mean(dim=1)  # без CLS
+            else:
+                emb = out.last_hidden_state[:, 0, :]  # CLS token
+        elif arch == "siglip2":
             inputs = self.processor(images=images, return_tensors="pt").to(self.device)
             out = self.model.get_image_features(**inputs)
             # некоторые версии transformers оборачивают результат в ModelOutput
@@ -55,27 +60,33 @@ class Backbone:
 
 _CACHE: dict[str, Backbone] = {}
 
+# name -> (huggingface model id, pooling variant, autocrop перед энкодингом)
+_VARIANTS = {
+    "dinov2": ("facebook/dinov2-base", "raw", False),
+    "dinov2_mean": ("facebook/dinov2-base", "mean", False),
+    "siglip2": ("google/siglip2-base-patch16-224", "raw", False),
+    "siglip2_crop": ("google/siglip2-base-patch16-224", "raw", True),
+}
+
 
 def load_backbone(name: str) -> Backbone:
-    """name: 'dinov2' (facebook/dinov2-base) | 'siglip2' (google/siglip2-base-patch16-224)"""
     if name in _CACHE:
         return _CACHE[name]
+    if name not in _VARIANTS:
+        raise ValueError(f"unknown backbone: {name} (available: {list(_VARIANTS)})")
 
+    model_id, variant, crop = _VARIANTS[name]
     device = get_device()
 
-    if name in ("dinov2", "dinov2_mean"):
+    if model_id.startswith("facebook/dinov2"):
         from transformers import AutoImageProcessor, AutoModel
-        model_id = "facebook/dinov2-base"
         processor = AutoImageProcessor.from_pretrained(model_id)
         model = AutoModel.from_pretrained(model_id).to(device).eval()
-    elif name == "siglip2":
+    else:
         from transformers import AutoProcessor, AutoModel
-        model_id = "google/siglip2-base-patch16-224"
         processor = AutoProcessor.from_pretrained(model_id)
         model = AutoModel.from_pretrained(model_id).to(device).eval()
-    else:
-        raise ValueError(f"unknown backbone: {name}")
 
-    backbone = Backbone(name=name, model=model, processor=processor, device=device)
+    backbone = Backbone(name=name, model=model, processor=processor, device=device, variant=variant, crop=crop)
     _CACHE[name] = backbone
     return backbone

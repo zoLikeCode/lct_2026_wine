@@ -20,7 +20,7 @@ BATCH_SIZE = 16
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--backbone", choices=["dinov2", "dinov2_mean", "siglip2"], required=True)
+    parser.add_argument("--backbone", choices=["dinov2", "dinov2_mean", "siglip2", "siglip2_crop"], required=True)
     args = parser.parse_args()
 
     catalog_path = config.OUTPUTS_DIR / "catalog_resolved.json"

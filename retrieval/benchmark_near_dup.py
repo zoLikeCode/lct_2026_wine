@@ -53,7 +53,7 @@ def run_query(backbone, index: EmbeddingIndex, image: Image.Image, true_slug: st
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--backbone", choices=["dinov2", "dinov2_mean", "siglip2"], required=True)
+    parser.add_argument("--backbone", choices=["dinov2", "dinov2_mean", "siglip2", "siglip2_crop"], required=True)
     parser.add_argument("--n-aug", type=int, default=5, help="аугментированных вариантов на каждый anchor")
     parser.add_argument("--control-size", type=int, default=60, help="размер контрольной группы (не near-dup)")
     parser.add_argument("--seed", type=int, default=42)

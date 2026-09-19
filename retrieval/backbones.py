@@ -60,6 +60,21 @@ class Backbone:
         emb = torch.nn.functional.normalize(emb, dim=-1)
         return emb.cpu().float().numpy()
 
+    @torch.no_grad()
+    def encode_text(self, texts: list[str]) -> np.ndarray:
+        """Текстовые эмбеддинги в том же пространстве, что и картиночные.
+        Работает только у мультимодальных бэкбонов (SigLIP2); DINOv2
+        самообучаемый и текстового энкодера не имеет."""
+        if not self.name.startswith("siglip2"):
+            raise ValueError(f"{self.name} не имеет текстового энкодера")
+        inputs = self.processor(
+            text=texts, return_tensors="pt", padding="max_length", truncation=True
+        ).to(self.device)
+        out = self.model.get_text_features(**inputs)
+        emb = out.pooler_output if hasattr(out, "pooler_output") else out
+        emb = torch.nn.functional.normalize(emb, dim=-1)
+        return emb.cpu().float().numpy()
+
 
 _CACHE: dict[str, Backbone] = {}
 

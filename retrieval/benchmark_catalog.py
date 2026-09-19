@@ -23,10 +23,16 @@ from PIL import Image
 
 from data_prep import config
 from .augment import simulate_field_photo
+from .augment_realistic import simulate_realistic_photo
 from .backbones import load_backbone
 from .index import EmbeddingIndex
 
 PROGRESS_EVERY = 100
+
+AUGMENTERS = {
+    "simple": simulate_field_photo,        # плоская перспектива + блик + блюр
+    "realistic": simulate_realistic_photo,  # цилиндр + фон + наклон + оптика
+}
 
 
 def main() -> None:
@@ -34,9 +40,11 @@ def main() -> None:
     parser.add_argument("--backbone", default="siglip2")
     parser.add_argument("--sample", type=int, default=400, help="сколько позиций каталога взять")
     parser.add_argument("--n-aug", type=int, default=2, help="аугментаций на позицию")
+    parser.add_argument("--aug", choices=list(AUGMENTERS), default="realistic")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
     random.seed(args.seed)
+    augment = AUGMENTERS[args.aug]
 
     with open(config.OUTPUTS_DIR / "catalog_resolved.json", encoding="utf-8") as f:
         records = json.load(f)
@@ -51,7 +59,7 @@ def main() -> None:
     sample_slugs = random.sample(sorted(lookup), min(args.sample, len(lookup)))
     n_queries = len(sample_slugs) * args.n_aug
     print(f"Каталог: {total_catalog}, в индексе: {len(lookup)} ({coverage:.1%})")
-    print(f"Выборка: {len(sample_slugs)} позиций x {args.n_aug} аугментаций = {n_queries} запросов\n")
+    print(f"Выборка: {len(sample_slugs)} позиций x {args.n_aug} аугментаций ({args.aug}) = {n_queries} запросов\n")
 
     hits_top1 = hits_top5 = 0
     gaps = []
@@ -61,7 +69,7 @@ def main() -> None:
     for slug in sample_slugs:
         base_img = Image.open(config.UPLOADS_DIR / lookup[slug]["photo_file"])
         for aug_i in range(args.n_aug):
-            query = simulate_field_photo(base_img, seed=hash((slug, aug_i)) % (2**31))
+            query = augment(base_img, seed=hash((slug, aug_i)) % (2**31))
             emb = backbone.encode(query)
             results = index.search(emb, top_k=5)
             top_slugs = [r.slug for r in results]
@@ -94,11 +102,11 @@ def main() -> None:
     print(f"  ОЖИДАЕМАЯ accuracy:           {expected:.1%}  -> {expected*50:.1f} из 50 баллов")
 
     out = {
-        "backbone": args.backbone, "sample": len(sample_slugs), "n_aug": args.n_aug,
+        "backbone": args.backbone, "aug": args.aug, "sample": len(sample_slugs), "n_aug": args.n_aug,
         "top1_acc_indexed": acc1, "top5_acc_indexed": acc5, "avg_gap": avg_gap,
         "catalog_coverage": coverage, "expected_accuracy": expected,
     }
-    out_path = config.OUTPUTS_DIR / f"benchmark_catalog_{args.backbone}.json"
+    out_path = config.OUTPUTS_DIR / f"benchmark_catalog_{args.backbone}_{args.aug}.json"
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(f"\nСохранено: {out_path}")

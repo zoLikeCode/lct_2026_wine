@@ -60,7 +60,7 @@ def main() -> None:
 
     records = []
     for row in rows:
-        match = match_slug(row["Slug"], index)
+        match = match_slug(row["Slug"], index, photo_name=row.get("Название фото"))
         records.append(build_record(row, match))
 
     config.OUTPUTS_DIR.mkdir(exist_ok=True)
@@ -80,12 +80,14 @@ def main() -> None:
                 "", r["photo_match_score"], r["photo_flagged_no_wine"],
             ])
 
-    exact = sum(1 for r in records if r["photo_match_method"] == "exact")
-    fuzzy = sum(1 for r in records if r["photo_match_method"] == "fuzzy")
-    print(f"Всего уникальных вин: {len(records)}")
-    print(f"  exact match:  {exact} ({100 * exact / len(records):.1f}%)")
-    print(f"  fuzzy match:  {fuzzy} ({100 * fuzzy / len(records):.1f}%)")
-    print(f"  unresolved:   {len(unresolved)} ({100 * len(unresolved) / len(records):.1f}%)")
+    n = len(records)
+    print(f"Всего уникальных вин: {n}")
+    for method in ("photo_column", "exact", "fuzzy", "unresolved"):
+        count = sum(1 for r in records if r["photo_match_method"] == method)
+        print(f"  {method:13s} {count:5d} ({100 * count / n:.1f}%)")
+    resolved = n - len(unresolved)
+    print(f"\nПокрытие индекса: {resolved}/{n} ({100 * resolved / n:.1f}%) "
+          f"-> потолок accuracy на равномерном eval")
     print(f"\nКаталог записан:    {catalog_path}")
     print(f"Список на доразбор: {unresolved_path}")
 

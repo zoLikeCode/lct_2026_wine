@@ -17,6 +17,7 @@ from pathlib import Path
 from rapidfuzz import fuzz, process
 
 from . import config
+from .translit import normalize_filename
 
 
 def strip_size_prefix(filename: str) -> str:
@@ -46,19 +47,22 @@ class UploadsIndex:
     base_to_files: dict = field(default_factory=dict)   # base_name -> [filenames]
     has_wine_bases: set = field(default_factory=set)
     no_wine_bases: set = field(default_factory=set)
+    normalized_to_base: dict = field(default_factory=dict)  # normalize_filename(base) -> base
 
     @classmethod
     def build(cls) -> "UploadsIndex":
         base_to_files: dict[str, list[str]] = {}
+        normalized_to_base: dict[str, str] = {}
         for fn in Path(config.UPLOADS_DIR).iterdir():
             if not fn.is_file():
                 continue
             base = to_base(fn.name)
             base_to_files.setdefault(base, []).append(fn.name)
+            normalized_to_base.setdefault(normalize_filename(base), base)
 
         has_wine_bases = cls._labeled_bases(config.HAS_WINE_DIR)
         no_wine_bases = cls._labeled_bases(config.NO_WINE_DIR)
-        return cls(base_to_files, has_wine_bases, no_wine_bases)
+        return cls(base_to_files, has_wine_bases, no_wine_bases, normalized_to_base)
 
     @staticmethod
     def _labeled_bases(directory: Path) -> set:
@@ -91,21 +95,31 @@ class MatchResult:
     slug: str
     base: str | None
     file: str | None
-    method: str        # "exact" | "fuzzy" | "unresolved"
+    method: str        # "photo_column" | "exact" | "fuzzy" | "unresolved"
     score: float | None
     flagged_no_wine: bool = False
 
 
-def match_slug(slug: str, index: UploadsIndex) -> MatchResult:
+def match_slug(slug: str, index: UploadsIndex, photo_name: str | None = None) -> MatchResult:
     key = slug.replace("-", "_")
 
-    # 1. exact match
+    # 1. колонка «Название фото» — авторитетный источник самой CMS.
+    # Сравнивается в нормализованном виде: CSV хранит исходное имя
+    # (`Агора_Блэк Стоун.webp`), а Strapi транслитерирует его и дописывает
+    # hex-суффикс (`Agora_Blek_Stoun_e98339ae1b.webp`).
+    if photo_name and photo_name.strip():
+        normalized = normalize_filename(photo_name.strip())
+        base = index.normalized_to_base.get(normalized)
+        if base and not index.is_confirmed_not_wine(base):
+            return MatchResult(slug, base, index.pick_best_file(base), "photo_column", 100.0)
+
+    # 2. exact match по самому slug
     if key in index.base_to_files:
         if not index.is_confirmed_not_wine(key):
             return MatchResult(slug, key, index.pick_best_file(key), "exact", 100.0)
         # exact match landed on a photo confirmed as non-wine junk — fall through to fuzzy
 
-    # 2. fuzzy match, skipping confirmed non-wine candidates
+    # 3. fuzzy match, skipping confirmed non-wine candidates
     slug_tokens = tokenize(slug)
     bases = list(index.base_to_files.keys())
     candidates = [b for b in bases if len(slug_tokens & tokenize(b)) >= 2] or bases
@@ -117,7 +131,7 @@ def match_slug(slug: str, index: UploadsIndex) -> MatchResult:
         if not index.is_confirmed_not_wine(base):
             return MatchResult(slug, base, index.pick_best_file(base), "fuzzy", score)
 
-    # 3. nothing usable found — report best guess (even if below threshold / non-wine) for manual review
+    # 4. nothing usable found — report best guess (even if below threshold / non-wine) for manual review
     if ranked:
         base, score, _ = ranked[0]
         return MatchResult(

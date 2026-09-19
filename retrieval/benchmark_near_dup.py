@@ -15,16 +15,21 @@
 """
 
 import argparse
+import gc
 import json
 import random
+import time
 
 import numpy as np
+import torch
 from PIL import Image
 
 from data_prep import config
 from .augment import simulate_field_photo
 from .backbones import load_backbone
 from .index import EmbeddingIndex
+
+PROGRESS_EVERY = 50
 
 
 def load_catalog_lookup() -> dict:
@@ -53,7 +58,7 @@ def run_query(backbone, index: EmbeddingIndex, image: Image.Image, true_slug: st
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--backbone", choices=["dinov2", "dinov2_mean", "siglip2", "siglip2_crop"], required=True)
+    parser.add_argument("--backbone", choices=["dinov2", "dinov2_mean", "siglip2", "siglip2_crop", "siglip2_detect"], required=True)
     parser.add_argument("--n-aug", type=int, default=5, help="аугментированных вариантов на каждый anchor")
     parser.add_argument("--control-size", type=int, default=60, help="размер контрольной группы (не near-dup)")
     parser.add_argument("--seed", type=int, default=42)
@@ -63,11 +68,27 @@ def main() -> None:
     lookup = load_catalog_lookup()
     index = EmbeddingIndex.load(config.OUTPUTS_DIR / f"embeddings_{args.backbone}.npz")
     backbone = load_backbone(args.backbone)
+    is_mps = backbone.device.type == "mps"
 
     with open(config.OUTPUTS_DIR / "near_duplicates_report.json", encoding="utf-8") as f:
         report = json.load(f)
     pairs = [p for p in report["near_identical_pairs"] if p["slug_a"] in lookup and p["slug_b"] in lookup]
-    print(f"Near-duplicate пар для теста: {len(pairs)}")
+    n_near_dup_total = len(pairs) * 2 * args.n_aug
+    n_control_total = min(args.control_size, len(lookup)) * args.n_aug
+    print(f"Near-duplicate пар для теста: {len(pairs)} -> {n_near_dup_total} запросов; control -> {n_control_total} запросов")
+
+    t0 = time.time()
+    done = 0
+
+    def tick():
+        nonlocal done
+        done += 1
+        if is_mps and done % 20 == 0:
+            torch.mps.empty_cache()
+            gc.collect()
+        if done % PROGRESS_EVERY == 0:
+            elapsed = time.time() - t0
+            print(f"  {done}/{n_near_dup_total + n_control_total}  ({elapsed:.1f}s, {elapsed / done:.2f}s/запрос)", flush=True)
 
     near_dup_results = []
     for pair in pairs:
@@ -77,6 +98,8 @@ def main() -> None:
             for aug_i in range(args.n_aug):
                 query_img = simulate_field_photo(base_img, seed=hash((anchor_slug, aug_i)) % (2**31))
                 near_dup_results.append(run_query(backbone, index, query_img, anchor_slug, sibling_slug))
+                tick()
+            base_img.close()
 
     # контрольная группа: случайные визуально уникальные позиции
     near_dup_slugs = {p["slug_a"] for p in pairs} | {p["slug_b"] for p in pairs}
@@ -90,6 +113,8 @@ def main() -> None:
         for aug_i in range(args.n_aug):
             query_img = simulate_field_photo(base_img, seed=hash((slug, aug_i)) % (2**31))
             control_results.append(run_query(backbone, index, query_img, slug, "__none__"))
+            tick()
+        base_img.close()
 
     def summarize(results, label):
         n = len(results)

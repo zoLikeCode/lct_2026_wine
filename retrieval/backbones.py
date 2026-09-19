@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from PIL import Image
 
+from .detect import detect_label_crop
 from .normalize import autocrop_to_content
 
 
@@ -26,8 +27,8 @@ class Backbone:
     model: object
     processor: object
     device: torch.device
-    variant: str = "raw"     # "raw" (CLS/pooler) | "mean" (dinov2 patch-mean)
-    crop: bool = False       # применить autocrop_to_content перед энкодингом
+    variant: str = "raw"        # "raw" (CLS/pooler) | "mean" (dinov2 patch-mean)
+    crop_mode: str = "none"     # "none" | "auto" (наивный autocrop) | "detect" (OWLv2 label detection)
 
     @torch.no_grad()
     def encode(self, image: Image.Image) -> np.ndarray:
@@ -36,8 +37,10 @@ class Backbone:
     @torch.no_grad()
     def encode_batch(self, images: list[Image.Image]) -> np.ndarray:
         images = [im.convert("RGB") for im in images]
-        if self.crop:
+        if self.crop_mode == "auto":
             images = [autocrop_to_content(im) for im in images]
+        elif self.crop_mode == "detect":
+            images = [detect_label_crop(im) for im in images]
 
         arch = self.name.split("_")[0]  # "dinov2" | "siglip2"
         if arch == "dinov2":
@@ -60,12 +63,13 @@ class Backbone:
 
 _CACHE: dict[str, Backbone] = {}
 
-# name -> (huggingface model id, pooling variant, autocrop перед энкодингом)
+# name -> (huggingface model id, pooling variant, режим кропа)
 _VARIANTS = {
-    "dinov2": ("facebook/dinov2-base", "raw", False),
-    "dinov2_mean": ("facebook/dinov2-base", "mean", False),
-    "siglip2": ("google/siglip2-base-patch16-224", "raw", False),
-    "siglip2_crop": ("google/siglip2-base-patch16-224", "raw", True),
+    "dinov2": ("facebook/dinov2-base", "raw", "none"),
+    "dinov2_mean": ("facebook/dinov2-base", "mean", "none"),
+    "siglip2": ("google/siglip2-base-patch16-224", "raw", "none"),
+    "siglip2_crop": ("google/siglip2-base-patch16-224", "raw", "auto"),
+    "siglip2_detect": ("google/siglip2-base-patch16-224", "raw", "detect"),
 }
 
 
@@ -75,7 +79,7 @@ def load_backbone(name: str) -> Backbone:
     if name not in _VARIANTS:
         raise ValueError(f"unknown backbone: {name} (available: {list(_VARIANTS)})")
 
-    model_id, variant, crop = _VARIANTS[name]
+    model_id, variant, crop_mode = _VARIANTS[name]
     device = get_device()
 
     if model_id.startswith("facebook/dinov2"):
@@ -87,6 +91,6 @@ def load_backbone(name: str) -> Backbone:
         processor = AutoProcessor.from_pretrained(model_id)
         model = AutoModel.from_pretrained(model_id).to(device).eval()
 
-    backbone = Backbone(name=name, model=model, processor=processor, device=device, variant=variant, crop=crop)
+    backbone = Backbone(name=name, model=model, processor=processor, device=device, variant=variant, crop_mode=crop_mode)
     _CACHE[name] = backbone
     return backbone

@@ -17,6 +17,7 @@ SLA кейса — 3 секунды на запрос, и скорость от�
 
 import argparse
 import json
+import pickle
 import random
 import statistics
 import time
@@ -27,7 +28,7 @@ from PIL import Image
 from data_prep import config
 from .backbones import load_backbone
 from .index import EmbeddingIndex
-from .rerank_signals import orb_inlier_score
+from .rerank_signals import describe, orb_inlier_score_cached
 
 TOP_K = 5
 
@@ -44,6 +45,8 @@ def main() -> None:
     parser.add_argument("--backbone", default="siglip2_512")
     parser.add_argument("--runs", type=int, default=30)
     parser.add_argument("--no-rerank", action="store_true", help="мерить только retrieval")
+    parser.add_argument("--no-cache", action="store_true",
+                        help="не использовать предпосчитанные ORB-дескрипторы (для сравнения)")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
     random.seed(args.seed)
@@ -55,7 +58,15 @@ def main() -> None:
     lookup = {r["slug"]: r for r in records if r["photo_file"]}
     index = EmbeddingIndex.load(config.OUTPUTS_DIR / f"embeddings_{args.backbone}.npz")
     backbone = load_backbone(args.backbone)
-    print(f"RSS после загрузки:      {rss_mb():.0f} МБ   (device={backbone.device})")
+
+    orb_cache = None
+    if not args.no_rerank and not args.no_cache:
+        cache_path = config.OUTPUTS_DIR / "orb_cache.pkl"
+        if cache_path.exists():
+            with open(cache_path, "rb") as f:
+                orb_cache = pickle.load(f)["cache"]
+    print(f"RSS после загрузки:      {rss_mb():.0f} МБ   (device={backbone.device}, "
+          f"ORB-кеш: {'да' if orb_cache else 'нет'})")
 
     sample = random.sample(sorted(lookup), args.runs)
     stages = {"decode": [], "embed": [], "search": [], "rerank": [], "total": []}
@@ -76,9 +87,16 @@ def main() -> None:
         t_search = time.perf_counter()
 
         if not args.no_rerank:
-            for r in top:
-                with Image.open(config.UPLOADS_DIR / lookup[r.slug]["photo_file"]) as cand:
-                    orb_inlier_score(img, cand)
+            if orb_cache is not None:
+                points_q, des_q = describe(img)
+                for r in top:
+                    points_c, des_c = orb_cache[r.slug]
+                    orb_inlier_score_cached(points_q, des_q, points_c, des_c)
+            else:
+                from .rerank_signals import orb_inlier_score
+                for r in top:
+                    with Image.open(config.UPLOADS_DIR / lookup[r.slug]["photo_file"]) as cand:
+                        orb_inlier_score(img, cand)
         t_rerank = time.perf_counter()
 
         img.close()

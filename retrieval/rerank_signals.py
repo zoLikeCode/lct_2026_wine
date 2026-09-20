@@ -24,32 +24,50 @@ def _get_orb():
     return _ORB, _BF
 
 
-def orb_inlier_score(query_img: Image.Image, candidate_img: Image.Image, size: int = 400) -> float:
+def _match_score(points_q, des_q, points_c, des_c, max_features: int) -> float:
     """Доля geometrically-verified inlier-матчей (0..1) после RANSAC-гомографии."""
     import cv2
-    orb, bf = _get_orb()
-
-    def prep(im):
-        im = im.convert("RGB").resize((size, size))
-        return cv2.cvtColor(np.array(im), cv2.COLOR_RGB2GRAY)
-
-    q, c = prep(query_img), prep(candidate_img)
-    kp1, des1 = orb.detectAndCompute(q, None)
-    kp2, des2 = orb.detectAndCompute(c, None)
-    if des1 is None or des2 is None or len(kp1) < 8 or len(kp2) < 8:
+    if des_q is None or des_c is None or len(points_q) < 8 or len(points_c) < 8:
         return 0.0
 
-    matches = bf.knnMatch(des1, des2, k=2)
+    _, bf = _get_orb()
+    matches = bf.knnMatch(des_q, des_c, k=2)
     good = [m for pair in matches if len(pair) == 2 for m, n in [pair] if m.distance < 0.75 * n.distance]
     if len(good) < 8:
         return 0.0
 
-    src = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
-    dst = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
-    H, mask = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
+    src = np.float32([points_q[m.queryIdx] for m in good]).reshape(-1, 1, 2)
+    dst = np.float32([points_c[m.trainIdx] for m in good]).reshape(-1, 1, 2)
+    _, mask = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
     if mask is None:
         return 0.0
-    return float(mask.sum()) / orb.getMaxFeatures()
+    return float(mask.sum()) / max_features
+
+
+def describe(image: Image.Image, size: int = 400):
+    """Ключевые точки и дескрипторы одного изображения."""
+    import cv2
+    orb, _ = _get_orb()
+    gray = cv2.cvtColor(np.array(image.convert("RGB").resize((size, size))), cv2.COLOR_RGB2GRAY)
+    keypoints, descriptors = orb.detectAndCompute(gray, None)
+    if descriptors is None or len(keypoints) < 8:
+        return np.zeros((0, 2), dtype=np.float32), None
+    return np.float32([kp.pt for kp in keypoints]), descriptors
+
+
+def orb_inlier_score(query_img: Image.Image, candidate_img: Image.Image, size: int = 400) -> float:
+    """Удобная обёртка, когда дескрипторы кандидата не предпосчитаны."""
+    orb, _ = _get_orb()
+    points_q, des_q = describe(query_img, size)
+    points_c, des_c = describe(candidate_img, size)
+    return _match_score(points_q, des_q, points_c, des_c, orb.getMaxFeatures())
+
+
+def orb_inlier_score_cached(points_q, des_q, points_c, des_c) -> float:
+    """Боевой путь: дескрипторы эталонов взяты из кеша (см. retrieval/orb_cache.py),
+    на запрос считается только его собственный набор точек."""
+    orb, _ = _get_orb()
+    return _match_score(points_q, des_q, points_c, des_c, orb.getMaxFeatures())
 
 
 _OCR_READER = None

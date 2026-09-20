@@ -37,7 +37,11 @@ AUGMENTERS = {
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--backbone", default="siglip2")
+    parser.add_argument("--backbone", default="siglip2", help="чем построен индекс")
+    parser.add_argument("--query-backbone", default=None,
+                        help="чем кодировать запрос (по умолчанию = --backbone). "
+                             "Разные значения позволяют, например, индексировать чистые "
+                             "каталожные фото целиком, а на запросе резать этикетку детектором.")
     parser.add_argument("--sample", type=int, default=400, help="сколько позиций каталога взять")
     parser.add_argument("--n-aug", type=int, default=2, help="аугментаций на позицию")
     parser.add_argument("--aug", choices=list(AUGMENTERS), default="realistic")
@@ -53,12 +57,14 @@ def main() -> None:
     coverage = len(lookup) / total_catalog
 
     index = EmbeddingIndex.load(config.OUTPUTS_DIR / f"embeddings_{args.backbone}.npz")
-    backbone = load_backbone(args.backbone)
+    query_backbone_name = args.query_backbone or args.backbone
+    backbone = load_backbone(query_backbone_name)
     is_mps = backbone.device.type == "mps"
 
     sample_slugs = random.sample(sorted(lookup), min(args.sample, len(lookup)))
     n_queries = len(sample_slugs) * args.n_aug
     print(f"Каталог: {total_catalog}, в индексе: {len(lookup)} ({coverage:.1%})")
+    print(f"Индекс: {args.backbone} | запрос: {query_backbone_name}")
     print(f"Выборка: {len(sample_slugs)} позиций x {args.n_aug} аугментаций ({args.aug}) = {n_queries} запросов\n")
 
     hits_top1 = hits_top5 = 0
@@ -94,7 +100,7 @@ def main() -> None:
     avg_gap = sum(gaps) / len(gaps) if gaps else 0.0
     expected = acc1 * coverage
 
-    print(f"\n########## {args.backbone} ##########")
+    print(f"\n########## индекс={args.backbone} запрос={query_backbone_name} ##########")
     print(f"  top-1 accuracy (по индексу):  {acc1:.1%}")
     print(f"  top-5 accuracy (по индексу):  {acc5:.1%}")
     print(f"  средний gap(top1,top2):       {avg_gap:.4f}")
@@ -102,11 +108,11 @@ def main() -> None:
     print(f"  ОЖИДАЕМАЯ accuracy:           {expected:.1%}  -> {expected*50:.1f} из 50 баллов")
 
     out = {
-        "backbone": args.backbone, "aug": args.aug, "sample": len(sample_slugs), "n_aug": args.n_aug,
+        "backbone": args.backbone, "query_backbone": query_backbone_name, "aug": args.aug, "sample": len(sample_slugs), "n_aug": args.n_aug,
         "top1_acc_indexed": acc1, "top5_acc_indexed": acc5, "avg_gap": avg_gap,
         "catalog_coverage": coverage, "expected_accuracy": expected,
     }
-    out_path = config.OUTPUTS_DIR / f"benchmark_catalog_{args.backbone}_{args.aug}.json"
+    out_path = config.OUTPUTS_DIR / f"benchmark_catalog_{args.backbone}_q{query_backbone_name}_{args.aug}.json"
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(f"\nСохранено: {out_path}")

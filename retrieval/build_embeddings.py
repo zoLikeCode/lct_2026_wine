@@ -23,7 +23,7 @@ CHECKPOINT_EVERY_BATCHES = 10  # ~160 фото — на случай паден�
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--backbone", choices=["dinov2", "dinov2_mean", "siglip2", "siglip2_crop", "siglip2_detect"], required=True)
+    parser.add_argument("--backbone", required=True)
     parser.add_argument("--resume", action="store_true", help="продолжить с последнего чекпоинта, если файл уже существует")
     args = parser.parse_args()
 

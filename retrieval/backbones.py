@@ -85,6 +85,11 @@ _VARIANTS = {
     "siglip2": ("google/siglip2-base-patch16-224", "raw", "none"),
     "siglip2_crop": ("google/siglip2-base-patch16-224", "raw", "auto"),
     "siglip2_detect": ("google/siglip2-base-patch16-224", "raw", "detect"),
+    # Этикетка — мелкий текст и тонкая графика: на 224px «2014» и «2016»
+    # физически неразличимы, поэтому разрешение проверяется как отдельная ось.
+    "siglip2_384": ("google/siglip2-base-patch16-384", "raw", "none"),
+    "siglip2_512": ("google/siglip2-base-patch16-512", "raw", "none"),
+    "siglip2_large384": ("google/siglip2-large-patch16-384", "raw", "none"),
 }
 
 

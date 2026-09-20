@@ -17,6 +17,7 @@ OCR по умолчанию выключен: он дорог (секунды н
 import argparse
 import gc
 import json
+import pickle
 import random
 import time
 
@@ -27,9 +28,9 @@ from data_prep import config
 from .augment_realistic import simulate_realistic_photo
 from .backbones import load_backbone
 from .index import EmbeddingIndex
-from .rerank_signals import ocr_match_score, ocr_text, orb_inlier_score
+from .rerank_signals import (describe, ocr_match_score, ocr_text,
+                             orb_inlier_score, orb_inlier_score_cached)
 
-TOP_K = 5
 PROGRESS_EVERY = 50
 
 WEIGHT_GRID = [
@@ -58,6 +59,8 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--backbone", default="siglip2_384")
     parser.add_argument("--sample", type=int, default=250)
+    parser.add_argument("--top-k", type=int, default=5,
+                        help="сколько кандидатов отдавать реранкеру")
     parser.add_argument("--n-aug", type=int, default=1)
     parser.add_argument("--with-ocr", action="store_true", help="включить OCR-сигнал (дорого)")
     parser.add_argument("--seed", type=int, default=42)
@@ -74,10 +77,18 @@ def main() -> None:
     backbone = load_backbone(args.backbone)
     is_mps = backbone.device.type == "mps"
 
+    orb_cache = None
+    cache_path = config.OUTPUTS_DIR / "orb_cache.pkl"
+    if cache_path.exists():
+        with open(cache_path, "rb") as f:
+            orb_cache = pickle.load(f)["cache"]
+
     sample_slugs = random.sample(sorted(lookup), min(args.sample, len(lookup)))
     n_queries = len(sample_slugs) * args.n_aug
     print(f"Индекс: {args.backbone} ({len(lookup)} позиций, покрытие {coverage:.1%})")
-    print(f"Запросов: {n_queries}  OCR: {'вкл' if args.with_ocr else 'выкл'}\n")
+    print(f"Запросов: {n_queries}  top-k: {args.top_k}  "
+          f"OCR: {'вкл' if args.with_ocr else 'выкл'}  "
+          f"ORB-кеш: {'да' if orb_cache else 'нет'}\n")
 
     raw = []
     done = 0
@@ -88,14 +99,19 @@ def main() -> None:
         for aug_i in range(args.n_aug):
             query = simulate_realistic_photo(base_img, seed=hash((slug, aug_i)) % (2**31))
             emb = backbone.encode(query)
-            top = index.search(emb, top_k=TOP_K)
+            top = index.search(emb, top_k=args.top_k)
 
             query_ocr = ocr_text(query) if args.with_ocr else ""
+            points_q, des_q = describe(query) if orb_cache is not None else (None, None)
             candidates = []
             for r in top:
                 rec = lookup[r.slug]
-                with Image.open(config.UPLOADS_DIR / rec["photo_file"]) as cand_img:
-                    orb = orb_inlier_score(query, cand_img)
+                if orb_cache is not None:
+                    points_c, des_c = orb_cache[r.slug]
+                    orb = orb_inlier_score_cached(points_q, des_q, points_c, des_c)
+                else:
+                    with Image.open(config.UPLOADS_DIR / rec["photo_file"]) as cand_img:
+                        orb = orb_inlier_score(query, cand_img)
                 candidates.append({
                     "slug": r.slug,
                     "embedding_score": r.score,
@@ -114,7 +130,7 @@ def main() -> None:
         base_img.close()
 
     in_top5 = sum(any(c["slug"] == q["true_slug"] for c in q["candidates"]) for q in raw) / len(raw)
-    print(f"\nПотолок реранкинга (верное вино есть в top-{TOP_K}): {in_top5:.1%}\n")
+    print(f"\nПотолок реранкинга (верное вино есть в top-{args.top_k}): {in_top5:.1%}\n")
 
     header = f"{'вариант':30s} | {'top-1':>7s} | {'ожидаемый балл':>15s}"
     print(header)
@@ -131,7 +147,7 @@ def main() -> None:
 
     print(f"\nЛучший вариант: {best[0]}  top-1={best[1]:.1%}")
 
-    out_path = config.OUTPUTS_DIR / f"rerank_catalog_{args.backbone}.json"
+    out_path = config.OUTPUTS_DIR / f"rerank_catalog_{args.backbone}_k{args.top_k}.json"
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump({"backbone": args.backbone, "n_queries": n_queries,
                    "with_ocr": args.with_ocr, "top5_ceiling": in_top5,

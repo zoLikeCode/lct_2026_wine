@@ -76,6 +76,38 @@ class Backbone:
         return emb.cpu().float().numpy()
 
 
+@dataclass
+class EnsembleBackbone:
+    """Несколько бэкбонов как один: векторы нормируются и конкатенируются,
+    поэтому косинусная близость ансамбля — это сумма близостей частей.
+    Индекс для него строится `retrieval/ensemble.py` тем же правилом."""
+
+    name: str
+    parts: list
+    weights: list
+
+    @property
+    def device(self):
+        return self.parts[0].device
+
+    def encode(self, image: Image.Image) -> np.ndarray:
+        return self.encode_batch([image])[0]
+
+    def encode_batch(self, images: list[Image.Image]) -> np.ndarray:
+        blocks = []
+        for part, weight in zip(self.parts, self.weights):
+            emb = part.encode_batch(images)
+            norms = np.linalg.norm(emb, axis=1, keepdims=True)
+            blocks.append(weight * emb / np.clip(norms, 1e-8, None))
+        combined = np.concatenate(blocks, axis=1)
+        return combined / np.clip(np.linalg.norm(combined, axis=1, keepdims=True), 1e-8, None)
+
+
+# имя ансамбля -> из чего собран
+_ENSEMBLES = {
+    "siglip2_ens": ["siglip2_384", "siglip2_512"],
+}
+
 _CACHE: dict[str, Backbone] = {}
 
 # name -> (huggingface model id, pooling variant, режим кропа)
@@ -96,8 +128,16 @@ _VARIANTS = {
 def load_backbone(name: str) -> Backbone:
     if name in _CACHE:
         return _CACHE[name]
+
+    if name in _ENSEMBLES:
+        parts = [load_backbone(p) for p in _ENSEMBLES[name]]
+        ensemble = EnsembleBackbone(name=name, parts=parts, weights=[1.0] * len(parts))
+        _CACHE[name] = ensemble
+        return ensemble
+
     if name not in _VARIANTS:
-        raise ValueError(f"unknown backbone: {name} (available: {list(_VARIANTS)})")
+        raise ValueError(f"unknown backbone: {name} "
+                         f"(available: {list(_VARIANTS)} + {list(_ENSEMBLES)})")
 
     model_id, variant, crop_mode = _VARIANTS[name]
     device = get_device()

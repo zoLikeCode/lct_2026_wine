@@ -26,25 +26,36 @@ class EmbeddingIndex:
         return cls(data["slugs"], data["embeddings"])
 
     def search(self, query_emb: np.ndarray, top_k: int = 10, exclude_slug: str | None = None) -> list[SearchResult]:
+        """При нескольких векторах на один slug (мультиреференсный индекс)
+        берётся максимум по slug — "лучший ракурс совпал" — прежде чем
+        резать по top_k, иначе один и тот же slug мог бы занять несколько
+        мест в выдаче за счёт своих же дополнительных векторов."""
         q = query_emb / max(np.linalg.norm(query_emb), 1e-8)
         scores = self.embeddings @ q
-        order = np.argsort(-scores)
-        results = []
-        for idx in order:
+        best_per_slug: dict[str, float] = {}
+        for idx in range(len(self.slugs)):
             slug = str(self.slugs[idx])
             if slug == exclude_slug:
                 continue
-            results.append(SearchResult(slug, float(scores[idx])))
-            if len(results) >= top_k:
-                break
-        return results
+            s = float(scores[idx])
+            if slug not in best_per_slug or s > best_per_slug[slug]:
+                best_per_slug[slug] = s
+        ranked = sorted(best_per_slug.items(), key=lambda x: -x[1])
+        return [SearchResult(slug, score) for slug, score in ranked[:top_k]]
 
     def rank_of(self, query_emb: np.ndarray, target_slug: str) -> int:
-        """1-based ранг target_slug в полном ранжировании по этому запросу."""
+        """1-based ранг target_slug (по максимуму среди его векторов) в
+        полном ранжировании по этому запросу."""
         q = query_emb / max(np.linalg.norm(query_emb), 1e-8)
         scores = self.embeddings @ q
-        order = np.argsort(-scores)
-        for rank, idx in enumerate(order, start=1):
-            if str(self.slugs[idx]) == target_slug:
+        best_per_slug: dict[str, float] = {}
+        for idx in range(len(self.slugs)):
+            slug = str(self.slugs[idx])
+            s = float(scores[idx])
+            if slug not in best_per_slug or s > best_per_slug[slug]:
+                best_per_slug[slug] = s
+        ranked = sorted(best_per_slug.items(), key=lambda x: -x[1])
+        for rank, (slug, _) in enumerate(ranked, start=1):
+            if slug == target_slug:
                 return rank
         return -1

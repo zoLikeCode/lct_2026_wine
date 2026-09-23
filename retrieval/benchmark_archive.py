@@ -15,6 +15,7 @@ import gc
 import json
 import pickle
 import time
+from pathlib import Path
 
 import torch
 from PIL import Image
@@ -52,14 +53,23 @@ def main() -> None:
 
     archive = load_archive()
     queries = []  # (slug, path)
+    skipped_leaked = 0
     for slug, photos in archive.items():
         if slug not in lookup:
             continue
+        # эталон индекса иногда сам взят из этого же датасета (parser_bottle,
+        # см. data_prep/build_catalog.py) — исключаем его из held-out запросов,
+        # иначе тестируем модель на файле, который она и так видела в индексе
+        indexed_path = str(Path(lookup[slug]["photo_file"]).resolve())
         for path in photos.extra:
+            if str(path.resolve()) == indexed_path:
+                skipped_leaked += 1
+                continue
             queries.append((slug, path))
     if args.limit:
         queries = queries[: args.limit]
-    print(f"Реальных фото для проверки: {len(queries)} (вин: {len({s for s, _ in queries})})")
+    print(f"Реальных фото для проверки: {len(queries)} (вин: {len({s for s, _ in queries})}), "
+          f"исключено как утечка (тот же файл, что в индексе): {skipped_leaked}")
     print(f"Индекс: {args.backbone}, ORB-кеш: {'да' if orb_cache else 'нет'}, вес ORB: {args.orb_weight}\n")
 
     rows = []

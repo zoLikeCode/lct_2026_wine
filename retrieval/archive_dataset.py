@@ -1,4 +1,7 @@
-"""Работа с дополнительным датасетом реальных фото: `Downloads/Archive`.
+"""Работа с дополнительным датасетом реальных фото: `Downloads/images`
+(до 22.09 — `Downloads/Archive/images`, тот же источник, позже дополненный
+до полного покрытия каталога и вручную перепроверенный, см.
+data_prep/parser_images.py).
 
 Команда собрала и вручную подтвердила соответствие интернет-фото каталожным
 позициям (`images/<slug>/*_bottle.webp`, `*_front_label.webp`,
@@ -13,7 +16,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-ARCHIVE_DIR = Path(os.environ.get("WINE_ARCHIVE_DIR", "~/Downloads/Archive")).expanduser()
+ARCHIVE_DIR = Path(os.environ.get("WINE_ARCHIVE_DIR", "~/Downloads")).expanduser()
 IMAGES_DIR = ARCHIVE_DIR / "images"
 
 

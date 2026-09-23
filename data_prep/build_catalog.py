@@ -11,7 +11,7 @@
 import csv
 import json
 
-from . import config
+from . import config, parser_images
 from .rerank_target import build_rerank_target
 from .slug_matching import MatchResult, UploadsIndex, match_slug
 from .slug_parser import parse_slug
@@ -54,13 +54,25 @@ def build_record(row: dict, match: MatchResult) -> dict:
     }
 
 
+def resolve_photo(slug: str, row: dict, uploads_index: UploadsIndex) -> MatchResult:
+    """Сначала — вручную подтверждённый датасет `Downloads/images`
+    (организован по slug напрямую, разметка человеком, см.
+    data_prep/parser_images.py), затем — старый путь через
+    prod-svoe-vino/strapi/uploads (транслитерация/fuzzy)."""
+    parser_path = parser_images.best_reference_for(slug)
+    if parser_path is not None:
+        kind = parser_images.classify(parser_path.name) or "reference"
+        return MatchResult(slug, None, str(parser_path), f"parser_{kind}", 100.0)
+    return match_slug(slug, uploads_index, photo_name=row.get("Название фото"))
+
+
 def main() -> None:
     rows = load_unique_rows()
     index = UploadsIndex.build()
 
     records = []
     for row in rows:
-        match = match_slug(row["Slug"], index, photo_name=row.get("Название фото"))
+        match = resolve_photo(row["Slug"], row, index)
         records.append(build_record(row, match))
 
     config.OUTPUTS_DIR.mkdir(exist_ok=True)
@@ -82,9 +94,12 @@ def main() -> None:
 
     n = len(records)
     print(f"Всего уникальных вин: {n}")
-    for method in ("photo_column", "exact", "fuzzy", "unresolved"):
+    methods = ("parser_reference", "parser_bottle", "parser_label",
+               "photo_column", "exact", "fuzzy", "unresolved")
+    for method in methods:
         count = sum(1 for r in records if r["photo_match_method"] == method)
-        print(f"  {method:13s} {count:5d} ({100 * count / n:.1f}%)")
+        if count:
+            print(f"  {method:17s} {count:5d} ({100 * count / n:.1f}%)")
     resolved = n - len(unresolved)
     print(f"\nПокрытие индекса: {resolved}/{n} ({100 * resolved / n:.1f}%) "
           f"-> потолок accuracy на равномерном eval")

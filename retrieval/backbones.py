@@ -122,6 +122,19 @@ _VARIANTS = {
     "siglip2_384": ("google/siglip2-base-patch16-384", "raw", "none"),
     "siglip2_512": ("google/siglip2-base-patch16-512", "raw", "none"),
     "siglip2_large384": ("google/siglip2-large-patch16-384", "raw", "none"),
+    # Крупнее модель (~400M vs 86M у base), то же разрешение 512 — проверяем
+    # "больше модель" как отдельную ось от "больше разрешение" (§11.5).
+    "siglip2_so400m512": ("google/siglip2-so400m-patch16-512", "raw", "none"),
+    # DINOv2 раньше проигрывал SigLIP2, но тестировался только на 224px —
+    # там у обеих моделей нет доступа к мелкому тексту этикетки. Перепроверяем
+    # на сопоставимом разрешении (518 = 37*14, ближайший кратный патчу к 512).
+    "dinov2_518": ("facebook/dinov2-base", "raw", "none"),
+}
+
+# переопределения конфигурации процессора там, где стандартного недостаточно
+# (DINOv2 по умолчанию режет всё до 224px вне зависимости от входа)
+_PROCESSOR_OVERRIDES = {
+    "dinov2_518": {"size": {"shortest_edge": 518}, "crop_size": {"height": 518, "width": 518}},
 }
 
 
@@ -142,13 +155,14 @@ def load_backbone(name: str) -> Backbone:
     model_id, variant, crop_mode = _VARIANTS[name]
     device = get_device()
 
+    overrides = _PROCESSOR_OVERRIDES.get(name, {})
     if model_id.startswith("facebook/dinov2"):
         from transformers import AutoImageProcessor, AutoModel
-        processor = AutoImageProcessor.from_pretrained(model_id)
+        processor = AutoImageProcessor.from_pretrained(model_id, **overrides)
         model = AutoModel.from_pretrained(model_id).to(device).eval()
     else:
         from transformers import AutoProcessor, AutoModel
-        processor = AutoProcessor.from_pretrained(model_id)
+        processor = AutoProcessor.from_pretrained(model_id, **overrides)
         model = AutoModel.from_pretrained(model_id).to(device).eval()
 
     backbone = Backbone(name=name, model=model, processor=processor, device=device, variant=variant, crop_mode=crop_mode)

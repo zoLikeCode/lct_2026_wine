@@ -92,7 +92,7 @@ def random_background(size: tuple[int, int], rng: random.Random) -> Image.Image:
     return bg.filter(ImageFilter.GaussianBlur(radius=max(w, h) / 90.0))
 
 
-def perspective(img: Image.Image, rng: random.Random, max_shift: float) -> Image.Image:
+def perspective(img: Image.Image, rng: random.Random, max_shift: float, return_coeffs: bool = False):
     w, h = img.size
     dx, dy = w * max_shift, h * max_shift
     src = [(0, 0), (w, 0), (w, h), (0, h)]
@@ -103,30 +103,92 @@ def perspective(img: Image.Image, rng: random.Random, max_shift: float) -> Image
         matrix.append([0, 0, 0, x, y, 1, -Y * x, -Y * y])
     A = np.array(matrix, dtype=np.float64)
     B = np.array(dst, dtype=np.float64).reshape(8)
-    coeffs = np.linalg.solve(A, B)
-    return img.transform((w, h), Image.PERSPECTIVE, coeffs.tolist(),
-                         resample=Image.BICUBIC, fillcolor=(255, 255, 255))
+    coeffs = np.linalg.solve(A, B).tolist()
+    out = img.transform((w, h), Image.PERSPECTIVE, coeffs,
+                        resample=Image.BICUBIC, fillcolor=(255, 255, 255))
+    return (out, coeffs) if return_coeffs else out
 
 
 def simulate_realistic_photo(img: Image.Image, seed: int | None = None) -> Image.Image:
     """Полный конвейер: цилиндр -> поворот на фоне -> блик -> оптика камеры."""
+    out, _ = simulate_realistic_photo_with_mask(img, mask=None, seed=seed)
+    return out
+
+
+# Типичная вертикальная раскладка кадра нашего каталога: колпачок/горлышко
+# сверху, дальше сама этикетка, снизу немного стекла. Доля по калибровке
+# на нескольких эталонах (не точная сегментация, а грубая эвристика —
+# достаточная, чтобы не путать этикетку с колпачком/фольгой).
+LABEL_REGION_FRACTION = (0.0, 0.36, 1.0, 0.80)  # (x0, y0, x1, y1) как доля от W,H
+
+
+def _label_mask_for(size: tuple[int, int]) -> Image.Image:
+    """Бинарная маска (L-режим, 0/255) — прямоугольник этикетки на
+    оригинальном эталонном фото, до какой-либо аугментации."""
+    w, h = size
+    x0f, y0f, x1f, y1f = LABEL_REGION_FRACTION
+    mask = Image.new("L", (w, h), 0)
+    box = (int(w * x0f), int(h * y0f), int(w * x1f), int(h * y1f))
+    from PIL import ImageDraw
+    ImageDraw.Draw(mask).rectangle(box, fill=255)
+    return mask
+
+
+def mask_to_bbox(mask: Image.Image, min_area: int = 25) -> tuple[int, int, int, int] | None:
+    """Bounding box непустой области маски в пикселях (x0,y0,x1,y1) или None,
+    если этикетка полностью ушла за кадр/обрезана (площадь < min_area)."""
+    arr = np.array(mask)
+    ys, xs = np.where(arr > 127)
+    if len(xs) < min_area:
+        return None
+    return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
+
+
+def simulate_realistic_photo_with_mask(
+    img: Image.Image, mask: Image.Image | None = None, seed: int | None = None,
+) -> tuple[Image.Image, Image.Image]:
+    """То же самое, что `simulate_realistic_photo`, но параллельно проводит
+    маску этикетки через ИДЕНТИЧНУЮ последовательность геометрических
+    преобразований (те же случайные параметры), чтобы после аугментации
+    можно было получить честный bounding box этикетки на выходном кадре —
+    без необходимости аналитически обращать цилиндрический warp/перспективу.
+
+    `mask=None` — авто: прямоугольник по `LABEL_REGION_FRACTION` на входном
+    фото. Цветовые эффекты (блик, яркость, шум) на маску не действуют —
+    геометрия для них тождественна.
+    """
     rng = random.Random(seed)
     out = img.convert("RGB")
+    if mask is None:
+        mask = _label_mask_for(out.size)
 
-    out = cylindrical_warp(out, arc_deg=rng.uniform(95, 140), yaw_deg=rng.uniform(-28, 28))
+    arc_deg, yaw_deg = rng.uniform(95, 140), rng.uniform(-28, 28)
+    out = cylindrical_warp(out, arc_deg=arc_deg, yaw_deg=yaw_deg)
+    mask = cylindrical_warp(mask.convert("RGB"), arc_deg=arc_deg, yaw_deg=yaw_deg).convert("L")
 
-    # Бутылку кладём на фон и немного поворачиваем — снимок с руки не бывает ровным.
     w, h = out.size
-    canvas = random_background((int(w * 1.5), int(h * 1.25)), rng)
-    canvas.paste(out, ((canvas.width - w) // 2, (canvas.height - h) // 2))
-    out = canvas.rotate(rng.uniform(-11, 11), resample=Image.BICUBIC, expand=False)
+    canvas_size = (int(w * 1.5), int(h * 1.25))
+    bg = random_background(canvas_size, rng)
+    canvas = bg.copy()
+    offset = ((canvas.width - w) // 2, (canvas.height - h) // 2)
+    canvas.paste(out, offset)
+    mask_canvas = Image.new("L", canvas_size, 0)
+    mask_canvas.paste(mask, offset)
 
-    out = perspective(out, rng, max_shift=rng.uniform(0.03, 0.10))
+    rot_deg = rng.uniform(-11, 11)
+    out = canvas.rotate(rot_deg, resample=Image.BICUBIC, expand=False)
+    mask_canvas = mask_canvas.rotate(rot_deg, resample=Image.NEAREST, expand=False, fillcolor=0)
 
-    # Кадрируем ближе к этикетке, как это делает человек с телефоном.
+    persp_shift = rng.uniform(0.03, 0.10)
+    out, persp_coeffs = perspective(out, rng, max_shift=persp_shift, return_coeffs=True)
+    mask_canvas = mask_canvas.transform(mask_canvas.size, Image.PERSPECTIVE, persp_coeffs,
+                                        resample=Image.NEAREST, fillcolor=0)
+
     cw, ch = out.size
     mx, my = int(cw * rng.uniform(0.06, 0.16)), int(ch * rng.uniform(0.04, 0.12))
-    out = out.crop((mx, my, cw - mx, ch - my))
+    box = (mx, my, cw - mx, ch - my)
+    out = out.crop(box)
+    mask_canvas = mask_canvas.crop(box)
 
     if rng.random() < 0.75:
         out = add_glare(out, strength=rng.uniform(0.25, 0.65), rng=rng)
@@ -138,10 +200,9 @@ def simulate_realistic_photo(img: Image.Image, seed: int | None = None) -> Image
     if rng.random() < 0.6:
         out = out.filter(ImageFilter.GaussianBlur(radius=rng.uniform(0.4, 2.0)))
 
-    # Шум матрицы телефона при плохом свете в магазине.
     if rng.random() < 0.5:
         arr = np.array(out).astype(np.float32)
         arr += np.random.default_rng(seed).normal(0, rng.uniform(2, 9), arr.shape)
         out = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))
 
-    return out
+    return out, mask_canvas

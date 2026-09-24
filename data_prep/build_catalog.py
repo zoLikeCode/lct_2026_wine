@@ -58,11 +58,16 @@ def resolve_photo(slug: str, row: dict, uploads_index: UploadsIndex) -> MatchRes
     """Сначала — вручную подтверждённый датасет `Downloads/images`
     (организован по slug напрямую, разметка человеком, см.
     data_prep/parser_images.py), затем — старый путь через
-    prod-svoe-vino/strapi/uploads (транслитерация/fuzzy)."""
+    prod-svoe-vino/strapi/uploads (транслитерация/fuzzy). Slug из
+    `parser_images.CONFIRMED_BAD_FALLBACK` (подтверждённо неверные
+    сопоставления, найдены и проверены глазами — docs/findings.md §11.15)
+    в откат не идут вообще, уходят в unresolved."""
     parser_path = parser_images.best_reference_for(slug)
     if parser_path is not None:
         kind = parser_images.classify(parser_path.name) or "reference"
         return MatchResult(slug, None, str(parser_path), f"parser_{kind}", 100.0)
+    if slug in parser_images.CONFIRMED_BAD_FALLBACK:
+        return MatchResult(slug, None, None, "unresolved", None, flagged_no_wine=False)
     return match_slug(slug, uploads_index, photo_name=row.get("Название фото"))
 
 

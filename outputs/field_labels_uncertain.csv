@@ -1,0 +1,5 @@
+image_path,best_guess_slug,alternative_slugs,reason
+95.76_23-08-2026_18-19-43.webp,denisov_barynya_kurmyshi,denisov_pereplyas_kurmyshi,"Denisov Kurmyshi line - label shows only 'Курмыши' text, no grape/sub-name visible to distinguish Барыня (Rubin Golodrigi+Tsitronny Magaracha) from Перепляс (Pino Noir+Chardonnay); embedding score gap large (0.899 vs 0.815) but cannot verify visually"
+96.08_22-08-2026_15-12-27.webp,zhemchuzhnaya-9-czitron-shardone-1,zhemchuzhnaya-9-czitron-shardone,"True catalog duplicate - two slugs with identical name/grape/color 'Жемчужная 9 Цитрон Шардоне', differ only in description text not visible on bottle photo"
+96.27_20-08-2026_16-26-30.webp,zhemchuzhnaya-9-pino-nuar-muskat-rozovyj-2,"zhemchuzhnaya-9-pino-nuar-muskat-rozovyj-1;zhemchuzhnaya-9-pino-nuar-muskat-rozovyj","True catalog triplet duplicate - three slugs identical name/grape 'Жемчужная 9 Пино Нуар Мускат Розовый', differ only in description text not visible on photo"
+96.31_09-09-2026_19-29-01.webp,aratti-kaberne-po-belomu-1,aratti-kaberne-po-belomu,"Two Aratti 'Каберне по-белому' slugs with identical visible label text, differ only in description not shown on bottle"

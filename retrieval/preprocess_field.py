@@ -91,8 +91,9 @@ def crop_to_bottle(image: Image.Image) -> Image.Image | None:
 
 def preprocess(image: Image.Image) -> Image.Image:
     """Полный конвейер перед эмбеддингом: EXIF-ориентация -> bottle-кроп
-    (с fallback на целое фото) -> баланс белого/контраст. +3.6пп top-1 на
-    честных 56 полевых фото (83.9% -> 87.5%, §11.19 findings)."""
+    (с fallback на целое фото) -> баланс белого/контраст. Официально
+    провалидированный прирост +1.8пп top-1 на 56 полевых фото
+    (83.9% -> 85.7%, §11.19 findings)."""
     img = ImageOps.exif_transpose(image.convert("RGB")).convert("RGB")
     cropped = crop_to_bottle(img)
     base = cropped if cropped is not None else img

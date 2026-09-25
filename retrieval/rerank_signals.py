@@ -81,9 +81,17 @@ def get_ocr_reader():
     return _OCR_READER
 
 
-def ocr_text(image: Image.Image, min_conf: float = 0.3) -> str:
+def ocr_text(image: Image.Image, min_conf: float = 0.3, max_side: int = 1280) -> str:
+    """Полевые фото приходят по 3000-4600px на сторону — без ресайза EasyOCR
+    на CPU уходит в десятки секунд/фото и разрастается по памяти. 1280px
+    достаточно, чтобы прочитать текст этикетки в кадре."""
+    img = image.convert("RGB")
+    w, h = img.size
+    scale = max_side / max(w, h)
+    if scale < 1.0:
+        img = img.resize((max(1, int(w * scale)), max(1, int(h * scale))), Image.BILINEAR)
     reader = get_ocr_reader()
-    results = reader.readtext(np.array(image.convert("RGB")), detail=1)
+    results = reader.readtext(np.array(img), detail=1)
     tokens = [text for _, text, conf in results if conf >= min_conf]
     return " ".join(tokens)
 

@@ -32,12 +32,14 @@ from PIL import Image
 
 from data_prep import config
 from .backbones import load_backbone
+from .differentiator_rerank import net_votes
 from .index import EmbeddingIndex
-from .rerank_signals import describe, orb_inlier_score_cached
+from .rerank_signals import describe, ocr_text, orb_inlier_score_cached
 
 BACKBONE = "siglip2_so400m512"
 TOP_K = 5
 ORB_WEIGHT = 0.0
+DIFFERENTIATOR_WEIGHT = 0.0  # §11.18 findings — под честной оценкой перед включением по умолчанию
 
 
 @dataclass
@@ -50,13 +52,15 @@ class Prediction:
 
 
 class WineFinder:
-    def __init__(self, backbone: str = BACKBONE, orb_weight: float = ORB_WEIGHT):
+    def __init__(self, backbone: str = BACKBONE, orb_weight: float = ORB_WEIGHT,
+                 differentiator_weight: float = DIFFERENTIATOR_WEIGHT):
         with open(config.OUTPUTS_DIR / "catalog_resolved.json", encoding="utf-8") as f:
             records = json.load(f)
         self.lookup = {r["slug"]: r for r in records if r["photo_file"]}
         self.index = EmbeddingIndex.load(config.OUTPUTS_DIR / f"embeddings_{backbone}.npz")
         self.backbone = load_backbone(backbone)
         self.orb_weight = orb_weight
+        self.differentiator_weight = differentiator_weight
 
         # ORB выключен по умолчанию (§11.9/11.14 findings — вредит на реальных
         # фото), поэтому кеш не обязателен: используется только если явно
@@ -77,15 +81,21 @@ class WineFinder:
         if self.orb_cache is not None:
             points_q, des_q = describe(image)
 
+        votes = {}
+        if self.differentiator_weight != 0.0:
+            query_text = ocr_text(image)
+            votes = net_votes(query_text, [self.lookup[cand.slug] for cand in candidates])
+
         scored = []
         for cand in candidates:
             orb = 0.0
             if self.orb_cache is not None:
                 points_c, des_c = self.orb_cache.get(cand.slug, (None, None))
                 orb = orb_inlier_score_cached(points_q, des_q, points_c, des_c)
+            vote = votes.get(cand.slug, 0)
             scored.append(Prediction(
                 slug=cand.slug,
-                score=cand.score + self.orb_weight * orb,
+                score=cand.score + self.orb_weight * orb + self.differentiator_weight * vote,
                 embedding_score=cand.score,
                 orb_score=orb,
                 record=self.lookup[cand.slug],

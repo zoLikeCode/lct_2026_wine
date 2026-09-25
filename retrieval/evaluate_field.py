@@ -22,7 +22,7 @@ from pathlib import Path
 from PIL import Image
 
 from data_prep import config
-from .predict import ORB_WEIGHT, WineFinder
+from .predict import DIFFERENTIATOR_WEIGHT, ORB_WEIGHT, WineFinder
 
 
 def main() -> None:
@@ -30,6 +30,7 @@ def main() -> None:
     parser.add_argument("--photos", required=True, help="папка с фотографиями")
     parser.add_argument("--labels", default=None, help="CSV с разметкой")
     parser.add_argument("--orb-weight", type=float, default=ORB_WEIGHT)
+    parser.add_argument("--differentiator-weight", type=float, default=DIFFERENTIATOR_WEIGHT)
     parser.add_argument("--top-k", type=int, default=5)
     args = parser.parse_args()
 
@@ -43,7 +44,7 @@ def main() -> None:
     if not labels:
         raise SystemExit("в разметке нет строк с true_slug")
 
-    finder = WineFinder(orb_weight=args.orb_weight)
+    finder = WineFinder(orb_weight=args.orb_weight, differentiator_weight=args.differentiator_weight)
     indexed = set(finder.lookup)
 
     rows = []

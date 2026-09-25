@@ -1,0 +1,44 @@
+{
+  "model_version": "refined-7db54690044e-linux-onnx-fp32-ppocr5-cyrillic",
+  "base_version": "refined-7db54690044e",
+  "catalog_slugs": 2034,
+  "reference_images": 2080,
+  "files": {
+    "index.npz": {
+      "sha256": "add26c125b89dd478a479fd7974b622aac45a26a2da64a67ff34c3196792e5d4",
+      "bytes": 11839528
+    },
+    "encoder.onnx": {
+      "sha256": "36897db81d87704d78ad2a160edf5d408a16e6af7f14d86ea8da8cc728e06643",
+      "bytes": 374255842
+    },
+    "yolo.onnx": {
+      "sha256": "3198b5e346065950be933c80be52bd12e963c74ec3dd69e9592dac22d7d9c253",
+      "bytes": 10560000
+    },
+    "geometry.npz": {
+      "sha256": "401b44c965c980cd3346b7129e1186a4611c9f4b1ac128cafc6ec0b3d6fb9d5f",
+      "bytes": 252117697
+    },
+    "index.json": {
+      "sha256": "5ced2c4bf4228c804ee62844d57fbeaff28cca968eb063145c5a844dbd1e9f8c",
+      "bytes": 11622737
+    },
+    "ocr/PP-OCRv6_det_small.onnx": {
+      "sha256": "090f04abcd9d9a7498bc4ebf677e4cb9bdce1fe4197ddb7e529f1ef44e1ff94f",
+      "bytes": 9929594
+    },
+    "ocr/ch_ppocr_mobile_v2.0_cls_mobile.onnx": {
+      "sha256": "e47acedf663230f8863ff1ab0e64dd2d82b838fceb5957146dab185a89d6215c",
+      "bytes": 585532
+    },
+    "ocr/cyrillic_PP-OCRv5_rec_mobile.onnx": {
+      "sha256": "90f761b4bfcce0c8c561c0cb5c887b0971d3ec01c32164bdf7374a35b0982711",
+      "bytes": 8074092
+    },
+    "provenance.json": {
+      "sha256": "4d900e3b236d95660a212cc76ad9d082928db6378e48a82b0cacd67216caefdf",
+      "bytes": 1550
+    }
+  }
+}

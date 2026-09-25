@@ -3,3 +3,17 @@ __pycache__/
 outputs/
 .venv/
 .DS_Store
+
+# Portable release assets are distributed separately from source.
+models/
+*.onnx
+*.safetensors
+*.npz
+*.pt
+*.pth
+*.ckpt
+*.zip
+*.tar.gz
+.venv-portable/
+.env
+.env.*

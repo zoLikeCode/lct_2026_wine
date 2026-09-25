@@ -1,0 +1,30 @@
+{
+  "release_date": "2026-09-26",
+  "model_version": "refined-7db54690044e-linux-onnx-fp32-ppocr5-cyrillic",
+  "archive": {
+    "name": "refined-7db54690044e.zip",
+    "sha256": "8197d86337eaf1438c51ad62ca15392555ad7ca4247963431fd1c43d31fed871",
+    "bytes": 639812644,
+    "uncompressed_bytes": 678986572
+  },
+  "verification": {
+    "archive_members_sha256_verified": 9,
+    "fresh_environment": "CPython 3.12, macOS ARM64",
+    "tests_passed": 4,
+    "regression_photos": 3,
+    "regression_checks": [
+      "input SHA-256",
+      "top-1 slug",
+      "ordered top-5 slugs",
+      "OCR text",
+      "model version",
+      "strict eval JSON"
+    ],
+    "dependency_check": "passed",
+    "docker_tested": false
+  },
+  "source_code": {
+    "inference.py": "9fa7dec1a3603933d784685cf45854bc51e11fb2219449765e9d3ff4c79c0ba0",
+    "ranking_core.py": "61cca1fe38af3afe7ab2d7d82c9e1e56145e15677bbd03af7e1baee21b7dea7d"
+  }
+}

@@ -14,6 +14,13 @@ p95 1405мс — в 2.1x запасе от SLA 3000мс). ORB-реранкинг
 обвязка оставлены в коде для дальнейших экспериментов (например, обученные
 матчеры вместо ORB), но по умолчанию не участвуют в ответе.
 
+Препроцессинг запроса ВКЛЮЧЁН по умолчанию (`retrieval/preprocess_field.py`):
+кроп по бутылке целиком (не по этикетке — то отклонено, §11.16) с fallback
+на целое фото при неуверенной детекции, плюс баланс белого/CLAHE-контраст.
+Единственный положительный результат реранкинга/препроцессинга кроме
+самого backbone: +3.6пп top-1 на честных 56 полевых фото, 83.9% -> 87.5%
+(§11.19 findings).
+
 Ответ всегда top-1: метрика кейса — accuracy без штрафа за ошибку, поэтому
 отказ «не найдено» только теряет баллы. Порог уверенности возвращается
 отдельным полем, чтобы интерфейс мог решать сам.
@@ -34,12 +41,14 @@ from data_prep import config
 from .backbones import load_backbone
 from .differentiator_rerank import net_votes
 from .index import EmbeddingIndex
+from .preprocess_field import preprocess as preprocess_image
 from .rerank_signals import describe, ocr_text, orb_inlier_score_cached
 
 BACKBONE = "siglip2_so400m512"
 TOP_K = 5
 ORB_WEIGHT = 0.0
 DIFFERENTIATOR_WEIGHT = 0.0  # §11.18 findings — под честной оценкой перед включением по умолчанию
+PREPROCESS = True  # §11.19 findings — bottle-кроп + баланс белого/контраст, единственный положительный результат
 
 
 @dataclass
@@ -53,7 +62,7 @@ class Prediction:
 
 class WineFinder:
     def __init__(self, backbone: str = BACKBONE, orb_weight: float = ORB_WEIGHT,
-                 differentiator_weight: float = DIFFERENTIATOR_WEIGHT):
+                 differentiator_weight: float = DIFFERENTIATOR_WEIGHT, preprocess: bool = PREPROCESS):
         with open(config.OUTPUTS_DIR / "catalog_resolved.json", encoding="utf-8") as f:
             records = json.load(f)
         self.lookup = {r["slug"]: r for r in records if r["photo_file"]}
@@ -61,6 +70,7 @@ class WineFinder:
         self.backbone = load_backbone(backbone)
         self.orb_weight = orb_weight
         self.differentiator_weight = differentiator_weight
+        self.preprocess = preprocess
 
         # ORB выключен по умолчанию (§11.9/11.14 findings — вредит на реальных
         # фото), поэтому кеш не обязателен: используется только если явно
@@ -74,6 +84,8 @@ class WineFinder:
                 self.orb_cache = pickle.load(f)["cache"]
 
     def predict(self, image: Image.Image, top_k: int = TOP_K) -> list[Prediction]:
+        if self.preprocess:
+            image = preprocess_image(image)
         emb = self.backbone.encode(image)
         candidates = self.index.search(emb, top_k=top_k)
 

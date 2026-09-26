@@ -31,8 +31,8 @@ def main() -> None:
     parser.add_argument("--labels", default=None, help="CSV с разметкой")
     parser.add_argument("--orb-weight", type=float, default=ORB_WEIGHT)
     parser.add_argument("--differentiator-weight", type=float, default=DIFFERENTIATOR_WEIGHT)
-    parser.add_argument("--no-preprocess", action="store_false", dest="preprocess", default=PREPROCESS,
-                        help="отключить bottle-кроп + баланс белого/контраст (§11.19)")
+    parser.add_argument("--preprocess", choices=["none", "enhance", "crop"], default=PREPROCESS,
+                        help="подготовка кадра: none / enhance (production) / crop (§11.25)")
     parser.add_argument("--top-k", type=int, default=5)
     args = parser.parse_args()
 

@@ -89,12 +89,24 @@ def crop_to_bottle(image: Image.Image) -> Image.Image | None:
     return image.crop((int(x0), int(y0), int(x1), int(y1)))
 
 
-def preprocess(image: Image.Image) -> Image.Image:
-    """Полный конвейер перед эмбеддингом: EXIF-ориентация -> bottle-кроп
-    (с fallback на целое фото) -> баланс белого/контраст. Официально
-    провалидированный прирост +1.8пп top-1 на 56 полевых фото
-    (83.9% -> 85.7%, §11.19 findings)."""
+MODES = ("none", "enhance", "crop")
+
+
+def preprocess(image: Image.Image, mode: str = "enhance") -> Image.Image:
+    """Подготовка кадра перед эмбеддингом. EXIF-ориентация применяется всегда.
+
+    - `none` — только EXIF;
+    - `enhance` — плюс баланс белого и CLAHE-контраст (production, §11.27:
+      +3 кадра из 261, 5 исправлений против 2 поломок, стоит ~50 мс);
+    - `crop` — плюс кроп по бутылке. ОТКЛЮЧЁН в production: на 261 честном
+      кадре теряет точность и top-5 и вдвое дороже (§11.25).
+    """
+    if mode not in MODES:
+        raise ValueError(f"mode must be one of {MODES}")
     img = ImageOps.exif_transpose(image.convert("RGB")).convert("RGB")
-    cropped = crop_to_bottle(img)
-    base = cropped if cropped is not None else img
-    return enhance(base)
+    if mode == "none":
+        return img
+    if mode == "crop":
+        cropped = crop_to_bottle(img)
+        img = cropped if cropped is not None else img
+    return enhance(img)

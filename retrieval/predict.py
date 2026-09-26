@@ -14,14 +14,13 @@ p95 1405мс — в 2.1x запасе от SLA 3000мс). ORB-реранкинг
 обвязка оставлены в коде для дальнейших экспериментов (например, обученные
 матчеры вместо ORB), но по умолчанию не участвуют в ответе.
 
-Препроцессинг запроса ОТКЛЮЧЁН (`PREPROCESS=False`). Кроп по бутылке с
-балансом белого давал +1 кадр из 56 (§11.19), но на выросшем честном наборе
-знак развернулся: на 205 новых полевых фото он теряет 3 кадра top-1
-(86.8% -> 85.4%), рушит top-5 (94.1% -> 90.2%, кроп выбрасывает верный ответ
-целиком примерно на 8 кадрах) и вдвое дороже по времени — p95 3701 мс против
-SLA 3000 мс. Суммарно по 261 честному кадру: 225 верных без препроцессинга
-против 223 с ним. Прежние +1.8пп были шумом малой выборки (§11.25).
-Модуль `preprocess_field.py` оставлен в коде.
+Препроцессинг запроса — `PREPROCESS="enhance"`: EXIF-ориентация плюс баланс
+белого и CLAHE-контраст, без кропа (§11.27: 228 верных из 261 против 225,
+5 исправлений против 2 поломок; стоит ~50 мс). Режим `crop` (кроп по
+бутылке) ОТКЛЮЧЁН: он давал +1 кадр из 56 (§11.19), но на выросшем до 261
+кадра честном наборе знак развернулся — теряет 3 кадра top-1, рушит top-5
+(94.1% -> 90.2%, кроп выбрасывает верный ответ целиком примерно на 8
+кадрах) и вдвое дороже, p95 3701 мс против SLA 3000 мс (§11.25).
 
 Ответ всегда top-1: метрика кейса — accuracy без штрафа за ошибку, поэтому
 отказ «не найдено» только теряет баллы. Порог уверенности возвращается
@@ -50,7 +49,7 @@ BACKBONE = "siglip2_so400m512"
 TOP_K = 5
 ORB_WEIGHT = 0.0
 DIFFERENTIATOR_WEIGHT = 0.0  # §11.18 findings — под честной оценкой перед включением по умолчанию
-PREPROCESS = False  # §11.25 findings — на выборке 261 кадра кроп теряет точность, top-5 и вдвое дороже
+PREPROCESS = "enhance"  # "none" | "enhance" | "crop"; см. preprocess_field.MODES
 
 
 @dataclass
@@ -64,7 +63,7 @@ class Prediction:
 
 class WineFinder:
     def __init__(self, backbone: str = BACKBONE, orb_weight: float = ORB_WEIGHT,
-                 differentiator_weight: float = DIFFERENTIATOR_WEIGHT, preprocess: bool = PREPROCESS):
+                 differentiator_weight: float = DIFFERENTIATOR_WEIGHT, preprocess: str = PREPROCESS):
         with open(config.OUTPUTS_DIR / "catalog_resolved.json", encoding="utf-8") as f:
             records = json.load(f)
         self.lookup = {r["slug"]: r for r in records if r["photo_file"]}
@@ -86,8 +85,7 @@ class WineFinder:
                 self.orb_cache = pickle.load(f)["cache"]
 
     def predict(self, image: Image.Image, top_k: int = TOP_K) -> list[Prediction]:
-        if self.preprocess:
-            image = preprocess_image(image)
+        image = preprocess_image(image, self.preprocess)
         emb = self.backbone.encode(image)
         candidates = self.index.search(emb, top_k=top_k)
 

@@ -46,8 +46,27 @@ def _clahe_contrast(arr: np.ndarray, clip_limit: float = 2.0) -> np.ndarray:
     return cv2.cvtColor(lab, cv2.COLOR_LAB2RGB).astype(np.float32)
 
 
-def enhance(image: Image.Image) -> Image.Image:
-    arr = np.array(image.convert("RGB"))
+ENHANCE_MAX_SIDE = 768
+
+
+def enhance(image: Image.Image, max_side: int | None = ENHANCE_MAX_SIDE) -> Image.Image:
+    """Полевые фото приходят по 12 мегапикселей, а бэкбон всё равно видит
+    512px, поэтому нормализация на полном разрешении — чистая трата времени
+    (§11.34: медиана запроса 2812 мс, p95 3942 мс при SLA 3000 мс). Кадр
+    сначала уменьшается до `max_side` по длинной стороне.
+
+    Замена не тождественная: CLAHE работает по плиткам 8x8, и на уменьшенном
+    кадре плитка покрывает ту же долю изображения, но меньше пикселей.
+    Поэтому изменение проверено на точности, а не только на времени.
+    """
+    img = image.convert("RGB")
+    if max_side is not None:
+        width, height = img.size
+        scale = max_side / max(width, height)
+        if scale < 1.0:
+            img = img.resize((max(1, int(width * scale)), max(1, int(height * scale))),
+                             Image.BILINEAR)
+    arr = np.array(img)
     arr = _gray_world_white_balance(arr)
     arr = _clahe_contrast(arr)
     return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))

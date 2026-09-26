@@ -42,6 +42,32 @@ def matches_kind(filename: str, kind: str) -> bool:
     raise ValueError(f"unknown kind: {kind}")
 
 
+CORRECTIONS_PATH = Path(__file__).resolve().parent / "field_label_corrections.csv"
+
+
+def load_corrections() -> dict[str, tuple[str, str]]:
+    """Правки разметки, сделанные по ЧИТАЕМОМУ на этикетке названию.
+
+    Разбор ошибок на 205 кадрах (§11.33) нашёл фотографии, лежащие не в своей
+    папке: например, в папке Ая Органик стоит «Мускатель Массандра белый».
+    Правила, которыми ограничены правки:
+
+    - `relabel` — только если название на этикетке читается и в каталоге ему
+      соответствует РОВНО ОДНА позиция;
+    - `exclude` — если вино в кадре опознано, но в каталоге у него несколько
+      дублирующих slug: выбрать между ними по фотографии нельзя, и оставлять
+      такой кадр в метрике нечестно по отношению к модели.
+
+    Правки не меняют файлы пользователя и лежат отдельно, чтобы их можно было
+    просмотреть и оспорить. Основание каждой — в колонке `reason`.
+    """
+    if not CORRECTIONS_PATH.exists():
+        return {}
+    with open(CORRECTIONS_PATH, encoding="utf-8") as f:
+        return {row["image_path"]: (row["action"], row["new_slug"])
+                for row in csv.DictReader(f)}
+
+
 def indexed_basenames(catalog_path: Path) -> dict[str, set[str]]:
     """slug -> множество basename файлов, которые уже лежат в индексе."""
     with open(catalog_path, encoding="utf-8") as f:
@@ -66,8 +92,10 @@ def main() -> None:
         else config.OUTPUTS_DIR / "catalog_resolved.json"
     indexed = indexed_basenames(catalog_path)
     known_slugs = set(indexed)
+    corrections = load_corrections()
 
     rows, leaked, unknown = [], [], set()
+    relabeled, excluded = [], []
     for slug_dir in sorted(root.iterdir()):
         if not slug_dir.is_dir():
             continue
@@ -80,9 +108,20 @@ def main() -> None:
             if photo.name in indexed.get(slug, ()):
                 leaked.append(f"{slug}/{photo.name}")
                 continue
+
+            image_path = f"{slug}/{photo.name}"
+            true_slug = slug
+            action, new_slug = corrections.get(image_path, ("", ""))
+            if action == "exclude":
+                excluded.append(image_path)
+                continue
+            if action == "relabel":
+                relabeled.append((image_path, slug, new_slug))
+                true_slug = new_slug
+
             rows.append({"query_id": f"q-{len(rows) + 1:06d}",
-                         "image_path": f"{slug}/{photo.name}",
-                         "true_slug": slug})
+                         "image_path": image_path,
+                         "true_slug": true_slug})
 
     out_path = Path(args.out).expanduser()
     with open(out_path, "w", encoding="utf-8", newline="") as f:
@@ -91,6 +130,14 @@ def main() -> None:
         writer.writerows(rows)
 
     print(f"Записано строк: {len(rows)} по {len({r['true_slug'] for r in rows})} slug")
+    if relabeled:
+        print(f"Переразмечено по читаемой этикетке: {len(relabeled)}")
+        for image_path, was, now in relabeled:
+            print(f"  {image_path[:52]}\n      {was[:56]} -> {now[:56]}")
+    if excluded:
+        print(f"Исключено (вино опознано, но в каталоге дубликаты slug): {len(excluded)}")
+        for item in excluded:
+            print(f"  {item[:66]}")
     print(f"Исключено как утечка (файл сам в индексе): {len(leaked)}")
     for item in leaked:
         print(f"  {item}")

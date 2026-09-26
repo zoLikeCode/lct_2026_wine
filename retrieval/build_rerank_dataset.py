@@ -27,11 +27,22 @@ from .backbones import load_backbone
 from .index import EmbeddingIndex
 from .predict import BACKBONE, PREPROCESS
 from .preprocess_field import preprocess
-from .rerank_features import FEATURE_NAMES, candidate_features, load_near_dup_pairs
+from .rerank_features import (FEATURE_NAMES, MULTIVIEW_FEATURE_NAMES, candidate_features,
+                              load_near_dup_pairs, multiview_features)
 
 REAL_ROOT = Path("~/Downloads/real_photos").expanduser()
 CATALOG_ROOT = Path("~/Downloads/catalog_photos").expanduser()
 TOP_K = 10
+# Доли центрального кропа для дополнительных ракурсов. Проверяют, держится ли
+# победа кандидата, когда в кадре остаётся меньше окружения (§11.29: нужен
+# признак, несущий новую информацию о запросе).
+VIEW_CROPS = (0.85, 0.70)
+
+
+def center_crop(image: Image.Image, fraction: float) -> Image.Image:
+    width, height = image.size
+    dx, dy = int(width * (1 - fraction) / 2), int(height * (1 - fraction) / 2)
+    return image.crop((dx, dy, width - dx, height - dy))
 
 
 def promo_queries() -> list[tuple[Path, str]]:
@@ -75,6 +86,8 @@ def main() -> None:
                         help="train — промо + лишние каталожные; own/org — честные полевые наборы")
     parser.add_argument("--limit-extra", type=int, default=1200,
                         help="сколько лишних каталожных снимков добавить к промо")
+    parser.add_argument("--multiview", action="store_true",
+                        help="добавить признаки устойчивости ранга при перекадрировании (§11.29)")
     parser.add_argument("--keep-unreachable", action="store_true",
                         help="не отбрасывать запросы, где верного ответа нет в top-K (нужно для честной оценки)")
     parser.add_argument("--seed", type=int, default=42)
@@ -101,7 +114,12 @@ def main() -> None:
             continue
         try:
             with Image.open(path) as raw:
-                embedding = backbone.encode(preprocess(raw, PREPROCESS))
+                primary = preprocess(raw, PREPROCESS)
+            views = [primary] + [center_crop(primary, f) for f in VIEW_CROPS] \
+                if args.multiview else [primary]
+            embeddings = backbone.encode_batch(views) if len(views) > 1 \
+                else [backbone.encode(primary)]
+            embedding = embeddings[0]
         except Exception as exc:
             print(f"  пропуск {path.name}: {exc}")
             skipped += 1
@@ -115,11 +133,18 @@ def main() -> None:
             skipped += 1
             continue
 
+        slugs = [c["slug"] for c in candidates]
+        features = candidate_features(candidates, lookup, near_dup)
+        if args.multiview:
+            extra_views = [index.ranks_and_scores(emb, slugs) for emb in embeddings[1:]]
+            for row, mv in zip(features, multiview_features(slugs, extra_views, TOP_K)):
+                row.extend(mv)
+
         groups.append({
             "query": str(path), "true_slug": true_slug,
-            "slugs": [c["slug"] for c in candidates],
+            "slugs": slugs,
             "labels": [int(c["slug"] == true_slug) for c in candidates],
-            "features": candidate_features(candidates, lookup, near_dup),
+            "features": features,
         })
         if i % 100 == 0:
             print(f"  {i}/{len(queries)} (собрано групп: {len(groups)})", flush=True)
@@ -127,7 +152,8 @@ def main() -> None:
     hard = sum(1 for g in groups if g["labels"][0] != 1)
     out_path = config.OUTPUTS_DIR / args.out
     with open(out_path, "w", encoding="utf-8") as f:
-        json.dump({"feature_names": list(FEATURE_NAMES), "top_k": TOP_K, "groups": groups},
+        names = list(FEATURE_NAMES) + (list(MULTIVIEW_FEATURE_NAMES) if args.multiview else [])
+        json.dump({"feature_names": names, "top_k": TOP_K, "groups": groups},
                   f, ensure_ascii=False)
 
     print(f"\nГрупп собрано: {len(groups)}, пропущено запросов: {skipped}")

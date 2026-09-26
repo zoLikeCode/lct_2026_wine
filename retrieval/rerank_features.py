@@ -20,6 +20,17 @@
 import json
 from pathlib import Path
 
+MULTIVIEW_FEATURE_NAMES = (
+    "mv_mean_rank",
+    "mv_worst_rank",
+    "mv_rank_std",
+    "mv_times_first",
+    "mv_mean_score",
+    "mv_score_std",
+    "mv_mean_margin_to_view_top1",
+    "mv_present_in_all",
+)
+
 FEATURE_NAMES = (
     "score",
     "rank",
@@ -95,5 +106,43 @@ def candidate_features(candidates: list[dict], lookup: dict[str, dict],
             float(bool(target.get("sweetness_ru"))),
             float(bool(target.get("abv_tokens"))),
             float(str(record.get("photo_match_method", "")).endswith("reference")),
+        ])
+    return rows
+
+
+def multiview_features(slugs: list[str],
+                       views: list[dict[str, tuple[int, float]]],
+                       top_k: int) -> list[list[float]]:
+    """Признаки устойчивости кандидата к перекадрированию запроса.
+
+    `views` — по одному словарю `slug -> (ранг, score)` на каждый
+    дополнительный ракурс (кадр, обрезанный сильнее/слабее). Кандидат,
+    выигрывающий только при одном кадрировании, вероятно поймал фон;
+    кандидат, стабильно первый во всех ракурсах, — настоящий. Это первый
+    признак в наборе, несущий НОВУЮ информацию о запросе, а не функцию от
+    тех же косинусных скоров (см. §11.29: без неё реранкинг невозможен).
+    """
+    if not views:
+        return [[0.0] * len(MULTIVIEW_FEATURE_NAMES) for _ in slugs]
+
+    rows = []
+    for slug in slugs:
+        ranks = [view.get(slug, (10 ** 6, 0.0))[0] for view in views]
+        scores = [view.get(slug, (10 ** 6, 0.0))[1] for view in views]
+        view_tops = [max(view.values(), key=lambda rs: rs[1])[1] if view else 0.0
+                     for view in views]
+        mean_rank = sum(ranks) / len(ranks)
+        mean_score = sum(scores) / len(scores)
+        rank_var = sum((r - mean_rank) ** 2 for r in ranks) / len(ranks)
+        score_var = sum((s - mean_score) ** 2 for s in scores) / len(scores)
+        rows.append([
+            mean_rank,
+            float(max(ranks)),
+            rank_var ** 0.5,
+            float(sum(1 for r in ranks if r == 1)),
+            mean_score,
+            score_var ** 0.5,
+            sum(s - t for s, t in zip(scores, view_tops)) / len(scores),
+            float(all(r <= top_k for r in ranks)),
         ])
     return rows

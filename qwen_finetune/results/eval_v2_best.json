@@ -1,0 +1,29 @@
+{
+  "val": {
+    "n": 310,
+    "top1": 0.9032258064516129,
+    "top5": 0.9935483870967742,
+    "top1_count": 280,
+    "top5_count": 308,
+    "not_in_index": 0,
+    "sec_per_img": 0.228
+  },
+  "field": {
+    "n": 56,
+    "top1": 0.9107142857142857,
+    "top5": 0.9464285714285714,
+    "top1_count": 51,
+    "top5_count": 53,
+    "not_in_index": 3,
+    "sec_per_img": 0.432
+  },
+  "own": {
+    "n": 158,
+    "top1": 0.9556962025316456,
+    "top5": 1.0,
+    "top1_count": 151,
+    "top5_count": 158,
+    "not_in_index": 0,
+    "sec_per_img": 0.377
+  }
+}

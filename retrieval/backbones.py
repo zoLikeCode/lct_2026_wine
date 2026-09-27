@@ -52,7 +52,8 @@ class Backbone:
                 emb = out.last_hidden_state[:, 0, :]  # CLS token
         elif arch == "siglip2":
             inputs = self.processor(images=images, return_tensors="pt").to(self.device)
-            out = self.model.get_image_features(**inputs)
+            extra = {"interpolate_pos_encoding": True} if self.name in _INTERPOLATE_POS else {}
+            out = self.model.get_image_features(**inputs, **extra)
             # некоторые версии transformers оборачивают результат в ModelOutput
             emb = out.pooler_output if hasattr(out, "pooler_output") else out
         else:
@@ -125,6 +126,16 @@ _VARIANTS = {
     # Крупнее модель (~400M vs 86M у base), то же разрешение 512 — проверяем
     # "больше модель" как отдельную ось от "больше разрешение" (§11.5).
     "siglip2_so400m512": ("google/siglip2-so400m-patch16-512", "raw", "none"),
+    # Крупнейший открытый SigLIP2 (~1B против 400M у so400m), но существует
+    # только на 384px. Размен неочевиден: §11.5 показал прирост от
+    # разрешения, §11.14 — от размера модели, а здесь оси тянут в разные
+    # стороны, поэтому это настоящий эксперимент, а не заведомое улучшение.
+    "siglip2_giant384": ("google/siglip2-giant-opt-patch16-384", "raw", "none"),
+    # §11.38: понижение разрешения с 512 до 384 стоило 12.4пп даже при втрое
+    # большей модели — разрешение доминирует над размером. Выше 512 у SigLIP2
+    # готовых весов нет, поэтому позиционные эмбеддинги интерполируются
+    # (`interpolate_pos_encoding=True`), а процессору задаётся больший вход.
+    "siglip2_so400m640": ("google/siglip2-so400m-patch16-512", "raw", "none"),
     # DINOv2 раньше проигрывал SigLIP2, но тестировался только на 224px —
     # там у обеих моделей нет доступа к мелкому тексту этикетки. Перепроверяем
     # на сопоставимом разрешении (518 = 37*14, ближайший кратный патчу к 512).
@@ -135,7 +146,12 @@ _VARIANTS = {
 # (DINOv2 по умолчанию режет всё до 224px вне зависимости от входа)
 _PROCESSOR_OVERRIDES = {
     "dinov2_518": {"size": {"shortest_edge": 518}, "crop_size": {"height": 518, "width": 518}},
+    "siglip2_so400m640": {"size": {"height": 640, "width": 640}},
 }
+
+# Бэкбоны, которым вход подаётся крупнее, чем предусмотрено весами: модель
+# должна интерполировать позиционные эмбеддинги под новое число патчей.
+_INTERPOLATE_POS = {"siglip2_so400m640"}
 
 
 def load_backbone(name: str) -> Backbone:

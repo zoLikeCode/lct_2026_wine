@@ -3,3 +3,6 @@ __pycache__/
 outputs/
 .venv/
 .DS_Store
+
+# клон репозитория Qwen3-VL-Embedding (ставится через qwen_finetune/setup.sh)
+qwen_finetune/Qwen3-VL-Embedding/

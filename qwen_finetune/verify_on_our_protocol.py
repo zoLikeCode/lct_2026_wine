@@ -127,7 +127,7 @@ def main() -> None:
     device = next(embedder.model.parameters()).device
     print(f"Модель на {device}, параметров {sum(p.numel() for p in embedder.model.parameters()) / 1e9:.1f}B")
 
-    rows, latencies = [], []
+    rows, latencies, query_embeddings = [], [], []
     for i, (path, true_slug, title) in enumerate(usable, start=1):
         with Image.open(path) as raw:
             image = ImageOps.exif_transpose(raw).convert("RGB")
@@ -140,9 +140,15 @@ def main() -> None:
         emb = (emb / emb.norm(dim=-1, keepdim=True)).cpu().numpy()[0]
         latencies.append((time.perf_counter() - started) * 1000)
 
+        scores = qwen_index @ emb
+        order = np.argsort(-scores)[:5]
         rows.append({"path": str(path), "set": title, "true": true_slug,
-                     "qwen": str(qwen_kept[int(np.argmax(qwen_index @ emb))]),
+                     "qwen": str(qwen_kept[int(order[0])]),
+                     "qwen_top5": [[str(qwen_kept[i]), float(scores[i])] for i in order],
                      "siglip": siglip.get(str(path))})
+        # вектор запроса сохраняется целиком: без него ансамбль по скорам
+        # потребовал бы повторного прогона модели (на MPS это часы)
+        query_embeddings.append(emb.astype(np.float32))
         if i % 10 == 0:
             print(f"  {i}/{len(usable)}  ({np.median(latencies) / 1000:.1f} с/кадр)", flush=True)
 
@@ -168,6 +174,11 @@ def main() -> None:
     with open(config.OUTPUTS_DIR / args.out, "w", encoding="utf-8") as f:
         json.dump({"rows": rows, "fixed": fixed, "broken": broken,
                    "threshold": threshold, "latency_ms": latencies}, f, ensure_ascii=False, indent=2)
+    if query_embeddings:
+        emb_path = config.OUTPUTS_DIR / (Path(args.out).stem + "_query_embeddings.npz")
+        np.savez(emb_path, embeddings=np.stack(query_embeddings),
+                 paths=np.array([r["path"] for r in rows]))
+        print(f"Векторы запросов: {emb_path}")
     print(f"Сохранено: {config.OUTPUTS_DIR / args.out}")
 
 

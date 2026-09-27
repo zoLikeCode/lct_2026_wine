@@ -82,6 +82,13 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--adapter", required=True)
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--only-set", default=None,
+                        help="считать только один набор: 'команды' или 'организатора'")
+    parser.add_argument("--device", default="mps", help="mps / cpu / cuda")
+    parser.add_argument("--attn", default="eager",
+                        help="sdpa падает на MPS: grouped-query attention (32 головы запросов "
+                             "против 8 ключевых) не разворачивается в mps_matmul; eager делает "
+                             "repeat_kv явно")
     parser.add_argument("--out", default="qwen_verification.json")
     args = parser.parse_args()
 
@@ -100,6 +107,8 @@ def main() -> None:
 
     queries = load_queries()
     usable = [q for q in queries if q[1] in allowed]
+    if args.only_set:
+        usable = [q for q in usable if args.only_set in q[2]]
     print(f"Кадров: {len(queries)}, пригодны (верное вино в общем поле): {len(usable)}")
     if args.limit:
         usable = usable[:args.limit]
@@ -108,11 +117,15 @@ def main() -> None:
     keep = np.array([s in allowed for s in qwen_slugs])
     qwen_index, qwen_kept = qwen_index[keep], qwen_slugs[keep]
 
-    embedder = load_embedder()
+    embedder = load_embedder(attn=args.attn)
     embedder.model = __import__("peft").PeftModel.from_pretrained(embedder.model, args.adapter)
     embedder.model.eval()
-    device = embedder.model.device
-    print(f"Модель загружена на {device}")
+    # Qwen3VLEmbedder выбирает cuda или cpu; на Apple Silicon нужен MPS явно,
+    # иначе 8B считает кадр десятками секунд.
+    if args.device:
+        embedder.model = embedder.model.to(args.device)
+    device = next(embedder.model.parameters()).device
+    print(f"Модель на {device}, параметров {sum(p.numel() for p in embedder.model.parameters()) / 1e9:.1f}B")
 
     rows, latencies = [], []
     for i, (path, true_slug, title) in enumerate(usable, start=1):
@@ -149,7 +162,7 @@ def main() -> None:
 
     print(f"\nисправлено {fixed}, сломано {broken}, |разница| {abs(fixed - broken)} "
           f"против порога {threshold:.1f} -> "
-          f"{'ЗНАЧИМО' if abs(fixed - broken) >= threshold else 'шум'}")
+          f"{'ЗНАЧИМО' if fixed + broken > 0 and abs(fixed - broken) >= threshold else 'шум'}")
     print(f"латентность Qwen: медиана {np.median(latencies):.0f} мс")
 
     with open(config.OUTPUTS_DIR / args.out, "w", encoding="utf-8") as f:

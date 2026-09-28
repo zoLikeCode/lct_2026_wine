@@ -1,0 +1,42 @@
+# hires_eval.py --tokens 1024 2560, 27.09.2026, RunPod A100 80GB PCIe
+# индекс: 2083 эталона catalog_photos + 8 вручную (refs_manual.csv) = 2091; кадры: 201 own + 56 организаторов
+# без эталона в индексе: 2 кадра rozovoe-zoloto (исключены из метрики)
+# results/*.json и emb_*.npz не сохранились (под удалён), ниже — полный вывод таблиц
+
+=== Индекс полный: эталонов 2091, кадров 255 ===
+эталон x запрос          команды n=200     организатора n=55  всего top1    top5   исправлено/сломано vs 1024x1024
+ 1024 x 1024                   189/200                 52/55      94.5%   99.2%   —
+ 1024 x 2560                   192/200                 53/55      96.1%   99.2%   5/1  порог 4.9  -> шум
+ 2560 x 1024                   189/200                 52/55      94.5%   99.6%   0/0  порог 0.0  -> шум
+ 2560 x 2560                   191/200                 52/55      95.3%   99.2%   3/1  порог 4.0  -> шум
+
+  1024x2560 против 1024x1024:
+    + oe-suhoe-147/own_IMG_20260919_191947.jpg   chateau-de-talu-uroki-frantsuzskogo-merlo-krasnoe-
+    + e-suhoe-14/own_5dde68dff1db_IMG_1892.jpg   sober-bash-rkatsiteli-beloe-suhoe-14
+    + efbf980b2_84.73_07-09-2026_11-07-51.webp   zhemchuzhnaya-9-aligote-czitron
+    + noe-suhoe-14/own_IMG_20260921_193912.jpg   zolotoe-pole-kaffa-kaberne-fran-krasnoe-suhoe-14
+    + 84.73_07-09-2026_11-07-51.webp             zhemchuzhnaya-9-aligote-czitron
+    - e-suhoe-13/own_287f22646caf_IMG_1866.jpg   vinodelnya-krinitsa-risling-beloe-suhoe- -> vinodelnya-krinitsa-vione-beloe-suhoe-13
+
+  2560x2560 против 1024x1024:
+    + oe-suhoe-147/own_IMG_20260919_191947.jpg   chateau-de-talu-uroki-frantsuzskogo-merlo-krasnoe-
+    + e-suhoe-14/own_5dde68dff1db_IMG_1892.jpg   sober-bash-rkatsiteli-beloe-suhoe-14
+    + noe-suhoe-14/own_IMG_20260921_193912.jpg   zolotoe-pole-kaffa-kaberne-fran-krasnoe-suhoe-14
+    - e-suhoe-13/own_287f22646caf_IMG_1866.jpg   vinodelnya-krinitsa-risling-beloe-suhoe- -> vinodelnya-krinitsa-vione-beloe-suhoe-13
+
+=== Поле 2083 (как в §11.42): эталонов 2083, кадров 253 ===
+эталон x запрос          команды n=200     организатора n=53  всего top1    top5   исправлено/сломано vs 1024x1024
+ 1024 x 1024                   189/200                 50/53      94.5%   99.2%   —
+ 1024 x 2560                   192/200                 51/53      96.0%   99.2%   5/1  порог 4.9  -> шум
+ 2560 x 1024                   189/200                 50/53      94.5%   99.6%   0/0  порог 0.0  -> шум
+ 2560 x 2560                   191/200                 50/53      95.3%   99.2%   3/1  порог 4.0  -> шум
+
+  (списки исправлено/сломано — те же, что для полного индекса)
+
+=== Латентность одиночного запроса (NVIDIA A100 80GB PCIe) ===
+ токенов   медиана     p95    макс   эталоны, с   пик ГБ
+    1024     323мс   338мс   553мс          311     18.7
+    2560     708мс   750мс   926мс          343     19.3
+
+# Примечание: кадр 84.73_07-09-2026_11-07-51 есть и в own (efbf980b2_...), и у организаторов —
+# это один снимок, в паре 1024x2560 он посчитан дважды; независимых исправлений 4 на 1 сломанный.

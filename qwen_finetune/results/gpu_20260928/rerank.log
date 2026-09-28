@@ -1,0 +1,59 @@
+Кадров 257 (с эталоном в индексе), кандидаты: эталоны 1024 x запрос 2560, top-5; реранкер Qwen/Qwen3-VL-Reranker-8B на 2560 токенах
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:00<00:00, 56.98it/s]
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:00<00:00, 58.52it/s]
+You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+/usr/local/lib/python3.12/dist-packages/transformers/tokenization_utils_base.py:2919: UserWarning: `max_length` is ignored when `padding`=`True` and there is no truncation strategy. To pad to max length, use `padding='max_length'`.
+  warnings.warn(
+  25/257  медиана 3544 мс на кадр, прошло 1.5 мин
+  50/257  медиана 3529 мс на кадр, прошло 3.1 мин
+  75/257  медиана 3467 мс на кадр, прошло 4.5 мин
+  100/257  медиана 3425 мс на кадр, прошло 6.0 мин
+  125/257  медиана 3425 мс на кадр, прошло 7.5 мин
+  150/257  медиана 3418 мс на кадр, прошло 9.0 мин
+  175/257  медиана 3412 мс на кадр, прошло 10.5 мин
+  200/257  медиана 3414 мс на кадр, прошло 12.0 мин
+  225/257  медиана 3399 мс на кадр, прошло 13.4 мин
+  250/257  медиана 3396 мс на кадр, прошло 14.9 мин
+
+=== Реранкер Qwen/Qwen3-VL-Reranker-8B, кадров 257 ===
+верное вино в top-5: 255/257 — потолок для реранкера
+вариант                                    команды n=201     организатора n=56     всего
+база 1024x1024                                   190/201                 53/56     94.6%
+эмбеддер 1024x2560                               193/201                 54/56     96.1%
++ реранкер                                       188/201                 52/56     93.4%
+
+реранкер против эмбеддера 1024x2560: исправлено 3, сломано 10, порог 7.2 -> шум
+    + ca33e7c27_70.45_04-09-2026_13-35-37.webp   fanagoriya-formula-q-kaberne-sovinon-krasnoe-suhoe
+    + 70.45_04-09-2026_13-35-37.webp             fanagoriya-formula-q-kaberne-sovinon-krasnoe-suhoe
+    + 91.43_02-09-2026_12-08-50.webp             merlo-litavshhuk
+    - noe-suhoe-13/own_IMG_20260919_192102.jpg   belbek-belbek-pino-nuar-krasnoe-suhoe- -> belbek-pino-nuar-krasnoe-suhoe-133
+    - f1f837d13_89.65_19-08-2026_19-48-39.webp   rozovoe-zoloto -> roze-2
+    - e-suhoe-14/own_5dde68dff1db_IMG_1892.jpg   sober-bash-rkatsiteli-beloe-suhoe-14 -> sober-bash-krasnostop-krasnostop-zolot
+    - oe-suhoe-145/own_IMG_20260921_200458.jpg   usadba-mezyb-mezyb-merlo-krasnoe-suhoe -> usadba-mezyb-mezyb-kaberne-sovinon-kab
+    - noe-suhoe-14/own_IMG_20260921_193912.jpg   zolotoe-pole-kaffa-kaberne-fran-krasno -> zolotoe-pole-kaffa-kaberne-sovinon-kra
+    - noe-suhoe-14/own_IMG_20260921_193915.jpg   zolotoe-pole-kaffa-kaberne-fran-krasno -> zolotoe-pole-kaffa-kaberne-sovinon-kra
+    - 89.65_19-08-2026_19-48-39.webp             rozovoe-zoloto -> roze-2
+    - 96.61_28-08-2026_09-16-27.webp             balaklava-muskat-beloe-polusladkoe -> balaklava-muskat
+    - 96.66_22-08-2026_20-44-40.webp             perovskih_polusuhoe_krasnoe -> perovskih_polusladkoe_krasnoe
+    - 96.79_28-08-2026_22-05-22.webp             vinodelnya-vedernikov-vedernikov-dolin -> vinodelnya-vedernikov-sibirkovyy-beloe
+
+реранкер против базы 1024x1024: исправлено 6, сломано 9, порог 7.7 -> шум
+    + oe-suhoe-147/own_IMG_20260919_191947.jpg   chateau-de-talu-uroki-frantsuzskogo-merlo-krasnoe-
+    + ca33e7c27_70.45_04-09-2026_13-35-37.webp   fanagoriya-formula-q-kaberne-sovinon-krasnoe-suhoe
+    + efbf980b2_84.73_07-09-2026_11-07-51.webp   zhemchuzhnaya-9-aligote-czitron
+    + 70.45_04-09-2026_13-35-37.webp             fanagoriya-formula-q-kaberne-sovinon-krasnoe-suhoe
+    + 84.73_07-09-2026_11-07-51.webp             zhemchuzhnaya-9-aligote-czitron
+    + 91.43_02-09-2026_12-08-50.webp             merlo-litavshhuk
+    - noe-suhoe-13/own_IMG_20260919_192102.jpg   belbek-belbek-pino-nuar-krasnoe-suhoe- -> belbek-pino-nuar-krasnoe-suhoe-133
+    - f1f837d13_89.65_19-08-2026_19-48-39.webp   rozovoe-zoloto -> roze-2
+    - oe-suhoe-145/own_IMG_20260921_200458.jpg   usadba-mezyb-mezyb-merlo-krasnoe-suhoe -> usadba-mezyb-mezyb-kaberne-sovinon-kab
+    - e-suhoe-13/own_287f22646caf_IMG_1866.jpg   vinodelnya-krinitsa-risling-beloe-suho -> vinodelnya-krinitsa-vione-beloe-suhoe-
+    - noe-suhoe-14/own_IMG_20260921_193915.jpg   zolotoe-pole-kaffa-kaberne-fran-krasno -> zolotoe-pole-kaffa-kaberne-sovinon-kra
+    - 89.65_19-08-2026_19-48-39.webp             rozovoe-zoloto -> roze-2
+    - 96.61_28-08-2026_09-16-27.webp             balaklava-muskat-beloe-polusladkoe -> balaklava-muskat
+    - 96.66_22-08-2026_20-44-40.webp             perovskih_polusuhoe_krasnoe -> perovskih_polusladkoe_krasnoe
+    - 96.79_28-08-2026_22-05-22.webp             vinodelnya-vedernikov-vedernikov-dolin -> vinodelnya-vedernikov-sibirkovyy-beloe
+
+Латентность реранкера на кадр (NVIDIA A100-SXM4-80GB, top-5): медиана 3393 мс, p95 3753 мс, макс 4564 мс (плюс эмбеддер — см. hires_eval)
+Сохранено: /workspace/qwen_hires/results/rerank_1024x2560_Qwen3-VL-Reranker-8B_k5.json

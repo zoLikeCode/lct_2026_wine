@@ -1,0 +1,203 @@
+Эталонов 2102, кадров 379 {'команды': 201, 'команды-новые': 122, 'организатора': 56}
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:00<00:00, 58.25it/s]
+  [эмбеддер 1024] 100/379
+  [эмбеддер 1024] 200/379
+  [эмбеддер 1024] 300/379
+[эмбеддер 2560] запросы из кеша прогона 1
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:00<00:02,  1.49it/s]Loading checkpoint shards:  50%|█████     | 2/4 [00:01<00:01,  1.42it/s]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:02<00:00,  1.42it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.76it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.63it/s]
+  [читатель] 25/379, медиана 656 мс
+  [читатель] 50/379, медиана 656 мс
+  [читатель] 75/379, медиана 658 мс
+  [читатель] 100/379, медиана 656 мс
+  [читатель] 125/379, медиана 656 мс
+  [читатель] 150/379, медиана 656 мс
+  [читатель] 175/379, медиана 656 мс
+  [читатель] 200/379, медиана 656 мс
+  [читатель] 225/379, медиана 655 мс
+  [читатель] 250/379, медиана 654 мс
+  [читатель] 275/379, медиана 653 мс
+  [читатель] 300/379, медиана 653 мс
+  [читатель] 325/379, медиана 654 мс
+  [читатель] 350/379, медиана 653 мс
+  [читатель] 375/379, медиана 654 мс
+
+=== Все кадры: 379 ===
+верное вино в top-5 эмбеддера (потолок для читателя): 375/379
+вариант                                                команды n=201   команды-новые n=122     организатора n=56    top1   исправлено/сломано vs прод
+1024x1024                                                    190/201                95/122                 53/56   89.2%   3/19  порог 9.4 -> ЗНАЧИМО ХУЖЕ
+1024x2560                                                    193/201                94/122                 54/56   90.0%   1/14  порог 7.7 -> ЗНАЧИМО ХУЖЕ
+1024x1024 + доп. эталоны                                     190/201               101/122                 55/56   91.3%   2/10  порог 6.9 -> ЗНАЧИМО ХУЖЕ
+1024x2560 + доп. эталоны (прод)                              194/201               105/122                 55/56   93.4%   —
+1024x(1024+2560) + доп. эталоны                              193/201               106/122                 55/56   93.4%   2/2  порог 4.0 -> шум
+читатель, всегда                                             175/201                77/122                 48/56   79.2%   11/65  порог 17.4 -> ЗНАЧИМО ХУЖЕ
+читатель, уверенность >= 0.5                                 175/201                79/122                 48/56   79.7%   11/63  порог 17.2 -> ЗНАЧИМО ХУЖЕ
+читатель, уверенность >= 0.8 (основной)                      177/201                86/122                 50/56   82.6%   10/51  порог 15.6 -> ЗНАЧИМО ХУЖЕ
+читатель, уверенность >= 0.95                                184/201                92/122                 50/56   86.0%   10/38  порог 13.9 -> ЗНАЧИМО ХУЖЕ
+читатель, перемешанный порядок, всегда                       185/201                94/122                 47/56   86.0%   8/36  порог 13.3 -> ЗНАЧИМО ХУЖЕ
+читатель, перемешанный, >= 0.8                               187/201                95/122                 48/56   87.1%   7/31  порог 12.3 -> ЗНАЧИМО ХУЖЕ
+
+1024x1024 + доп. эталоны против прода:
+   + -brut-shardone-beloe-bryut-115/own_dac06fa139a1_IMG_1705.jpg
+   + lova-rkatsiteli-beloe-suhoe-12/own_17d87d6f7fbf_IMG_1957.jpg
+   - lo-krasnoe-suhoe-147/own_IMG_20260919_191947.jpg   -> chateau-de-talu-uroki-frantsuzskogo-kaberne-sovi
+   - eli-beloe-suhoe-14/own_5dde68dff1db_IMG_1892.jpg   -> sober-bash-krasnostop-krasnostop-zolotovskiy-kra
+   - lo-krasnoe-suhoe-145/own_IMG_20260921_200458.jpg   -> usadba-mezyb-mezyb-kaberne-sovinon-krasnoe-suhoe
+   - ran-krasnoe-suhoe-14/own_IMG_20260921_193912.jpg   -> zolotoe-pole-kaffa-kaberne-sovinon-krasnoe-suhoe
+   - -krasnoe-suhoe-142/own_daa97a08b15d_IMG_1645.jpg   -> chateau-de-talu-yuzhnaya-vertikal-kaberne-fran-p
+   - n-krasnoe-suhoe-14/own_671e02452a1e_IMG_1656.jpg   -> imenie-sikory-gerts-sikory-kaberne-sovinon-krasn
+   - n-krasnoe-suhoe-14/own_7820b3e117e9_IMG_1658.jpg   -> imenie-sikory-gerts-sikory-kaberne-sovinon-krasn
+   - n-krasnoe-suhoe-14/own_82639095f939_IMG_1657.jpg   -> imenie-sikory-gerts-sikory-kaberne-sovinon-krasn
+   - uhoe-13/own_48f996531cdb_IMG_20260926_190946.jpg   -> skalistyy-bereg-shyopot-tsvetov-risling-beloe-su
+   - uhoe-13/own_c8fd774164ae_IMG_20260926_190948.jpg   -> skalistyy-bereg-shyopot-tsvetov-risling-beloe-su
+
+1024x(1024+2560) + доп. эталоны против прода:
+   + -brut-shardone-beloe-bryut-115/own_dac06fa139a1_IMG_1705.jpg
+   + lova-rkatsiteli-beloe-suhoe-12/own_17d87d6f7fbf_IMG_1957.jpg
+   - lo-krasnoe-suhoe-145/own_IMG_20260921_200458.jpg   -> usadba-mezyb-mezyb-kaberne-sovinon-krasnoe-suhoe
+   - n-krasnoe-suhoe-14/own_82639095f939_IMG_1657.jpg   -> imenie-sikory-gerts-sikory-kaberne-sovinon-krasn
+
+читатель, всегда против прода:
+   + 91.43_02-09-2026_12-08-50.webp
+   + -brut-shardone-beloe-bryut-115/own_dac06fa139a1_IMG_1705.jpg
+   + lancs-shardone-beloe-bryut-125/own_16b8e6cb4497_IMG_1717.jpg
+   + lancs-shardone-beloe-bryut-125/own_530de4e23134_IMG_1719.jpg
+   + lancs-shardone-beloe-bryut-125/own_5896d044fc39_IMG_1720.jpg
+   + lancs-shardone-beloe-bryut-125/own_ecac66873af3_IMG_1718.jpg
+   + locantita-more/own_04eb247794a0_IMG_1648.jpg
+   + locantita-more/own_1bde7947758a_IMG_1649.jpg
+   + locantita-more/own_a5f11047929c_IMG_1647.jpg
+   + lova-rkatsiteli-beloe-suhoe-12/own_17d87d6f7fbf_IMG_1957.jpg
+   + ozovoe-polusuhoe-10/own_38ffc1168575_IMG_20260926_191814.jpg
+   - yy-krasnoe-suhoe-135/own_IMG_20260921_200627.jpg   -> abrau-dyurso-abrau-estates-krasnoe-kaberne-sovin
+   - yy-krasnoe-suhoe-135/own_IMG_20260921_200628.jpg   -> abrau-dyurso-abrau-estates-krasnoe-kaberne-sovin
+   - rne-sovinon-suhoe-13/own_IMG_20260921_200643.jpg   -> abrau-dyurso-abrau-estates-amurskiy-potapenko-kr
+   - rne-sovinon-suhoe-13/own_IMG_20260921_200644.jpg   -> vinodelnya-bratev-melnikovyh-kaberne-sovinon-kab
+   - lan-krasnoe-suhoe-13/own_IMG_20260921_194121.jpg   -> agrolayn-mountain-eagle-saperavi-saperavi-krasno
+   - uar-krasnoe-suhoe-13/own_IMG_20260919_192102.jpg   -> belbek-pino-nuar-krasnoe-suhoe-133
+   - /own_92d6c8f1e002_95.76_23-08-2026_18-19-43.webp   -> denisov_pereplyas_kurmyshi
+   - /own_08c2879cf770_94.55_02-09-2026_16-53-08.webp   -> denisov-winery-pino-nuar-shardone-ekstra-bryut-b
+   - /own_67eca33e7c27_70.45_04-09-2026_13-35-37.webp   -> fanagoriya-formula-q-saperavi-krasnoe-suhoe-135
+   - good-steak-cabernet/own_IMG_20260921_200327.jpg    -> skalistyy-bereg-skalistyy-bereg-kaberne-sovinon-
+   - -rozovoe-suhoe-125/own_e332f267dc64_IMG_1861.jpg   -> vino-suhoe-rozovoe-endemy-kaberne-sovinon
+   - i-krasnoe-suhoe-11/own_IMG_20260921_200725_1.jpg   -> olymp-winery-adagum-valley-saperavi-saperavi-kra
+   - /own_fd1246630a43_82.33_27-08-2026_10-03-52.webp   -> skalistyy-bereg-shyopot-tsvetov-risling-beloe-su
+   - y-krasnoe-suhoe-14/own_d4e3e7d25435_IMG_1891.jpg   -> sober-bash-kaberne-fran-krasnoe-suhoe-13
+   - gri-beloe-suhoe-11/own_733e0cce64e6_IMG_1871.jpg   -> sober-bash-kaberne-fran-rozovoe-suhoe-12
+   - eli-beloe-suhoe-14/own_5dde68dff1db_IMG_1892.jpg   -> sober-bash-krasnostop-krasnostop-zolotovskiy-kra
+   - lo-krasnoe-suhoe-145/own_IMG_20260921_200457.jpg   -> usadba-mezyb-usadba-mezyb-merlo-krasnoe-suhoe-15
+   - lo-krasnoe-suhoe-145/own_IMG_20260921_200458.jpg   -> usadba-mezyb-usadba-mezyb-merlo-krasnoe-suhoe-15
+   - /own_1d46b8d1ba3a_96.08_22-08-2026_15-12-27.webp   -> zhemchuzhnaya-9-czitron-shardone
+   - 70.45_04-09-2026_13-35-37.webp                     -> fanagoriya-formula-q-saperavi-krasnoe-suhoe-135
+   - 82.33_27-08-2026_10-03-52.webp                     -> skalistyy-bereg-shyopot-tsvetov-risling-beloe-su
+   - 94.55_02-09-2026_16-53-08.webp                     -> denisov-winery-pino-nuar-shardone-ekstra-bryut-b
+   - 94.97_02-09-2026_19-01-48.webp                     -> zhemchuzhnaya-9-pino-nuar-muskat-rozovyj
+   - 95.49_05-09-2026_15-34-51.webp                     -> zhemchuzhnaya-9-pino-nuar-muskat-rozovyj
+   - 96.55_30-08-2026_19-34-31.webp                     -> novyy-svet-dom-shampanskih-vin-rossiyskoe-shampa
+   - 96.61_28-08-2026_09-16-27.webp                     -> balaklava-muskat
+   - 96.79_28-08-2026_22-05-22.webp                     -> vinodelnya-vedernikov-rkatsiteli-beloe-suhoe-13
+   - n-krasnoe-suhoe-14/own_0c499c349902_IMG_1660.jpg   -> chateau-de-talu-roze-kaberne-sovinon-rozovoe-suh
+   - n-krasnoe-suhoe-14/own_dee26e8c2a3b_IMG_1659.jpg   -> chateau-de-talu-roze-kaberne-sovinon-rozovoe-suh
+   - n-krasnoe-suhoe-14/own_e5fd11c41f25_IMG_1661.jpg   -> chateau-de-talu-roze-kaberne-sovinon-rozovoe-suh
+   - -krasnoe-suhoe-142/own_ae7191894adb_IMG_1644.jpg   -> chateau-de-talu-yuzhnaya-vertikal-kaberne-fran-p
+   - -krasnoe-suhoe-142/own_d9aa68a9c808_IMG_1646.jpg   -> chateau-de-talu-yuzhnaya-vertikal-kaberne-fran-p
+   - -krasnoe-suhoe-142/own_daa97a08b15d_IMG_1645.jpg   -> chateau-de-talu-yuzhnaya-vertikal-kaberne-fran-p
+   - hardone/own_827780444885_IMG_20260926_191440.jpg   -> kuban-vino-shato-tamane-shardone-beloe-suhoe-12
+   - risling/own_36afc7dc11e7_IMG_20260926_191512.jpg   -> golubitskoe-estate-risling-beloe-suhoe-125
+   - risling/own_5f19dc62052b_IMG_20260926_191506.jpg   -> golubitskoe-estate-risling-beloe-suhoe-125
+   - risling/own_61a2d97ac4f2_IMG_20260926_191504.jpg   -> golubitskoe-estate-risling-beloe-suhoe-125
+   - n-krasnoe-suhoe-14/own_671e02452a1e_IMG_1656.jpg   -> imenie-sikory-gerts-sikory-kaberne-sovinon-krasn
+   - n-krasnoe-suhoe-14/own_7820b3e117e9_IMG_1658.jpg   -> imenie-sikory-gerts-sikory-kaberne-sovinon-krasn
+   - n-krasnoe-suhoe-14/own_82639095f939_IMG_1657.jpg   -> imenie-sikory-gerts-sikory-kaberne-sovinon-krasn
+   - hoe-125/own_ee3d67e7a113_IMG_20260926_185659.jpg   -> kuban-vino-shato-tamane-terruar-krasnostop-saper
+   - -krasnoe-suhoe-138/own_5fabb71726c8_IMG_1650.jpg   -> loco-cimbali-loco-cimbali-red-kaberne-sovinon-kr
+   - -krasnoe-suhoe-138/own_ac60401178d5_IMG_1651.jpg   -> loco-cimbali-loco-cimbali-red-kaberne-sovinon-kr
+   - rymskij/own_42b323ec2ee6_IMG_20260926_190004.jpg   -> sary-pandas-vyderzhannoe
+   - rymskij/own_7b2ac394e2f5_IMG_20260926_185956.jpg   -> solnechnaya-dolina-chernyy-doktor-solnechnoy-dol
+   - rymskij/own_a01122d8d2e5_IMG_20260926_185944.jpg   -> solnechnaya-dolina-chernyy-doktor-solnechnoy-dol
+   - rymskij/own_ac60e075a13e_IMG_20260926_185958.jpg   -> solnechnaya-dolina-chernyy-doktor-solnechnoy-dol
+   - rymskij/own_b531330cbcc0_IMG_20260926_185946.jpg   -> solnechnaya-dolina-chernyy-doktor-solnechnoy-dol
+   - rymskij/own_c54570fe2408_IMG_20260926_185945.jpg   -> solnechnaya-dolina-chernyy-doktor-solnechnoy-dol
+   - aperavi/own_29532314fe19_IMG_20260926_185705.jpg   -> kuban-vino-saperavi-de-tamane-krasnoe-suhoe-125
+   - uhoe-13/own_1899a97c5d2b_IMG_20260926_185305.jpg   -> oleg-repin-listva-cabernet-sauvignon-kaberne-sov
+   - uhoe-13/own_8f5654b2c7de_IMG_20260926_185306.jpg   -> oleg-repin-listva-cabernet-sauvignon-kaberne-sov
+   - uhoe-13/own_a7e1c81efe76_IMG_20260926_185308.jpg   -> oleg-repin-listva-cabernet-sauvignon-kaberne-sov
+   - uhoe-13/own_b258140b7db6_IMG_20260926_185315.jpg   -> golubitskoe-estate-red-blend-kaberne-sovinon-kra
+   - esimato/own_efe766b9ea07_IMG_20260926_191824.jpg   -> aristov-anima-pinot-grigio-blush
+   - n-krasnoe-suhoe-13/own_1f2cdeb5f65b_IMG_1936.jpg   -> dacha-serdyuka-kazache-krasnostop-zolotovskiy-kr
+   - zh-beloe-suhoe-135/own_c3c3e9da71e0_IMG_1933.jpg   -> dacha-serdyuka-sibirkovyy-beloe-suhoe-135
+   - e-ekstra-bryut-115/own_2bb81659cb0a_IMG_1722.jpg   -> esse-brut-zero-dosage-shardone-beloe-ekstra-bryu
+   - e-ekstra-bryut-115/own_b986bfd1dfa7_IMG_1724.jpg   -> esse-brut-zero-dosage-shardone-beloe-ekstra-bryu
+   - laklava/own_c0416b8f843f_IMG_20260926_191815.jpg   -> balaklava-bryut-rezerv
+   - kaberne/own_4a0624b3e531_IMG_20260926_192825.jpg   -> kuban-vino-kaberne-de-tamane-kaberne-sovinon-kra
+   - a-krasnoe-suhoe-14/own_2a5760249876_IMG_1911.jpg   -> sober-bash-krasnostop-amfora-krasnostop-zolotovs
+   - p-krasnoe-suhoe-13/own_93ffa858caf7_IMG_1959.jpg   -> sober-bash-trezvaya-golova-tsimlyanskiygolubok-t
+   - kiy-beloe-suhoe-10/own_ba9d560ff4d1_IMG_1958.jpg   -> sober-bash-trezvaya-golova-sibirkovyypino-gri-be
+   - uhoe-13/own_f4a3960d7f78_IMG_20260926_193247.jpg   -> vino-nebo-aligote-sur-lie-aligote-beloe-suhoe-12
+
+читатель, уверенность >= 0.8 (основной) против прода:
+   + 91.43_02-09-2026_12-08-50.webp
+   + lancs-shardone-beloe-bryut-125/own_16b8e6cb4497_IMG_1717.jpg
+   + lancs-shardone-beloe-bryut-125/own_530de4e23134_IMG_1719.jpg
+   + lancs-shardone-beloe-bryut-125/own_5896d044fc39_IMG_1720.jpg
+   + lancs-shardone-beloe-bryut-125/own_ecac66873af3_IMG_1718.jpg
+   + locantita-more/own_04eb247794a0_IMG_1648.jpg
+   + locantita-more/own_1bde7947758a_IMG_1649.jpg
+   + locantita-more/own_a5f11047929c_IMG_1647.jpg
+   + lova-rkatsiteli-beloe-suhoe-12/own_17d87d6f7fbf_IMG_1957.jpg
+   + ozovoe-polusuhoe-10/own_38ffc1168575_IMG_20260926_191814.jpg
+   - yy-krasnoe-suhoe-135/own_IMG_20260921_200627.jpg   -> abrau-dyurso-abrau-estates-krasnoe-kaberne-sovin
+   - yy-krasnoe-suhoe-135/own_IMG_20260921_200628.jpg   -> abrau-dyurso-abrau-estates-krasnoe-kaberne-sovin
+   - rne-sovinon-suhoe-13/own_IMG_20260921_200643.jpg   -> abrau-dyurso-abrau-estates-amurskiy-potapenko-kr
+   - rne-sovinon-suhoe-13/own_IMG_20260921_200644.jpg   -> vinodelnya-bratev-melnikovyh-kaberne-sovinon-kab
+   - lan-krasnoe-suhoe-13/own_IMG_20260921_194121.jpg   -> agrolayn-mountain-eagle-saperavi-saperavi-krasno
+   - uar-krasnoe-suhoe-13/own_IMG_20260919_192102.jpg   -> belbek-pino-nuar-krasnoe-suhoe-133
+   - /own_92d6c8f1e002_95.76_23-08-2026_18-19-43.webp   -> denisov_pereplyas_kurmyshi
+   - /own_67eca33e7c27_70.45_04-09-2026_13-35-37.webp   -> fanagoriya-formula-q-saperavi-krasnoe-suhoe-135
+   - good-steak-cabernet/own_IMG_20260921_200327.jpg    -> skalistyy-bereg-skalistyy-bereg-kaberne-sovinon-
+   - -rozovoe-suhoe-125/own_e332f267dc64_IMG_1861.jpg   -> vino-suhoe-rozovoe-endemy-kaberne-sovinon
+   - i-krasnoe-suhoe-11/own_IMG_20260921_200725_1.jpg   -> olymp-winery-adagum-valley-saperavi-saperavi-kra
+   - /own_fd1246630a43_82.33_27-08-2026_10-03-52.webp   -> skalistyy-bereg-shyopot-tsvetov-risling-beloe-su
+   - y-krasnoe-suhoe-14/own_d4e3e7d25435_IMG_1891.jpg   -> sober-bash-kaberne-fran-krasnoe-suhoe-13
+   - gri-beloe-suhoe-11/own_733e0cce64e6_IMG_1871.jpg   -> sober-bash-kaberne-fran-rozovoe-suhoe-12
+   - eli-beloe-suhoe-14/own_5dde68dff1db_IMG_1892.jpg   -> sober-bash-krasnostop-krasnostop-zolotovskiy-kra
+   - lo-krasnoe-suhoe-145/own_IMG_20260921_200458.jpg   -> usadba-mezyb-usadba-mezyb-merlo-krasnoe-suhoe-15
+   - /own_1d46b8d1ba3a_96.08_22-08-2026_15-12-27.webp   -> zhemchuzhnaya-9-czitron-shardone
+   - 70.45_04-09-2026_13-35-37.webp                     -> fanagoriya-formula-q-saperavi-krasnoe-suhoe-135
+   - 82.33_27-08-2026_10-03-52.webp                     -> skalistyy-bereg-shyopot-tsvetov-risling-beloe-su
+   - 94.97_02-09-2026_19-01-48.webp                     -> zhemchuzhnaya-9-pino-nuar-muskat-rozovyj
+   - 95.49_05-09-2026_15-34-51.webp                     -> zhemchuzhnaya-9-pino-nuar-muskat-rozovyj
+   - 96.55_30-08-2026_19-34-31.webp                     -> novyy-svet-dom-shampanskih-vin-rossiyskoe-shampa
+   - 96.61_28-08-2026_09-16-27.webp                     -> balaklava-muskat
+   - n-krasnoe-suhoe-14/own_0c499c349902_IMG_1660.jpg   -> chateau-de-talu-roze-kaberne-sovinon-rozovoe-suh
+   - n-krasnoe-suhoe-14/own_dee26e8c2a3b_IMG_1659.jpg   -> chateau-de-talu-roze-kaberne-sovinon-rozovoe-suh
+   - n-krasnoe-suhoe-14/own_e5fd11c41f25_IMG_1661.jpg   -> chateau-de-talu-roze-kaberne-sovinon-rozovoe-suh
+   - -krasnoe-suhoe-142/own_ae7191894adb_IMG_1644.jpg   -> chateau-de-talu-yuzhnaya-vertikal-kaberne-fran-p
+   - -krasnoe-suhoe-142/own_d9aa68a9c808_IMG_1646.jpg   -> chateau-de-talu-yuzhnaya-vertikal-kaberne-fran-p
+   - -krasnoe-suhoe-142/own_daa97a08b15d_IMG_1645.jpg   -> chateau-de-talu-yuzhnaya-vertikal-kaberne-fran-p
+   - risling/own_36afc7dc11e7_IMG_20260926_191512.jpg   -> golubitskoe-estate-risling-beloe-suhoe-125
+   - risling/own_5f19dc62052b_IMG_20260926_191506.jpg   -> golubitskoe-estate-risling-beloe-suhoe-125
+   - risling/own_61a2d97ac4f2_IMG_20260926_191504.jpg   -> golubitskoe-estate-risling-beloe-suhoe-125
+   - n-krasnoe-suhoe-14/own_671e02452a1e_IMG_1656.jpg   -> imenie-sikory-gerts-sikory-kaberne-sovinon-krasn
+   - n-krasnoe-suhoe-14/own_7820b3e117e9_IMG_1658.jpg   -> imenie-sikory-gerts-sikory-kaberne-sovinon-krasn
+   - n-krasnoe-suhoe-14/own_82639095f939_IMG_1657.jpg   -> imenie-sikory-gerts-sikory-kaberne-sovinon-krasn
+   - hoe-125/own_ee3d67e7a113_IMG_20260926_185659.jpg   -> kuban-vino-shato-tamane-terruar-krasnostop-saper
+   - -krasnoe-suhoe-138/own_5fabb71726c8_IMG_1650.jpg   -> loco-cimbali-loco-cimbali-red-kaberne-sovinon-kr
+   - rymskij/own_42b323ec2ee6_IMG_20260926_190004.jpg   -> sary-pandas-vyderzhannoe
+   - rymskij/own_7b2ac394e2f5_IMG_20260926_185956.jpg   -> solnechnaya-dolina-chernyy-doktor-solnechnoy-dol
+   - rymskij/own_a01122d8d2e5_IMG_20260926_185944.jpg   -> solnechnaya-dolina-chernyy-doktor-solnechnoy-dol
+   - rymskij/own_ac60e075a13e_IMG_20260926_185958.jpg   -> solnechnaya-dolina-chernyy-doktor-solnechnoy-dol
+   - rymskij/own_b531330cbcc0_IMG_20260926_185946.jpg   -> solnechnaya-dolina-chernyy-doktor-solnechnoy-dol
+   - rymskij/own_c54570fe2408_IMG_20260926_185945.jpg   -> solnechnaya-dolina-chernyy-doktor-solnechnoy-dol
+   - aperavi/own_29532314fe19_IMG_20260926_185705.jpg   -> kuban-vino-saperavi-de-tamane-krasnoe-suhoe-125
+   - esimato/own_efe766b9ea07_IMG_20260926_191824.jpg   -> aristov-anima-pinot-grigio-blush
+   - laklava/own_c0416b8f843f_IMG_20260926_191815.jpg   -> balaklava-bryut-rezerv
+   - kaberne/own_4a0624b3e531_IMG_20260926_192825.jpg   -> kuban-vino-kaberne-de-tamane-kaberne-sovinon-kra
+   - a-krasnoe-suhoe-14/own_2a5760249876_IMG_1911.jpg   -> sober-bash-krasnostop-amfora-krasnostop-zolotovs
+   - p-krasnoe-suhoe-13/own_93ffa858caf7_IMG_1959.jpg   -> sober-bash-trezvaya-golova-tsimlyanskiygolubok-t
+   - kiy-beloe-suhoe-10/own_ba9d560ff4d1_IMG_1958.jpg   -> sober-bash-trezvaya-golova-sibirkovyypino-gri-be
+   - uhoe-13/own_f4a3960d7f78_IMG_20260926_193247.jpg   -> vino-nebo-aligote-sur-lie-aligote-beloe-suhoe-12
+
+Читатель: выбирает 1-й вариант (ответ эмбеддера) в 77% кадров; ответ совпадает при перемешивании в 85% кадров
+Латентность читателя (NVIDIA A100-SXM4-80GB): медиана 654 мс, p95 677 мс (плюс эмбеддер 2560)
+Сохранено: results/run2_summary.json

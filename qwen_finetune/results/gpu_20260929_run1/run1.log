@@ -1,0 +1,156 @@
+Эталонов 2102, доп. эталонов 1991 (827 вин), кадров 379 {'команды': 201, 'команды-новые': 122, 'организатора': 56}, с ручной рамкой 342
+[эталоны] основной индекс из кеша: (2102, 4096)
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:00<00:00, 60.22it/s]
+  доп. эталоны 16/1991
+  доп. эталоны 416/1991
+  доп. эталоны 816/1991
+  доп. эталоны 1216/1991
+  доп. эталоны 1616/1991
+[эталоны] посчитано за 380 с
+WARNING ⚠️ user config directory '/root/.config/Ultralytics' is not writable, using '/tmp/Ultralytics'. Set YOLO_CONFIG_DIR to override.
+Creating new Ultralytics Settings v0.0.8 file ✅ 
+View Ultralytics Settings with 'yolo settings' or at '/tmp/Ultralytics/settings.json'
+Update Settings with 'yolo settings key=value', i.e. 'yolo settings runs_dir=path/to/dir'. For help see https://docs.ultralytics.com/usage/settings.
+[yolo] этикетка найдена на 376/379, медиана 34 мс
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:00<00:00, 57.92it/s]
+  [запросы] 50/379
+  [запросы] 100/379
+  [запросы] 150/379
+  [запросы] 200/379
+  [запросы] 250/379
+  [запросы] 300/379
+  [запросы] 350/379
+
+=== Все кадры: кадров 379 ===
+вариант                                        команды n=201   команды-новые n=122     организатора n=56    top1    top5   исправлено/сломано vs base
+base (кадр 2560)                                     193/201                94/122                 54/56   90.0%   98.9%   —
+A  ручная рамка, вырезка                             194/201                96/122                 53/56   90.5%   98.9%   4/2  порог 4.9 -> шум
+A+ кадр + ручная рамка                               195/201                96/122                 54/56   91.0%   98.9%   4/0  порог 4.0 -> ЗНАЧИМО ЛУЧШЕ
+B  YOLO, вырезка                                     182/201                78/122                 50/56   81.8%   88.7%   2/33  порог 11.8 -> ЗНАЧИМО ХУЖЕ
+C  кадр + YOLO                                       188/201                90/122                 54/56   87.6%   97.6%   2/11  порог 7.2 -> ЗНАЧИМО ХУЖЕ
+D  несколько эталонов                                194/201               105/122                 55/56   93.4%   98.9%   14/1  порог 7.7 -> ЗНАЧИМО ЛУЧШЕ
+CD кадр + YOLO, несколько эталонов                   190/201               101/122                 55/56   91.3%   97.6%   14/9  порог 9.6 -> шум
+
+=== Только кадры с ручной рамкой (честное сравнение для A): кадров 342 ===
+вариант                                        команды n=188   команды-новые n=122     организатора n=32    top1    top5   исправлено/сломано vs base
+base (кадр 2560)                                     180/188                94/122                 31/32   89.2%   98.8%   —
+A  ручная рамка, вырезка                             181/188                96/122                 30/32   89.8%   98.8%   4/2  порог 4.9 -> шум
+A+ кадр + ручная рамка                               182/188                96/122                 31/32   90.4%   98.8%   4/0  порог 4.0 -> ЗНАЧИМО ЛУЧШЕ
+B  YOLO, вырезка                                     173/188                78/122                 29/32   81.9%   89.2%   1/26  порог 10.4 -> ЗНАЧИМО ХУЖЕ
+C  кадр + YOLO                                       177/188                90/122                 31/32   87.1%   97.7%   1/8  порог 6.0 -> ЗНАЧИМО ХУЖЕ
+D  несколько эталонов                                182/188               105/122                 32/32   93.3%   98.8%   14/0  порог 7.5 -> ЗНАЧИМО ЛУЧШЕ
+CD кадр + YOLO, несколько эталонов                   179/188               101/122                 32/32   91.2%   97.7%   13/6  порог 8.7 -> шум
+
+--- разбор: что исправили и сломали лучшие варианты (все кадры) ---
+
+A  ручная рамка, вырезка:
+   + ya-pti-verdo-krasnoe-suhoe-135/own_007317c47487_IMG_1862.jpg
+   + rinitsa-risling-beloe-suhoe-13/own_287f22646caf_IMG_1866.jpg
+   + -brut-shardone-beloe-bryut-115/own_dac06fa139a1_IMG_1705.jpg
+   + lova-rkatsiteli-beloe-suhoe-12/own_17d87d6f7fbf_IMG_1957.jpg
+   - on/own_cb7efbf980b2_84.73_07-09-2026_11-07-51.webp   -> zhemchuzhnaya-9-czitron-shardone
+   - 84.73_07-09-2026_11-07-51.webp                       -> zhemchuzhnaya-9-czitron-shardone
+
+A+ кадр + ручная рамка:
+   + ya-pti-verdo-krasnoe-suhoe-135/own_007317c47487_IMG_1862.jpg
+   + rinitsa-risling-beloe-suhoe-13/own_287f22646caf_IMG_1866.jpg
+   + -brut-shardone-beloe-bryut-115/own_dac06fa139a1_IMG_1705.jpg
+   + lova-rkatsiteli-beloe-suhoe-12/own_17d87d6f7fbf_IMG_1957.jpg
+
+B  YOLO, вырезка:
+   + on-pino-nuar/own_498cd3d3f9ef_94.97_02-09-2026_19-01-48.webp
+   + 91.43_02-09-2026_12-08-50.webp
+   - ynyy-krasnoe-suhoe-135/own_IMG_20260921_200627.jpg   -> leto-kaberne-fran-rezerv-2021-suhoe-krasnoe
+   - agora-muskat-chernyj/own_IMG_20260921_193726.jpg     -> perovskih_odesskiy_chernyi
+   - agora-yachting-shiraz/own_IMG_20260921_193703.jpg    -> leto-kaberne-fran-rezerv-2021-suhoe-krasnoe
+   - agora-yachting-shiraz/own_IMG_20260921_193705.jpg    -> agora-yachting-merlot
+   - selan-krasnoe-suhoe-13/own_IMG_20260921_194122.jpg   -> pino-nuar-premium
+   - -fran-krasnoe-suhoe-14/own_IMG_20260921_195907.jpg   -> valeriy-zaharin-sira-valeriy-zaharin-krasnoe-
+   - -fran-krasnoe-suhoe-14/own_IMG_20260921_195909.jpg   -> kuban-vino-vysokiy-bereg-merlo-krasnoe-suhoe-
+   - erlo-krasnoe-suhoe-147/own_IMG_20260919_191947.jpg   -> vinodelnya-pokrovskaya-ryzhest-rkatsiteli-bel
+   - ek-rozovoe-suhoe-125/own_e332f267dc64_IMG_1861.jpg   -> vinodelnya-zhakov-rozeo-saperavi-rozovoe-suho
+   - o-gri-beloe-suhoe-11/own_733e0cce64e6_IMG_1871.jpg   -> soyuz-vino-soyuz-vino-muskat-beloe-polusladko
+   - iteli-beloe-suhoe-14/own_5dde68dff1db_IMG_1892.jpg   -> sober-bash-kaberne-fran-krasnoe-suhoe-127
+   - -fran-krasnoe-suhoe-14/own_IMG_20260921_193915.jpg   -> perovskih_merlo
+   - 68.81_05-09-2026_15-46-31.webp                       -> fanagoriya-q-bordeaux-blend-kaberne-sovinon-k
+   - 94.97_02-09-2026_19-01-48.webp                       -> zhemchuzhnaya-9-kaberne-sovinon-pino-nuar
+   - 95.49_05-09-2026_15-34-51.webp                       -> cantiani-merlot
+   - 96.45_02-09-2026_14-19-06.webp                       -> le-k2-vassal-risling-reynskiy-beloe-suhoe-14
+   - 96.98_19-08-2026_19-05-06.webp                       -> oleg
+   - done-beloe-bryut-115/own_c971f0dd5c36_IMG_1703.jpg   -> vinodelnya-zhakov-rkatsiteli-eskeyp-krasnoe-s
+   - on-krasnoe-suhoe-125/own_bc2d63351832_IMG_1674.jpg   -> saperavi-premium
+   - suhoe-127/own_1c9de17ffded_IMG_20260926_191519.jpg   -> gunko-winery-sovinon-blan-gunko-winery-beloe-
+   - non-krasnoe-suhoe-14/own_0c499c349902_IMG_1660.jpg   -> soyuz-vino-lenty-kaberne-krymskoe-kaberne-sov
+   - non-krasnoe-suhoe-14/own_dee26e8c2a3b_IMG_1659.jpg   -> imenie-sikory-merlo-sikory-krasnoe-suhoe-13
+   - -shardone/own_79a432430c9a_IMG_20260926_191435.jpg   -> vinodelnya-vedernikov-sibirkovyy-ekstra-bryut
+   - suhoe-115/own_d5415ada1686_IMG_20260926_191459.jpg   -> derbent-vino-di-kaspiko-shardone-beloe-suhoe-
+   - ran-krasnoe-suhoe-14/own_98093b694994_IMG_1639.jpg   -> oleg-repin-pinot-noir-pino-nuar-krasnoe-suhoe
+   - ira-krasnoe-suhoe-13/own_a0bb2a352be5_IMG_1666.jpg   -> leto-kaberne-fran-rezerv-2021-suhoe-krasnoe
+   - ira-krasnoe-suhoe-13/own_c861b740284d_IMG_1665.jpg   -> fanagoriya-101-ottenok-krasnogo-pino-nuar-kra
+   - loe-ekstra-bryut-115/own_3beeffd064cf_IMG_1721.jpg   -> usadba-rodnoe-gnezdo-4-elements-sovinon-blan-
+   - n-kaberne/own_4a0624b3e531_IMG_20260926_192825.jpg   -> vinodelnya-zhakov-saperavi-krasnoe-suhoe-126
+   - mfora-beloe-suhoe-14/own_eb5643d86da9_IMG_1910.jpg   -> sober-bash-rkatsiteli-amfora-beloe-suhoe-135
+   - zos-krasnoe-suhoe-14/own_fc97130361c4_IMG_1912.jpg   -> sober-bash-dostoynyy-krasnoe-suhoe-14
+   - ora-krasnoe-suhoe-14/own_2a5760249876_IMG_1911.jpg   -> sober-bash-krasnostop-amfora-krasnostop-zolot
+   - nskiy-beloe-suhoe-10/own_ba9d560ff4d1_IMG_1958.jpg   -> sober-bash-trezvaya-golova-rozovoe-krasnostop
+
+C  кадр + YOLO:
+   + 91.43_02-09-2026_12-08-50.webp
+   + berne-sovinon-krasnoe-suhoe-14/own_7820b3e117e9_IMG_1658.jpg
+   - agora-yachting-shiraz/own_IMG_20260921_193705.jpg    -> agora-yachting-merlot
+   - -fran-krasnoe-suhoe-14/own_IMG_20260921_195909.jpg   -> chateau-de-talu-uroki-frantsuzskogo-sira-kras
+   - erlo-krasnoe-suhoe-147/own_IMG_20260919_191947.jpg   -> chateau-de-talu-uroki-frantsuzskogo-kaberne-s
+   - iteli-beloe-suhoe-14/own_5dde68dff1db_IMG_1892.jpg   -> sober-bash-kaberne-fran-krasnoe-suhoe-127
+   - -fran-krasnoe-suhoe-14/own_IMG_20260921_193915.jpg   -> merlo
+   - 68.81_05-09-2026_15-46-31.webp                       -> fanagoriya-velvet-season-risling-beloe-sladko
+   - loe-ekstra-bryut-115/own_3beeffd064cf_IMG_1721.jpg   -> esse-brut-zero-dosage-shardone-beloe-ekstra-b
+   - mfora-beloe-suhoe-14/own_eb5643d86da9_IMG_1910.jpg   -> sober-bash-rkatsiteli-amfora-beloe-suhoe-135
+   - zos-krasnoe-suhoe-14/own_fc97130361c4_IMG_1912.jpg   -> sober-bash-dostoynyy-krasnoe-suhoe-14
+   - ora-krasnoe-suhoe-14/own_2a5760249876_IMG_1911.jpg   -> sober-bash-krasnostop-amfora-krasnostop-zolot
+   - nskiy-beloe-suhoe-10/own_ba9d560ff4d1_IMG_1958.jpg   -> sober-bash-trezvaya-golova-rozovoe-krasnostop
+
+D  несколько эталонов:
+   + oe-suhoe-135/own_67eca33e7c27_70.45_04-09-2026_13-35-37.webp
+   + rinitsa-risling-beloe-suhoe-13/own_287f22646caf_IMG_1866.jpg
+   + 70.45_04-09-2026_13-35-37.webp
+   + kaberne-fran-krasnoe-suhoe-142/own_ae7191894adb_IMG_1644.jpg
+   + kaberne-fran-krasnoe-suhoe-142/own_d9aa68a9c808_IMG_1646.jpg
+   + kaberne-fran-krasnoe-suhoe-142/own_daa97a08b15d_IMG_1645.jpg
+   + berne-sovinon-krasnoe-suhoe-14/own_671e02452a1e_IMG_1656.jpg
+   + berne-sovinon-krasnoe-suhoe-14/own_7820b3e117e9_IMG_1658.jpg
+   + berne-sovinon-krasnoe-suhoe-14/own_82639095f939_IMG_1657.jpg
+   + 3-krasnoe-suhoe-125/own_ee3d67e7a113_IMG_20260926_185659.jpg
+   + an-krasnoe-suhoe-13/own_48f996531cdb_IMG_20260926_190946.jpg
+   + an-krasnoe-suhoe-13/own_544556713497_IMG_20260926_190949.jpg
+   + an-krasnoe-suhoe-13/own_c8fd774164ae_IMG_20260926_190948.jpg
+   + an-krasnoe-suhoe-13/own_f090e8d725ae_IMG_20260926_190954.jpg
+   - -fran-krasnoe-suhoe-14/own_IMG_20260921_193915.jpg   -> zolotoe-pole-kaffa-saperavi-krasnoe-suhoe-14
+
+CD кадр + YOLO, несколько эталонов:
+   + oe-suhoe-135/own_67eca33e7c27_70.45_04-09-2026_13-35-37.webp
+   + 70.45_04-09-2026_13-35-37.webp
+   + 91.43_02-09-2026_12-08-50.webp
+   + kaberne-fran-krasnoe-suhoe-142/own_ae7191894adb_IMG_1644.jpg
+   + kaberne-fran-krasnoe-suhoe-142/own_d9aa68a9c808_IMG_1646.jpg
+   + kaberne-fran-krasnoe-suhoe-142/own_daa97a08b15d_IMG_1645.jpg
+   + berne-sovinon-krasnoe-suhoe-14/own_671e02452a1e_IMG_1656.jpg
+   + berne-sovinon-krasnoe-suhoe-14/own_7820b3e117e9_IMG_1658.jpg
+   + berne-sovinon-krasnoe-suhoe-14/own_82639095f939_IMG_1657.jpg
+   + 3-krasnoe-suhoe-125/own_ee3d67e7a113_IMG_20260926_185659.jpg
+   + an-krasnoe-suhoe-13/own_48f996531cdb_IMG_20260926_190946.jpg
+   + an-krasnoe-suhoe-13/own_544556713497_IMG_20260926_190949.jpg
+   + an-krasnoe-suhoe-13/own_c8fd774164ae_IMG_20260926_190948.jpg
+   + an-krasnoe-suhoe-13/own_f090e8d725ae_IMG_20260926_190954.jpg
+   - agora-yachting-shiraz/own_IMG_20260921_193705.jpg    -> agora-yachting-merlot
+   - erlo-krasnoe-suhoe-147/own_IMG_20260919_191947.jpg   -> chateau-de-talu-uroki-frantsuzskogo-kaberne-s
+   - iteli-beloe-suhoe-14/own_5dde68dff1db_IMG_1892.jpg   -> sober-bash-kaberne-fran-krasnoe-suhoe-127
+   - -fran-krasnoe-suhoe-14/own_IMG_20260921_193915.jpg   -> usadba-divnomorskoe-merlot-merlo-krasnoe-suho
+   - 68.81_05-09-2026_15-46-31.webp                       -> fanagoriya-velvet-season-risling-beloe-sladko
+   - mfora-beloe-suhoe-14/own_eb5643d86da9_IMG_1910.jpg   -> sober-bash-rkatsiteli-amfora-beloe-suhoe-135
+   - zos-krasnoe-suhoe-14/own_fc97130361c4_IMG_1912.jpg   -> sober-bash-dostoynyy-krasnoe-suhoe-14
+   - ora-krasnoe-suhoe-14/own_2a5760249876_IMG_1911.jpg   -> sober-bash-krasnostop-amfora-krasnostop-zolot
+   - nskiy-beloe-suhoe-10/own_ba9d560ff4d1_IMG_1958.jpg   -> sober-bash-trezvaya-golova-rozovoe-krasnostop
+
+Латентность (NVIDIA A100-SXM4-80GB): кадр 2560 — 683 мс, вырезка — 666 мс, YOLO — 34 мс; YOLO нашёл этикетку на 376/379
+Сохранено: results/run1_summary.json, results/run1_*.npz

@@ -1,0 +1,27 @@
+[Unit]
+Description=Wine scanner and dataset administration
+After=network.target
+
+[Service]
+Type=simple
+User=wine
+Group=wine
+WorkingDirectory=/opt/wine/wine_server
+EnvironmentFile=/etc/wine.env
+Environment=PYTHONUNBUFFERED=1
+Environment=OMP_NUM_THREADS=2
+Environment=OPENBLAS_NUM_THREADS=1
+Environment=MKL_NUM_THREADS=2
+ExecStart=/opt/wine/venv/bin/python /opt/wine/wine_server/app.py
+Restart=always
+RestartSec=5
+TimeoutStopSec=100
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/wine/wine_dataset /opt/wine/wine_media
+
+[Install]
+WantedBy=multi-user.target

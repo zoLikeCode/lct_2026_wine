@@ -1,0 +1,16 @@
+const CACHE = 'wine-server-v19-recipe-followup';
+const SHELL = ['/', '/app.js', '/app.css', '/chat.css', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/icon-maskable.png', '/assets/playfair.woff2', '/assets/no-bottle.svg'];
+self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL))); self.skipWaiting(); });
+self.addEventListener('activate', event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => (k.startsWith('wine-shell-')||k.startsWith('wine-server-')) && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  if (!SHELL.includes(url.pathname)) return;
+  event.respondWith(fetch(event.request).then(async response => {
+    // A disconnected HTTPS tunnel returns HTML 503 instead of a network error.
+    // Keep the installed app and its history visible; never cache this error page.
+    if (response.status >= 500) return (await caches.match(url.pathname)) || response;
+    if (response.ok) { const copy = response.clone(); caches.open(CACHE).then(c => c.put(url.pathname, copy)); }
+    return response;
+  }).catch(() => caches.match(url.pathname)));
+});

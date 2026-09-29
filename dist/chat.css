@@ -1,0 +1,56 @@
+/* Shared full-height conversation, with the colors of the selected design. */
+body[data-screen=assistant]{height:100dvh;overflow:hidden}
+body[data-screen=assistant] .app-shell{height:100dvh;display:flex;flex-direction:column;padding-bottom:0}
+body[data-screen=assistant] .app-header{flex-shrink:0}
+body[data-screen=assistant] main{display:flex;flex-direction:column;flex:1;min-height:0}
+body[data-screen=assistant] .app-footer{display:none}
+#assistant-view.chat-fullscreen{display:flex;flex-direction:column;flex:1;min-height:0;padding:20px 0 22px;gap:0}
+.chat-fullscreen .conversation{display:flex;flex-direction:column;flex:1;min-height:0;max-height:none;width:100%;border:0;border-radius:0;background:none;box-shadow:none;padding:0;backdrop-filter:none;overflow:hidden}
+.chat-fullscreen .chat-messages{flex:1;min-height:0;max-height:none;height:auto;width:100%;padding:20px max(12px,calc((100% - 880px)/2));scroll-behavior:auto;overflow-y:auto;overflow-anchor:none}
+.chat-fullscreen .assistant-welcome{max-width:590px;margin:clamp(20px,7vh,80px) auto 0;padding:18px 0}
+.chat-fullscreen .assistant-welcome h2{font-size:40px;line-height:1.15;letter-spacing:-1px}
+.chat-fullscreen .assistant-welcome>p{font-size:14px;line-height:1.7;margin:18px 0 27px;color:var(--muted)}
+.chat-fullscreen .prompt-list{display:flex;flex-wrap:wrap;gap:9px}
+.chat-fullscreen .prompt-list button{padding:12px 16px;min-height:46px;border:1px solid var(--line);border-radius:18px;background:var(--soft);font-size:12px;gap:16px;flex:1 1 auto;justify-content:space-between}
+.chat-fullscreen .composer{flex-shrink:0;align-self:center;width:100%;max-width:930px;margin:12px 0 0;padding:14px 16px;border-radius:24px;box-shadow:var(--rim);background:var(--glass)}
+.chat-fullscreen .composer textarea{resize:none;min-height:54px;max-height:130px;padding:4px;line-height:1.6;font-size:14px}
+.chat-fullscreen .composer-bottom>span{font-size:10px}
+.chat-fullscreen .chat-turn{max-width:880px;width:100%;margin:0 auto 30px}
+.chat-fullscreen .chat-user{max-width:85%;width:fit-content;margin-left:auto;padding:13px 18px;font-size:14px;border-radius:20px 20px 3px 20px}
+.chat-fullscreen .chat-answer{font-size:14px;line-height:1.8;padding:22px 0 14px}
+.chat-fullscreen .chat-result{max-width:680px}.chat-fullscreen .chat-result .reason{font-size:12px;line-height:1.7}
+.chat-fullscreen .chat-result .row-copy b{font-size:23px;line-height:1.2}.chat-fullscreen .chat-result .row-copy small{font-size:11px}
+@media(max-width:760px){
+#assistant-view.chat-fullscreen{padding:8px 0 100px;gap:0}
+.chat-fullscreen .chat-messages{padding:10px 2px 18px}
+.chat-fullscreen .assistant-welcome{margin:clamp(10px,4vh,32px) auto 0;padding:12px 6px}
+.chat-fullscreen .assistant-welcome h2{font-size:30px;letter-spacing:-.75px}
+.chat-fullscreen .assistant-welcome>p{font-size:12px;margin:14px 0 24px}
+.chat-fullscreen .prompt-list{display:grid;gap:9px}.chat-fullscreen .prompt-list button{font-size:12px;min-height:47px;padding:12px 14px}
+.chat-fullscreen .composer{border-radius:22px;margin-top:8px;padding:12px}
+.chat-fullscreen .composer textarea{font-size:14px;min-height:50px}.chat-fullscreen .composer-bottom>span{font-size:9px}
+.chat-fullscreen .chat-user,.chat-fullscreen .chat-answer{font-size:13px;line-height:1.7}.chat-fullscreen .chat-user{padding:12px 15px;max-width:90%}
+.chat-fullscreen .chat-result .row-copy b{font-size:21px}.chat-fullscreen .chat-result .row-copy small{font-size:10px}.chat-fullscreen .chat-result .reason{font-size:11px}
+}
+@media(max-height:560px) and (max-width:760px){.chat-fullscreen .assistant-welcome{margin:0;padding:0 6px}.chat-fullscreen .composer textarea{min-height:40px}#assistant-view.chat-fullscreen{padding-bottom:89px}.chat-fullscreen .composer{padding:8px 12px}}
+
+/* A saved scan travels with the conversation by server scan ID. */
+.assistant-attachment{display:flex;align-items:center;gap:11px;min-width:0;margin:0 0 10px;padding:7px 8px;border:1px solid var(--line);border-radius:15px;background:var(--soft)}
+.assistant-attachment img{width:43px;height:54px;flex:none;object-fit:cover;border-radius:9px;background:var(--paper)}
+.assistant-attachment-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.assistant-attachment-copy strong{font-size:11px;font-weight:600;color:var(--ink)}
+.assistant-attachment-copy small{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted);font-size:10px}
+.attachment-disclosure{color:var(--muted);font-size:10px;line-height:1.35}
+.assistant-attachment button{width:44px;height:44px;min-width:44px;display:grid;place-items:center;border-radius:50%;color:var(--ink)}
+.assistant-attachment button:hover{background:var(--soft)}
+.assistant-attachment button svg{width:17px;height:17px}
+.chat-fullscreen .chat-user .chat-attached-photo{width:100px;height:118px;object-fit:cover;border-radius:12px;margin:0 0 9px auto;background:var(--paper)}
+.chat-fullscreen .chat-user span{display:block}
+.match-score{display:block;margin-top:5px;color:var(--wine);font-size:10px;font-weight:600}
+.scan-assistant-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin:-7px 0 12px;color:var(--wine);font-size:11px;font-weight:600;text-align:left}
+.scan-assistant-link svg{width:16px;height:16px}
+.result-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:20px}
+.camera-toggle-slot #camera-button{width:55px;height:55px;min-width:55px;padding:5px;border-radius:50%;border:1px solid #fff9;box-shadow:0 0 0 2px var(--wine),0 5px 18px #2518102b;touch-action:manipulation}
+.camera-toggle-slot #camera-button .shutter-core svg{width:21px;height:21px}
+.camera-toggle-slot>span{font-size:10px;white-space:nowrap}
+@media(max-width:760px){.result-actions .button{width:100%}.chat-fullscreen .chat-user .chat-attached-photo{width:84px;height:96px}}

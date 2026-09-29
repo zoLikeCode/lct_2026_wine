@@ -44,9 +44,14 @@ def main():
     p.add_argument("--url", default="http://127.0.0.1:8080/v1/eval/predict")
     p.add_argument("--frames", help="csv с колонками path,true_slug[,set]; пути от папки csv")
     p.add_argument("--neg", help="папка с фото без вина")
+    p.add_argument("--dups", help="catalog_duplicates.csv (group,slug): ответ из той же группы дублей каталога считать верным")
     p.add_argument("--out", default="service_check.jsonl")
     args = p.parse_args()
     log = open(args.out, "w", encoding="utf-8")
+    group = {}
+    if args.dups:
+        with open(args.dups, encoding="utf-8-sig") as f:
+            group = {r["slug"]: r["group"] for r in csv.DictReader(f)}
 
     if args.frames:
         root = Path(args.frames).parent
@@ -76,6 +81,10 @@ def main():
                 print(f"  {i}/{len(uniq)}: top-1 {sum(ok_all) / i:.1%}", flush=True)
         print(f"\ntop-1 по кадрам: {sum(ok_all) / len(ok_all):.1%} ({sum(ok_all)}/{len(ok_all)}), "
               f"по винам: {sum(sum(v) / len(v) for v in by_wine.values()) / len(by_wine):.1%} ({len(by_wine)} вин), null: {nulls}")
+        if group:
+            same = lambda a, b: a == b or (a is not None and group.get(a, a) == group.get(b, b))
+            ok_dup = sum(same(pred_by_hash[r["_hash"]], r["true_slug"]) for r in uniq)
+            print(f"top-1, если дубли каталога считать одним вином: {ok_dup / len(uniq):.1%} ({ok_dup}/{len(uniq)})")
         ok_rows = sum(pred_by_hash[h] == r["true_slug"] for h, r in zip(row_hash, rows))
         print(f"top-1 без дедупликации (как в прогонах, для сверки с 93.4%): {ok_rows / len(rows):.1%} ({ok_rows}/{len(rows)})")
         for s, v in sorted(by_set.items()):

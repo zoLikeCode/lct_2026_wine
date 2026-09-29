@@ -19,7 +19,6 @@
   QWEN_QUERY_TOKENS  визуальных токенов на запрос, по умолчанию 2560
 """
 
-import csv
 import json
 import os
 import sys
@@ -49,14 +48,10 @@ class Prediction:
 
 def _load_catalog() -> dict:
     """Карточки вин для /v1/search. Необязательны: без них отдаётся только slug."""
-    for path in (REPO_ROOT / "outputs" / "catalog_resolved.json",):
+    for path in (QWEN_DIR / "catalog_cards.json", REPO_ROOT / "outputs" / "catalog_resolved.json"):
         if path.exists():
             with open(path, encoding="utf-8") as f:
                 return {r["slug"]: r for r in json.load(f)}
-    path = QWEN_DIR / "data" / "catalog_meta.csv"
-    if path.exists():
-        with open(path, encoding="utf-8-sig") as f:
-            return {r["slug"]: r for r in csv.DictReader(f)}
     return {}
 
 

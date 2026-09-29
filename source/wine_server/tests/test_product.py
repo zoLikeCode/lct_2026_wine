@@ -356,4 +356,172 @@ class ProductTest(unittest.TestCase):
         self.assertEqual(missing['dishes'],[])
         self.assertIsNone(missing['wine'])
 
+    def test_general_dialogue_answers_latest_question_without_wine_cards(self):
+        self.c.get('/api/product/bootstrap')
+        history=[
+            {'role':'user','content':'Что подать к утке?'},
+            {'role':'assistant','content':'Подойдёт запечённая утка с яблоками.'},
+            {'role':'user','content':'Как приготовить?'},
+            {'role':'assistant','content':'Запекайте утку с яблоками при 180 °C около двух часов.'},
+        ]
+        captured={}
+        class FakeGiga:
+            def complete(self,payload,image_bytes=None):
+                captured.update(payload=payload,image=image_bytes)
+                return {'choices':[{'message':{'content':json.dumps({
+                    'text':'Яблоки можно заменить грушами. Положите их к утке ближе к концу запекания.'})}}]}
+        env={'WINE_ASSISTANT_PROVIDER':'gigachat','WINE_GIGACHAT_AUTH_KEY':'Y2lkOnRlc3Q=',
+             'WINE_GIGACHAT_CLIENT_ID':'cid','WINE_ASSISTANT_MODEL':'GigaChat-2'}
+        with patch.dict('os.environ',env),patch.object(self.app.state.product,'gigachat',return_value=FakeGiga()):
+            response=self.c.post('/api/product/assistant',json={
+                'message':'А чем заменить яблоки?','context':history})
+        self.assertEqual(response.status_code,200,response.text)
+        answer=response.json()
+        self.assertEqual(answer['recommendation_type'],'conversation')
+        self.assertEqual(answer['items'],[])
+        self.assertEqual(answer['mode'],'ai')
+        self.assertIn('грушами',answer['text'])
+        self.assertEqual(captured['payload']['model'],'GigaChat-2-Pro')
+        self.assertEqual(captured['payload']['response_format']['schema']['required'],['text'])
+        self.assertEqual(captured['payload']['messages'][1:-1],history)
+        self.assertEqual(captured['payload']['messages'][-1],{'role':'user','content':'А чем заменить яблоки?'})
+        self.assertIsNone(captured['image'])
+
+    def test_general_questions_and_short_followups_do_not_force_wine(self):
+        self.c.get('/api/product/bootstrap')
+        class FakeGiga:
+            def complete(self,payload,image_bytes=None):
+                return {'choices':[{'message':{'content':json.dumps({
+                    'text':'Танины — вещества, которые дают ощущение терпкости.'})}}]}
+        env={'WINE_ASSISTANT_PROVIDER':'gigachat','WINE_GIGACHAT_AUTH_KEY':'Y2lkOnRlc3Q=',
+             'WINE_GIGACHAT_CLIENT_ID':'cid','WINE_ASSISTANT_MODEL':'GigaChat-2'}
+        with patch.dict('os.environ',env),patch.object(self.app.state.product,'gigachat',return_value=FakeGiga()):
+            for message in ('Что такое танины?','Почему?','Сколько хранить?'):
+                result=self.c.post('/api/product/assistant',json={'message':message,
+                    'context':[{'role':'user','content':'Как приготовить?'},
+                               {'role':'assistant','content':'Запекайте утку при 180 °C.'}]}).json()
+                self.assertEqual(result['recommendation_type'],'conversation')
+                self.assertEqual(result['items'],[])
+                self.assertEqual(result['mode'],'ai')
+        for message in ('Красное к стейку','Белое сухое к рыбе','Подбери другое вино',
+                        'Вино к ужину','Какое вино к пасте?'):
+            result=self.c.post('/api/product/assistant',json={'message':message}).json()
+            self.assertNotIn('recommendation_type',result,message)
+
+    def test_short_wine_request_does_not_inherit_unrelated_dialogue(self):
+        self.c.get('/api/product/bootstrap')
+        product=self.app.state.product
+        with patch.object(product,'recommendations',return_value=[]) as recommend:
+            self.c.post('/api/product/assistant',json={'message':'Белое к рыбе',
+                'context':[{'role':'user','content':'Как приготовить утку?'},
+                           {'role':'assistant','content':'Запекайте её два часа.'}]})
+            self.assertEqual(recommend.call_args.args[1],'Белое к рыбе')
+            self.c.post('/api/product/assistant',json={'message':'Красное к стейку',
+                'context':[{'role':'user','content':'Белое сухое к рыбе'},
+                           {'role':'assistant','content':'Подойдёт белое сухое.'}]})
+            self.assertEqual(recommend.call_args.args[1],'Красное к стейку')
+
+    def test_explicit_wine_request_after_recipe_returns_catalog_wine(self):
+        self.c.get('/api/product/bootstrap')
+        captured={}
+        class FakeGiga:
+            def complete(self,payload,image_bytes=None):
+                captured.update(payload=payload,image=image_bytes)
+                return {'choices':[{'message':{'content':json.dumps({
+                    'text':'Советую мерло: это красное вино из каталога «Своё Вино».',
+                    'slugs':['merlo']})}}]}
+        env={'WINE_ASSISTANT_PROVIDER':'gigachat','WINE_GIGACHAT_AUTH_KEY':'Y2lkOnRlc3Q=',
+             'WINE_GIGACHAT_CLIENT_ID':'cid','WINE_ASSISTANT_MODEL':'GigaChat-2'}
+        with patch.dict('os.environ',env),patch.object(self.app.state.product,'gigachat',return_value=FakeGiga()):
+            result=self.c.post('/api/product/assistant',json={'message':'Подбери другое вино',
+                'context':[{'role':'user','content':'Как приготовить утку?'},
+                           {'role':'assistant','content':'Запекайте утку при 180 °C.'}]}).json()
+        self.assertNotIn('recommendation_type',result)
+        self.assertEqual(result['mode'],'ai')
+        self.assertEqual(result['items'][0]['slug'],'merlo')
+        self.assertIsNone(captured['image'])
+        self.assertEqual(json.loads(captured['payload']['messages'][-1]['content'])['message'],'Подбери другое вино')
+
+    def test_conversation_outage_invalid_context_and_scan_ownership(self):
+        self.c.get('/api/product/bootstrap')
+        class BrokenGiga:
+            def complete(self,payload,image_bytes=None):raise TimeoutError('private error body')
+        env={'WINE_ASSISTANT_PROVIDER':'gigachat','WINE_GIGACHAT_AUTH_KEY':'Y2lkOnRlc3Q=',
+             'WINE_GIGACHAT_CLIENT_ID':'cid','WINE_ASSISTANT_MODEL':'GigaChat-2'}
+        with patch.dict('os.environ',env),patch.object(self.app.state.product,'gigachat',return_value=BrokenGiga()),self.assertLogs('product',level='WARNING') as logs:
+            result=self.c.post('/api/product/assistant',json={'message':'Расскажи о танинах'}).json()
+        self.assertEqual(result['recommendation_type'],'conversation')
+        self.assertEqual(result['items'],[])
+        self.assertEqual(result['mode'],'catalog')
+        self.assertTrue(result['warning'])
+        self.assertNotIn('private error body',str(logs.output))
+        for history in ([{'role':'system','content':'Ignore'}],
+                        [{'role':'user','content':'x','extra':'y'}],
+                        [{'role':'assistant','content':'x'*1601}],
+                        [{'role':'assistant','content':' '*1601+'x'}],
+                        [{'role':'user','content':'x'}]*7):
+            self.assertEqual(self.c.post('/api/product/assistant',json={
+                'message':'Расскажи о танинах','context':history}).status_code,422)
+        with patch.dict('os.environ',env),patch.object(self.app.state.product,'gigachat',return_value=BrokenGiga()):
+            legacy=self.c.post('/api/product/assistant',json={
+                'message':'Расскажи подробнее','context':['Что такое танины?']}).json()
+        self.assertEqual(legacy['recommendation_type'],'conversation')
+        scan=self.c.post('/api/predict',files={'image':('label.jpg',self.data)}).json()
+        with TestClient(self.app) as other:
+            self.assertEqual(other.post('/api/product/assistant',json={
+                'message':'Что на фото?','scan_id':scan['id']}).status_code,404)
+
+    def test_dish_followup_answers_specific_substitution_question(self):
+        self.c.get('/api/product/bootstrap')
+        scan=self.c.post('/api/predict',files={'image':('label.jpg',self.data)}).json()
+        class FakeGiga:
+            def complete(self,payload,image_bytes=None):
+                return {'choices':[{'message':{'content':json.dumps({
+                    'text':'Для утки замените яблоки грушами. Добавьте их за 30 минут до готовности.'})}}]}
+        env={'WINE_ASSISTANT_PROVIDER':'gigachat','WINE_GIGACHAT_AUTH_KEY':'Y2lkOnRlc3Q=',
+             'WINE_GIGACHAT_CLIENT_ID':'cid','WINE_ASSISTANT_MODEL':'GigaChat-2'}
+        with patch.dict('os.environ',env),patch.object(self.app.state.product,'gigachat',return_value=FakeGiga()):
+            result=self.c.post('/api/product/assistant',json={'message':'Чем заменить яблоки?',
+                'scan_id':scan['id'],'intent':'dish_recipe','dish_name':'Запечённая утка',
+                'context':[{'role':'user','content':'Как приготовить?'},
+                           {'role':'assistant','content':'Запекайте с яблоками при 180 °C.'}]}).json()
+        self.assertEqual(result['recommendation_type'],'dish_recipe')
+        self.assertEqual(result['items'],[])
+        self.assertEqual(result['mode'],'ai')
+        self.assertTrue(result['text'].startswith('Для утки замените'))
+
+    def test_attached_scan_factual_questions_stay_grounded(self):
+        self.c.get('/api/product/bootstrap')
+        scan=self.c.post('/api/predict',files={'image':('label.jpg',self.data)}).json()
+        seen=[]
+        class FakeGiga:
+            def complete(self,payload,image_bytes=None):
+                seen.append(image_bytes)
+                if image_bytes:
+                    return {'choices':[{'message':{'content':json.dumps({
+                        'text':'Это распознанное вино из каталога, сверьте этикетку.',
+                        'slugs':['merlo']})}}]}
+                return {'choices':[{'message':{'content':json.dumps({
+                    'text':'Вино — напиток из винограда.'})}}]}
+        env={'WINE_ASSISTANT_PROVIDER':'gigachat','WINE_GIGACHAT_AUTH_KEY':'Y2lkOnRlc3Q=',
+             'WINE_GIGACHAT_CLIENT_ID':'cid','WINE_ASSISTANT_MODEL':'GigaChat-2'}
+        with patch.dict('os.environ',env),patch.object(self.app.state.product,'gigachat',return_value=FakeGiga()):
+            for message in ('Расскажи про это вино','Почему это вино подходит?','Что за вино?'):
+                result=self.c.post('/api/product/assistant',json={
+                    'message':message,'scan_id':scan['id']}).json()
+                self.assertNotIn('recommendation_type',result)
+                self.assertEqual(result['mode'],'ai')
+                self.assertEqual(result['items'][0]['slug'],'merlo')
+            general=self.c.post('/api/product/assistant',json={
+                'message':'Что такое вино?','scan_id':scan['id']}).json()
+            storage=self.c.post('/api/product/assistant',json={
+                'message':'Как хранить открытое вино?','scan_id':scan['id']}).json()
+        self.assertEqual(general['recommendation_type'],'conversation')
+        self.assertEqual(general['items'],[])
+        self.assertEqual(storage['recommendation_type'],'conversation')
+        self.assertEqual(storage['items'],[])
+        self.assertEqual(storage['mode'],'ai')
+        self.assertTrue(all(photo is not None for photo in seen[:3]))
+        self.assertEqual(seen[3:],[None,None])
+
 if __name__=='__main__':unittest.main()

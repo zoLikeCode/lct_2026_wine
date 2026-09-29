@@ -116,7 +116,7 @@ body[data-screen=scan] .notice{bottom:calc(max(14px,env(safe-area-inset-bottom))
 }
 
 /* Keep the recognized wine above the pairing advice on narrow screens. */
-.result-pairing{margin:23px 0 18px;padding:22px 24px 23px;border:1px solid var(--line);border-radius:22px;background:var(--soft)}
+.result-pairing{max-width:720px;margin:23px 0 18px;padding:22px 24px 23px;border:1px solid var(--line);border-radius:22px;background:var(--soft)}
 .result-pairing-kicker,.chat-dish-kicker{font-size:10px;line-height:1.4;font-weight:700;letter-spacing:1.5px;color:var(--wine)}
 .result-pairing h2{font-size:clamp(24px,2.4vw,32px);line-height:1.18;letter-spacing:-.7px;margin:9px 0 15px}
 .pairing-preview{display:grid;gap:10px;list-style:none;margin:0;padding:0}
@@ -126,8 +126,7 @@ body[data-screen=scan] .notice{bottom:calc(max(14px,env(safe-area-inset-bottom))
 .pairing-source{font-size:12px;line-height:1.55;color:var(--muted);margin:17px 0 0}
 .result-pairing .scan-assistant-link{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:52px;margin:20px 0 0;padding:12px 17px;border:1px solid #77353a;border-radius:14px;background:linear-gradient(135deg,#995356,#75313b);color:#fffaf4;font-size:14px;line-height:1.35;font-weight:600}
 .result-pairing .scan-assistant-link:hover{filter:brightness(1.07)}
-.chat-fullscreen .dish-turn .chat-answer{font-size:16px;line-height:1.7}
-.chat-fullscreen .recipe-turn .chat-answer{font-size:16px;line-height:1.7}
+.chat-fullscreen .dish-turn .chat-answer,.chat-fullscreen .recipe-turn .chat-answer,.chat-fullscreen .conversation-turn .chat-answer{font-size:16px;line-height:1.7}
 .chat-dish{max-width:680px;margin:4px 0 12px;padding:22px 24px;border:1px solid var(--line);border-radius:20px;background:var(--soft)}
 .chat-dish-context{font-size:13px;line-height:1.5;color:var(--muted);margin:12px 0 4px}
 .chat-dish h3{font:400 29px/1.17 var(--serif);letter-spacing:-.5px;margin:10px 0 0;overflow-wrap:anywhere}
@@ -141,8 +140,7 @@ body[data-screen=scan] .notice{bottom:calc(max(14px,env(safe-area-inset-bottom))
  .pairing-preview{gap:8px}.pairing-preview li{font-size:16px;line-height:1.4}
  .pairing-source{font-size:12px;margin-top:14px}
  .result-pairing .scan-assistant-link{font-size:14px;min-height:54px;margin-top:18px}
- .chat-fullscreen .dish-turn .chat-answer{font-size:16px;line-height:1.65}
- .chat-fullscreen .recipe-turn .chat-answer{font-size:16px;line-height:1.65}
+ .chat-fullscreen .dish-turn .chat-answer,.chat-fullscreen .recipe-turn .chat-answer,.chat-fullscreen .conversation-turn .chat-answer{font-size:16px;line-height:1.65}
  .chat-dish{padding:20px 19px;border-radius:19px}
  .chat-dish h3{font-size:27px;line-height:1.2}
  .chat-dish-source{font-size:13px}

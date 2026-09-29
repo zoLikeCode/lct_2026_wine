@@ -1,4 +1,4 @@
-const CACHE = 'wine-server-v19-recipe-followup';
+const CACHE = 'wine-server-v21-conversation-context';
 const SHELL = ['/', '/app.js', '/app.css', '/chat.css', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/icon-maskable.png', '/assets/playfair.woff2', '/assets/no-bottle.svg'];
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => (k.startsWith('wine-shell-')||k.startsWith('wine-server-')) && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

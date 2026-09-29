@@ -206,7 +206,7 @@ function renderResult(entry,wine=entry?.wine,push=true){
   }else{const empty=document.createElement('p');empty.className='pairing-empty';empty.textContent='В карточке вина пока нет сочетаний. Помощник проверит, можно ли предложить конкретное блюдо.';panel.append(empty);}
   const source=document.createElement('p');source.className='pairing-source';source.textContent=names.length?'Сочетания из карточки портала «Своё Вино». Помощник поможет выбрать конкретное блюдо.':'Помощник учтёт это вино и ваш снимок.';panel.append(source);
   const button=$('ask-about-scan');if(button){button.textContent='Подобрать блюдо с помощником';panel.append(button);}
-  card.querySelector('.wine-info .traits').after(panel);
+  $('wine-card').querySelector('.wine-extra').after(panel);
  }
  updatePersonal(w);handleBrokenImages($('wine-card'));
  if($('ask-about-scan'))$('ask-about-scan').onclick=()=>{showView('assistant');const name=String(wine?.name||'').trim();$('assistant-input').value=recognizedScan?(name?'Что приготовить к «'+name+'»?':'Что приготовить к этому вину?'):'Помоги определить вино на фото';$('assistant-input').focus();};
@@ -228,21 +228,38 @@ let rankJob=0;
 async function loadRanking(){const own=++rankJob;document.querySelectorAll('[data-ranking]').forEach(b=>b.classList.toggle('active',b.dataset.ranking===rankingMode));$('ranking-list').innerHTML='<p class="muted">Собираем рейтинг…</p>';try{await initPromise;const data=await api('ranking?mode='+rankingMode);if(own!==rankJob)return;$('ranking-total').textContent=rankingMode==='scans'?`Всего сканов: ${data.total_scans}`:`Всего оценок: ${data.total_ratings}`;const root=$('ranking-list');root.replaceChildren();if(!data.items.length){root.innerHTML=empty(rankingMode==='scans'?'scan':'star',rankingMode==='scans'?'Первый скан — за вами.':'Первая оценка — за вами.',rankingMode==='scans'?'Здесь появятся вина, которые сканируют чаще всего.':'Поставьте оценку в карточке вина, чтобы начать общий рейтинг.',true);bindEmpty(root);}data.items.forEach((w,i)=>{const b=document.createElement('button');b.className='ranking-row';b.innerHTML=`<span class="rank-number">${String(i+1).padStart(2,'0')}</span>${img(w)}<span class="row-copy"><small>${esc(w.winery)}</small><b>${esc(w.name)}</b><small>${esc(w.category)}</small></span><span class="rank-value">${rankingMode==='scans'?w.scan_count:w.average_rating.toFixed(1)}<small>${rankingMode==='scans'?'сканирований':'из 5 · оценок: '+w.rating_count}</small></span>`;b.onclick=()=>openWine(w);handleBrokenImages(b);root.append(b);});}catch(e){if(own===rankJob)$('ranking-list').innerHTML=empty('info','Не удалось загрузить рейтинг',e.message,false);}}
 document.querySelectorAll('[data-ranking]').forEach(b=>b.onclick=()=>{rankingMode=b.dataset.ranking;loadRanking();});
 function updatePreferenceCopy(){if(!$('preference-copy'))return;const n=Object.values(productData.preferences).filter(x=>x.favorite||x.rating>=4).length;$('preference-copy').textContent=n?`Вин в основе подбора: ${n}. Учитываем избранное, высокие оценки и вашу историю сканов.`:'Сохраняйте вина и ставьте оценки — подбор станет ближе к вашему вкусу.';}
-const chatContext=[];let chatBusy=false,lastDish=null;
+const chatContext=[];let chatBusy=false,lastDish=null,conversationScanId=null;
 function isRecipeFollowup(message){
  return /рецепт|ингредиент|приготов|готов(?:ить|к|ят|ится)|пошагов|пожар|запеч|запека|свар|туш(?:ить|и)|испеч|выпека|маринова|сколько\s+(?:минут|времени)|что\s+нужно\s+для|какие\s+продукты|как\s+(?:это|его|ее|её)?\s*сделать/i.test(message);
 }
+function asksForDishWithWine(message){
+ const query=message.toLowerCase();
+ return /с\s+чем\s+сочета|(?:какие|какое|что).{0,30}(?:блюд|закуск|гарнир)/.test(query)||
+  /(?:блюд|закус|ед[ыу]|гарнир|приготов|подат|сочета|сервир|ужин|к столу)/.test(query)&&
+  /(?:вин[оауеым]|к\s*[«"]|к\s+нему|с\s+ним)/.test(query);
+}
+function asksAboutScan(message){
+ return /фото|сним|скан|этикет|распозн|бутылк|(?:это|этого|этом|этому|этим)\s+вин|что\s+за\s+вин|какое\s+это\s+вин/i.test(message);
+}
+function asksForWineRecommendation(message){
+ const query=message.toLowerCase();
+ return /(?:подбер|посовет|порекоменд|найд|выбер|предлож|советуешь).{0,90}(?:вин[оа]|бутылк|красн|бел|розов|игрист)/.test(query)||
+  /(?:какое|какие).{0,20}вин[оа].{0,50}(?:купить|взять|выбрать|посовет|порекоменд)/.test(query)||
+  /(?:ищу|хочу).{0,30}вин[оа]/.test(query);
+}
 function renderAssistantAttachment(){
  const box=$('assistant-attachment');box.hidden=!assistantAttachment;
- $('assistant-input').placeholder=assistantAttachment?.intent==='dish_pairing'?'Какое блюдо приготовить к этому вину?':assistantAttachment?'Спросите о снимке…':lastDish?'Например, как приготовить это блюдо?':'Например, красное к стейку…';
+ $('assistant-input').placeholder=assistantAttachment?.intent==='dish_pairing'?'Какое блюдо приготовить к этому вину?':assistantAttachment?'Спросите о снимке…':lastDish?'Спросите о блюде или его рецепте…':'Спросите о вине, блюде или рецепте…';
  const welcome=$('chat-messages').querySelector('.assistant-welcome');
- if(welcome){welcome.querySelector('h2').textContent=assistantAttachment?.intent==='dish_pairing'?'Что приготовить к этому вину?':assistantAttachment?'Поможем разобраться со снимком':'Какое вино ищем?';welcome.querySelector('p').textContent=assistantAttachment?.intent==='dish_pairing'?'Фото вина уже прикреплено. Спросите о блюде или отправьте готовый запрос.':assistantAttachment?'Фото уже прикреплено. Спросите, что на нём.':'Напишите, что вам нравится, или что сегодня на ужин.';welcome.querySelector('.prompt-list').hidden=!!assistantAttachment;}
+ if(welcome){welcome.querySelector('h2').textContent=assistantAttachment?.intent==='dish_pairing'?'Что приготовить к этому вину?':assistantAttachment?'Поможем разобраться со снимком':'Чем помочь?';welcome.querySelector('p').textContent=assistantAttachment?.intent==='dish_pairing'?'Фото вина уже прикреплено. Спросите о блюде или отправьте готовый запрос.':assistantAttachment?'Фото уже прикреплено. Спросите, что на нём.':'Спросите о вине, блюде, рецепте или сочетании к столу.';welcome.querySelector('.prompt-list').hidden=!!assistantAttachment;}
  if(!assistantAttachment)return;
  $('attachment-image').src=assistantAttachment.preview;
  $('attachment-label').textContent=assistantAttachment.name||'Снимок скана';
 }
 function attachScan(entry){
  if(!entry?.server_id)return;
+ if(conversationScanId!==entry.server_id){chatContext.length=0;lastDish=null;}
+ conversationScanId=entry.server_id;
  if(lastDish?.scanId!==entry.server_id)lastDish=null;
  assistantAttachment={scanId:entry.server_id,preview:entry.thumb||'/api/product/scans/'+encodeURIComponent(entry.server_id)+'/image',name:entry.wine?.name||'Снимок скана'};
  assistantAttachment.intent=!entry.no_wine&&entry.wine?.slug===currentWine?.slug?'dish_pairing':null;
@@ -254,26 +271,42 @@ async function askAssistant(message){
  const attachment=assistantAttachment;
  message=message.trim()||(attachment?.intent==='dish_pairing'?'Что приготовить к этому вину?':attachment?'Помоги определить вино на фото.':'');
  if(chatBusy||!message)return;
- const recipeFollowup=!!lastDish&&isRecipeFollowup(message)&&(!attachment||attachment.scanId===lastDish.scanId);
- const intent=recipeFollowup?'dish_recipe':attachment?.intent==='dish_pairing'?'dish_pairing':null;
- const scanId=recipeFollowup?lastDish.scanId:attachment?.scanId;
+ const wineSwitch=asksForWineRecommendation(message);
+ const recipeFollowup=!wineSwitch&&!!lastDish&&isRecipeFollowup(message)&&(!attachment||attachment.scanId===lastDish.scanId);
+ const dishPairing=!!attachment&&!wineSwitch&&!recipeFollowup&&asksForDishWithWine(message);
+ const usedAttachment=!!attachment&&(dishPairing||asksAboutScan(message)||wineSwitch);
+ const intent=recipeFollowup?'dish_recipe':dishPairing?'dish_pairing':null;
+ const scanId=recipeFollowup?lastDish.scanId:usedAttachment?attachment.scanId:null;
+ const previousContext=wineSwitch?[]:chatContext.slice(-6).map(turn=>({...turn}));
+ const request={message,context:previousContext,...(scanId?{scan_id:scanId}:{}),...(intent?{intent}:{}),...(recipeFollowup?{dish_name:lastDish.name}:{})};
+ // Keep the whole JSON request below the backend's 8192-byte body limit.
+ const encoder=new TextEncoder();
+ while(encoder.encode(JSON.stringify(request)).length>7600&&previousContext.length){
+  if(previousContext[0].content.length>100)previousContext[0].content=previousContext[0].content.slice(0,Math.floor(previousContext[0].content.length/2));
+  else previousContext.shift();
+ }
  chatBusy=true;$('send-button').disabled=true;$('voice-button').disabled=true;$('assistant-input').value='';
  const root=$('chat-messages');root.querySelector('.assistant-welcome')?.remove();
  const turn=document.createElement('div');turn.className='chat-turn';
- turn.innerHTML=`<div class="chat-user">${attachment?`<img class="chat-attached-photo" src="${esc(attachment.preview)}" alt="Прикреплённый снимок этикетки">`:''}<span>${esc(message)}</span></div><div class="chat-answer">Подбираем вино…</div>`;
+ turn.innerHTML=`<div class="chat-user">${usedAttachment?`<img class="chat-attached-photo" src="${esc(attachment.preview)}" alt="Прикреплённый снимок этикетки">`:''}<span>${esc(message)}</span></div><div class="chat-answer">${wineSwitch?'Подбираем вино…':'Готовим ответ…'}</div>`;
  if(intent==='dish_pairing')turn.querySelector('.chat-answer').textContent='Подбираем блюдо…';
  if(intent==='dish_recipe')turn.querySelector('.chat-answer').textContent='Готовим рецепт…';
  root.append(turn);root.scrollTop=root.scrollHeight;
  try{
   await initPromise;
-  const data=await api('assistant',{message,context:chatContext,...(scanId?{scan_id:scanId}:{}),...(intent?{intent}:{}),...(recipeFollowup?{dish_name:lastDish.name}:{})});
-  chatContext.push(message);if(chatContext.length>3)chatContext.shift();
-  if(intent==='dish_pairing'){
-   const name=String(data.dishes?.[0]?.name||'').trim();lastDish=data.recommendation_type==='dish'&&name&&scanId?{scanId,name}:null;
-  }else if(!recipeFollowup)lastDish=null;
-  const recipeAnswer=intent==='dish_recipe'||data.recommendation_type==='dish_recipe';
+  const data=await api('assistant',request);
+  const wineAnswer=!data.recommendation_type||data.recommendation_type==='wine';
+  if(wineSwitch||wineAnswer)chatContext.length=0;
+  chatContext.push({role:'user',content:message.slice(0,600)},{role:'assistant',content:String(data.text||'').slice(0,600)});
+  if(chatContext.length>6)chatContext.splice(0,chatContext.length-6);
+  if(data.recommendation_type==='dish'){
+   const name=String(data.dishes?.[0]?.name||'').trim();
+   if(name&&scanId)lastDish={scanId,name};
+  }else if(wineSwitch||wineAnswer)lastDish=null;
+  const recipeAnswer=data.recommendation_type==='dish_recipe';
   if(data.recommendation_type==='dish')turn.classList.add('dish-turn');
   if(recipeAnswer)turn.classList.add('recipe-turn');
+  if(data.recommendation_type==='conversation')turn.classList.add('conversation-turn');
   turn.querySelector('.chat-answer').innerHTML=`<p>${esc(data.text)}</p>`;
   if(data.warning){const warning=document.createElement('p');warning.className='muted';warning.textContent=data.warning;turn.append(warning);}
   if(!recipeAnswer&&data.recommendation_type==='dish'&&Array.isArray(data.dishes)&&data.dishes.length){
@@ -286,8 +319,8 @@ async function askAssistant(message){
    }
    turn.append(panel);
   }
-  for(const w of (data.recommendation_type==='dish'||recipeAnswer?[]:(data.items||[]))){const result=document.createElement('div');result.className='chat-result';result.append(wineRow(w,w.category,()=>openWine(w)));const reason=document.createElement('p');reason.className='reason';reason.textContent=w.reason;result.append(reason);turn.append(result);}
-  if(assistantAttachment===attachment)removeAssistantAttachment();else if(!assistantAttachment)renderAssistantAttachment();
+  for(const w of (['dish','dish_recipe','conversation'].includes(data.recommendation_type)?[]:(data.items||[]))){const result=document.createElement('div');result.className='chat-result';result.append(wineRow(w,w.category,()=>openWine(w)));const reason=document.createElement('p');reason.className='reason';reason.textContent=w.reason;result.append(reason);turn.append(result);}
+  if(usedAttachment&&assistantAttachment===attachment)removeAssistantAttachment();else renderAssistantAttachment();
  }catch(e){turn.querySelector('.chat-answer').textContent=e.message+' Запрос сохранён в поле ввода — можно отправить ещё раз.';$('assistant-input').value=message;}
  finally{chatBusy=false;$('send-button').disabled=false;$('voice-button').disabled=false;root.scrollTop=Math.max(0,root.scrollTop+turn.getBoundingClientRect().top-root.getBoundingClientRect().top);}
 }

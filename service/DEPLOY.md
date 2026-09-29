@@ -66,6 +66,17 @@ curl -F image=@photo.jpg http://HOST:8080/v1/search
 
 Латентность на поде от отправки фото до ответа (снимки 4032×3024): среднее 1.2 с, p95 1.5 с.
 
+## Публичный адрес на RunPod
+
+В настройках пода Expose HTTP Ports: `8080`. Сервис доступен снаружи по
+`https://<POD_ID>-8080.proxy.runpod.net` (POD_ID — в карточке пода или `echo $RUNPOD_POD_ID`):
+
+- `GET  /health`, `POST /v1/search`, `POST /v1/eval/predict` — как выше;
+- `/docs` — Swagger: можно загрузить фото прямо из браузера и посмотреть ответ.
+
+CORS открыт для любых доменов (фронт может звать сервис из браузера); сузить —
+`CORS_ORIGINS="https://our-front.app" bash start.sh`.
+
 ## Проверка после деплоя
 
 ```

@@ -32,6 +32,7 @@ import os
 import time
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image, ImageOps
 
 BACKEND = os.environ.get("WINE_BACKEND", "qwen").lower()
@@ -49,6 +50,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger("wine-scanner")
 
 app = FastAPI(title="Сканер российских вин", version="2.0")
+# Фронт команды ходит в сервис из браузера с другого домена — разрешаем CORS.
+# CORS_ORIGINS="https://site1,https://site2" сужает список; по умолчанию — любой источник.
+_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",") if o.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=_origins, allow_methods=["GET", "POST", "OPTIONS"],
+                   allow_headers=["*"])
 _finder = None
 
 

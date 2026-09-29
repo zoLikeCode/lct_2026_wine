@@ -1,0 +1,12 @@
+# python train_v3.py --exp v3   (RunPod A100 80GB, 29.09.2026), ключевые строки лога
+{"event": "data", "refs": 2102, "inet_train": 305, "inet_val": 78, "inet_val_wines": 62, "extras": 1991}
+trainable params: 87,293,952 || all params: 8,232,087,792 || trainable%: 1.0604
+{"event": "start", "per_epoch": 1710, "steps_total": 54}
+{"event": "eval", "at": "step0 (= v2)", "val_top1": 0.9231, "val_top5": 0.9744, "n": 78}
+{"event": "train", "step": 5, "loss": 0.1362, "acc": 0.975, "pos_cos": 0.931, "hardest_neg_cos": 0.732, "ref_cos": 0.396, "sec_per_step": 62.8}
+{"event": "train", "step": 20, "loss": 0.1329, "acc": 0.975, "pos_cos": 0.935, "hardest_neg_cos": 0.744, "ref_cos": 0.364}
+{"event": "eval", "at": "step20", "val_top1": 0.9231, "val_top5": 0.9744, "n": 78}
+{"event": "train", "step": 40, "loss": 0.1769, "acc": 0.969, "pos_cos": 0.93, "hardest_neg_cos": 0.741, "ref_cos": 0.333}
+{"event": "eval", "at": "step40", "val_top1": 0.9103, "val_top5": 0.9744, "n": 78}
+{"event": "eval", "at": "epoch1", "val_top1": 0.9231, "val_top5": 0.9744, "n": 78}
+{"event": "done", "best_val": [0.9231, 0.9744]}

@@ -1,0 +1,26 @@
+# python eval_v3.py --adapter runs/v3/epoch1 --tag v3e1   (RunPod A100 80GB, 29.09.2026)
+[v3e1] эталоны (2102, 4096)
+[v3e1] доп. эталоны (1991, 4096)
+[v3e1] кадры (379, 4096)
+
+=== Тест: 379 кадров, 137 вин ===
+вариант                           команды  команды-новые   организатора    top1    top5  по винам   исправлено/сломано vs v2 прод
+v2, один эталон                     96.0%          77.0%          96.4%   90.0%   98.9%     87.4%   1/14  порог 7.7 -> ЗНАЧИМО ХУЖЕ
+v2, доп. эталоны                    96.5%          86.1%          98.2%   93.4%   98.9%     91.3%
+v3e1, один эталон                   97.0%          78.7%          92.9%   90.5%   98.7%     87.6%   5/16  порог 9.2 -> ЗНАЧИМО ХУЖЕ
+v3e1, доп. эталоны                  96.0%          88.5%          92.9%   93.1%   98.4%     91.0%   5/6  порог 6.6 -> шум
+
+v3e1, доп. эталоны против v2 прода:
+   + an-odesskiy-chernyy-krasnoe-suhoe-11/own_IMG_20260921_195341.jpg
+   + erve-brut-shardone-beloe-bryut-115/own_dac06fa139a1_IMG_1705.jpg
+   + de-blancs-shardone-beloe-bryut-125/own_5896d044fc39_IMG_1720.jpg
+   + ryut-shardone-beloe-125/own_dd3a5cb0b8eb_IMG_20260926_193349.jpg
+   + a-golova-rkatsiteli-beloe-suhoe-12/own_17d87d6f7fbf_IMG_1957.jpg
+   - 35/own_67eca33e7c27_70.45_04-09-2026_13-35-37.webp   -> fanagoriya-formula-q-saperavi-krasnoe-suhoe-13
+   - erlo-krasnoe-suhoe-145/own_IMG_20260921_200458.jpg   -> usadba-mezyb-mezyb-kaberne-sovinon-krasnoe-suh
+   - 68.81_05-09-2026_15-46-31.webp                       -> soyuz-vino-soyuz-vino-muskat-beloe-polusladkoe
+   - 70.45_04-09-2026_13-35-37.webp                       -> fanagoriya-formula-q-saperavi-krasnoe-suhoe-13
+   - 94.97_02-09-2026_19-01-48.webp                       -> zhemchuzhnaya-9-pino-nuar-muskat-rozovyj-1
+   - non-krasnoe-suhoe-14/own_82639095f939_IMG_1657.jpg   -> imenie-sikory-gerts-sikory-kaberne-sovinon-kra
+
+# Контроль: eval_v3.py --adapter runs/v3/best (= копия v2) дал 0/0 против кешей v2 — пайплайн воспроизводится покадрово.

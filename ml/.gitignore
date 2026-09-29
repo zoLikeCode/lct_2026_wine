@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+outputs/
+.venv/
+.DS_Store
+
+# клон репозитория Qwen3-VL-Embedding (ставится через qwen_finetune/setup.sh)
+qwen_finetune/Qwen3-VL-Embedding/
+
+# прод-артефакты (ставятся setup.sh из wine_prod.tar)
+qwen_finetune/adapter/
+qwen_finetune/results/index_prod.npz
+qwen_finetune/catalog_cards.json
+wine_prod.tar
+hf/
+service_check.jsonl

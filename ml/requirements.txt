@@ -1,0 +1,14 @@
+# подготовка каталога
+rapidfuzz>=3.0        # fuzzy-матчинг slug и сверка OCR-текста
+pillow>=10.0
+imagehash>=4.3        # поиск визуально идентичных эталонных фото
+numpy>=1.24
+
+# эмбеддинги и поиск
+torch>=2.2            # инференс на MPS / CUDA / CPU
+transformers>=4.45    # SigLIP2, DINOv2, OWL-ViT
+huggingface-hub>=0.24
+
+# реранкинг
+opencv-python>=4.9    # ORB + RANSAC
+easyocr>=1.7          # опциональный текстовый сигнал (--with-ocr)

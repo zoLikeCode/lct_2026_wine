@@ -1,0 +1,12 @@
+# torch с CUDA ставится отдельно (образ PyTorch 2.8 / CUDA 12.x), здесь не пинится
+transformers>=4.57.3,<5
+qwen-vl-utils>=0.0.14
+peft>=0.17
+accelerate>=1.12.0
+huggingface_hub[hf_transfer]
+pillow
+numpy
+fastapi
+uvicorn
+python-multipart
+requests

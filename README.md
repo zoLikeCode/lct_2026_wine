@@ -8,6 +8,20 @@
 [`docs/findings.md`](docs/findings.md). Читать до того, как повторять
 гипотезы: часть очевидных идей уже проверена и не работает.
 
+## Быстрый старт (сервис для оценки)
+
+Нужен Linux с NVIDIA GPU от 24 ГБ и torch с CUDA (например, образ RunPod PyTorch 2.8).
+
+```
+git clone https://github.com/zoLikeCode/lct_2025_wine.git && cd lct_2025_wine
+bash setup.sh      # зависимости, адаптер + индекс (Google Drive), веса Qwen3-VL-Embedding-8B
+bash start.sh      # сервис на :8080
+curl -F image=@photo.jpg http://127.0.0.1:8080/v1/eval/predict     # {"slug": "..."}
+```
+
+Подробно — [`service/DEPLOY.md`](service/DEPLOY.md). Результаты скрипта оценки организаторов —
+[`eval_results/`](eval_results/).
+
 ## Текущее состояние
 
 | Что | Значение |

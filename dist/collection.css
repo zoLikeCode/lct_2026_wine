@@ -28,7 +28,7 @@ body[data-screen=scan] .viewfinder .scan-frame{border-color:#fffc;box-shadow:0 0
 body[data-screen=scan] .viewfinder .scan-frame i{border-color:#fff}.scan-frame-reticle:before,.scan-frame-reticle:after{background:#fff}
 body[data-screen=scan] .capture-side>span:last-child,body[data-screen=scan] .shutter-slot>span{color:#fff}
 body[data-screen=scan] .overlay-icon{background:#ffffff29;border-color:#ffffff70;color:#fff}
-body[data-screen=scan] .desktop-nav{background:#ffffffd6;border-color:#fffc}
+
 body[data-screen=scan] .camera-feedback{background:#fdfdf5e6;color:#4f4b46;border-color:#fff8;backdrop-filter:blur(20px)}
 
 .bottom-nav button.active{background:#ebe6dd}.account-monogram,.account-avatar{background:#eae5dc}
@@ -43,3 +43,7 @@ body[data-screen=scan] .camera-feedback{background:#fdfdf5e6;color:#4f4b46;borde
 #age-dialog:focus,#age-title:focus{outline:none}
 
 #entry-note-form .entry-lists{border:0;padding:0;margin:0}
+
+@media(min-width:761px) and (max-width:1000px){.app-header{gap:12px;padding-inline:16px}.portal-logo{width:132px;height:33px}.desktop-nav button{padding-inline:12px;font-size:13px}.header-actions .install-button{display:none}}
+
+.account-shortcuts{display:grid;gap:12px;width:max-content;max-width:100%}

@@ -2,11 +2,11 @@
 body[data-screen=scan]{background:#f4f1e9;color:#39352f}
 body[data-screen=scan] .viewfinder{--frame-width:min(352px,calc(100vw - 72px));--frame-height:min(44dvh,440px);--frame-top:max(120px,17dvh);isolation:isolate;background:#f4f1e9}
 body[data-screen=scan] .finder-idle{inset:0;background:#f4f1e9}
-body[data-screen=scan] .app-header{top:max(24px,env(safe-area-inset-top))}
-body[data-screen=scan] .desktop-nav{padding:5px;border:1px solid #fff9;background:#fcfaf2b8;backdrop-filter:blur(20px);box-shadow:0 4px 16px #46332206}
-body[data-screen=scan] .desktop-nav button{color:#6c6359}
-body[data-screen=scan] .desktop-nav button.active{background:#fffdf8;color:#8f3d42;box-shadow:none}
-body[data-screen=scan] .desktop-nav button:hover{background:#ffffffb3}
+
+
+
+
+
 body[data-screen=scan] .viewfinder .scan-frame{z-index:2;top:var(--frame-top);bottom:auto;left:50%;width:var(--frame-width);height:var(--frame-height);max-height:none;transform:translateX(-50%);border:1px solid #9d8a7140;border-radius:18px;box-shadow:0 0 0 100vmax #4e3f2b0a;opacity:1}
 body[data-screen=scan] .viewfinder .scan-frame i{width:24px;height:24px;border-width:1px;border-color:#9a7157b3;filter:none}
 body[data-screen=scan] .viewfinder .scan-frame i:nth-child(1){border-radius:18px 0 0 0}

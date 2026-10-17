@@ -9,3 +9,35 @@
 @media(max-width:700px){.cellar-dialog>.dialog-head{top:-20px}}
 
 .account-security{border-top:1px solid var(--line);padding-top:18px;font-size:13px}.account-security summary{cursor:pointer;min-height:44px;color:var(--wine)}.account-security .cellar-form{margin-top:8px;border-top:0;padding-top:0}
+
+/* Account navigation: reserve space so usernames never move adjacent controls. */
+.header-actions .profile-button{width:138px;min-width:0;display:flex;align-items:center;justify-content:flex-start;gap:9px;padding:0 14px;border-radius:24px;font-size:12px}
+.profile-button svg{width:20px;height:20px;flex:0 0 20px}.profile-button span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prompt-icon{background:transparent;border:0;box-shadow:none}.chat-auth-actions{display:flex;align-items:center;flex-wrap:wrap;gap:16px;margin-top:16px}.chat-auth-actions button{font-size:13px;min-height:44px}.chat-auth-actions .text-button{color:var(--wine)}
+#gallery-button{grid-column:1}.shutter-slot{grid-column:2}#history-camera-button,#camera-toggle-slot{grid-column:3}
+@media(max-width:760px){.app-header{gap:10px;padding-inline:12px}.portal-logo{width:110px;height:32px}.header-actions .profile-button{width:106px;min-width:0;padding-inline:10px;font-size:11px;gap:6px}.header-actions .install-button{display:none}.header-actions{gap:6px}.header-actions .icon-button:not(.profile-button){width:40px;min-width:40px}.bottom-nav button{font-size:10px}}
+/* Neutral translucent surfaces follow the portal reference without a yellow tint. */
+:root{--bg:#fbfaf7;--paper:#fff;--soft:#f1efea;--line:#e5e1da;--glass:#ffffffc9}
+.app-header,.header-actions .icon-button,.header-actions .install-button{background:#ffffffb8;border-color:#e5e1d9;backdrop-filter:blur(22px)}
+.desktop-nav button.active{background:#ebe6dd}.desktop-nav button:hover{background:#f1eeea}
+.prompt-list button,.account-block,.auth-panel,.list-cover,.collection-slot,#history-list,.chat-result{background:#f5f3efcc;border-color:#e3dfd8}
+.prompt-list button:hover,.list-cover:hover{background:#eeebe5}.prompt-icon{background:transparent}
+.assistant-emblem{background:#f1eeea;border-color:#e4dfd7;box-shadow:inset 0 1px #fff}.chat-user{background:#ece7df;border-color:#dfd8ce}
+body[data-screen=scan],body[data-screen=scan] .viewfinder,body[data-screen=scan] .finder-idle{background:#8b8a85}
+body[data-screen=scan] .viewfinder .scan-frame{border-color:#fffc;box-shadow:0 0 0 100vmax #14161740}
+body[data-screen=scan] .viewfinder .scan-frame i{border-color:#fff}.scan-frame-reticle:before,.scan-frame-reticle:after{background:#fff}
+body[data-screen=scan] .capture-side>span:last-child,body[data-screen=scan] .shutter-slot>span{color:#fff}
+body[data-screen=scan] .overlay-icon{background:#ffffff29;border-color:#ffffff70;color:#fff}
+body[data-screen=scan] .desktop-nav{background:#ffffffd6;border-color:#fffc}
+body[data-screen=scan] .camera-feedback{background:#fdfdf5e6;color:#4f4b46;border-color:#fff8;backdrop-filter:blur(20px)}
+
+.bottom-nav button.active{background:#ebe6dd}.account-monogram,.account-avatar{background:#eae5dc}
+
+/* First-visit age notice: white sheet and a softly dimmed, blurred backdrop. */
+#age-dialog{width:420px;max-width:calc(100% - 40px);padding:48px 36px 44px;margin:auto;border:0;border-radius:26px;background:white;box-shadow:0 24px 100px #12141324;text-align:center;color:#282824;max-height:calc(100dvh - 32px)}
+#age-dialog::backdrop{background:#292b2859;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#age-dialog h2{font:400 42px/1.2 var(--serif);margin:0 0 28px}#age-dialog p{font:400 14px/1.7 var(--sans,Arial,sans-serif);margin:0 0 30px;color:#514e49}
+#age-confirm{display:block;width:100%;min-height:52px;padding:14px 18px;border:0;border-radius:14px;background:var(--wine);color:#fff;font:500 14px/1.5 var(--sans,Arial,sans-serif);cursor:pointer}#age-confirm:hover{background:var(--deep)}#age-confirm:focus-visible{outline:2px solid #8f3d42;outline-offset:5px}
+@media(max-width:600px){#age-dialog{width:100%;max-width:100%;margin:auto 0 0;min-height:min(380px,70dvh);padding:48px 28px calc(52px + env(safe-area-inset-bottom));border-radius:26px 26px 0 0}#age-dialog h2{font-size:36px;margin-bottom:28px}#age-dialog p{font-size:14px;margin-bottom:30px}#age-confirm{min-height:52px}}
+
+#age-dialog:focus,#age-title:focus{outline:none}

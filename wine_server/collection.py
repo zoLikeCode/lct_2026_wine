@@ -37,6 +37,7 @@ class Collection:
             CREATE TABLE IF NOT EXISTS wine_account_sessions(id TEXT PRIMARY KEY,account TEXT,created REAL,last_seen REAL,expires REAL,label TEXT);
             CREATE INDEX IF NOT EXISTS account_sessions_owner ON wine_account_sessions(account);
             CREATE TABLE IF NOT EXISTS wine_auth_limits(key TEXT PRIMARY KEY,started REAL,attempts INTEGER);
+            CREATE TABLE IF NOT EXISTS wine_guest_assistant(profile TEXT PRIMARY KEY,state TEXT,token TEXT,updated REAL);
             ''')
         # Equal-cost password verification for unknown usernames.
         self.dummy=password_hash(secrets.token_urlsafe(24))
@@ -55,6 +56,25 @@ class Collection:
         with self.store.db() as db:
             sessions=[{'id':r['id'],'label':r['label'],'created':r['created'],'last_seen':r['last_seen'],'current':r['id']==s['session_id']} for r in db.execute('SELECT * FROM wine_account_sessions WHERE account=? AND expires>? ORDER BY last_seen DESC',(s['id'],time.time()))]
         return {'authenticated':True,'username':s['username'],'display_name':s['display_name'],'sessions':sessions}
+
+    def claim_guest_assistant(self,request):
+        if self.session(request):return None
+        now=time.time();token=secrets.token_hex(16);profile=request.state.profile
+        with self.store.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            row=db.execute('SELECT state,updated FROM wine_guest_assistant WHERE profile=?',(profile,)).fetchone()
+            if row and row['state']=='used':
+                raise HTTPException(401,{'code':'assistant_sign_in','message':'Чтобы продолжить разговор с сомелье, войдите или создайте аккаунт.'})
+            if row and now-row['updated']<120:
+                raise HTTPException(429,'Первый ответ ещё готовится. Дождитесь его.')
+            db.execute('INSERT OR REPLACE INTO wine_guest_assistant VALUES(?,?,?,?)',(profile,'pending',token,now))
+        return token
+
+    def finish_guest_assistant(self,profile,token,success):
+        if token is None:return
+        with self.store.db() as db:
+            if success:db.execute("UPDATE wine_guest_assistant SET state='used',updated=? WHERE profile=? AND token=?",(time.time(),profile,token))
+            else:db.execute('DELETE FROM wine_guest_assistant WHERE profile=? AND token=?',(profile,token))
 
     def rate_limit(self,request,username):
         now=time.time();ip=request.client.host if request.client else 'unknown'

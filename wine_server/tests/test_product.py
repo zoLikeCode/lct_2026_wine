@@ -7,7 +7,9 @@ import test_server
 from fastapi.testclient import TestClient
 
 class ProductTest(unittest.TestCase):
-    setUp=test_server.ServerTest.setUp
+    def setUp(self):
+        test_server.ServerTest.setUp(self)
+        self.c.post('/api/product/account/register',json={'username':'product.test','password':'Product-test-only-2026'})
     tearDown=test_server.ServerTest.tearDown
     def test_profile_isolation_and_persistent_rating_upsert(self):
         self.c.get('/api/product/bootstrap')
@@ -33,7 +35,7 @@ class ProductTest(unittest.TestCase):
         self.c.get('/api/product/bootstrap')
         r=self.c.post('/api/predict',files={'image':('a.jpg',self.data)},headers={'X-Device-ID':'phone'})
         scan_id=r.json()['id'];self.assertEqual(self.c.get('/api/product/history').json()['items'][0]['id'],scan_id)
-        with TestClient(self.app) as other:self.assertEqual(other.get('/api/product/history').json()['items'],[])
+        with TestClient(self.app) as other:self.assertEqual(other.get('/api/product/history').status_code,401)
         self.assertEqual(self.c.get('/admin/api/image/scan/'+scan_id).status_code,401)
         self.assertEqual(self.c.get('/api/product/ranking').json()['total_scans'],1)
         self.assertEqual(self.c.get('/api/product/wines/merlo/image').status_code,404)

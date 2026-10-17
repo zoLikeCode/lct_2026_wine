@@ -397,7 +397,9 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
     def product_recommendations(request:Request):return {'items':product.recommendations(request.state.profile)}
 
     @app.get('/api/product/history')
-    def product_history(request:Request):return {'items':product.history(request.state.profile)}
+    def product_history(request:Request):
+        if not product.collection.session(request):raise HTTPException(401,'Войдите, чтобы открыть историю сканирований')
+        return {'items':product.history(request.state.profile)}
 
     @app.get('/api/product/scans/{scan_id}/image')
     def product_scan_image(scan_id:str,request:Request):
@@ -417,7 +419,13 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
     async def product_assistant(body:dict,request:Request):
         context=body.get('context',[])
         if not isinstance(context,list):raise HTTPException(422,'Некорректный контекст')
-        return await asyncio.to_thread(product.assistant,request.state.profile,body.get('message',''),context,body.get('scan_id'),body.get('intent'),body.get('dish_name'))
+        token=product.collection.claim_guest_assistant(request)
+        success=False
+        try:
+            result=await asyncio.to_thread(product.assistant,request.state.profile,body.get('message',''),context,body.get('scan_id'),body.get('intent'),body.get('dish_name'))
+            success=True
+            return result
+        finally:product.collection.finish_guest_assistant(request.state.profile,token,success)
 
     @app.get('/admin')
     @app.get('/admin/')

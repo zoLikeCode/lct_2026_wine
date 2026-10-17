@@ -44,7 +44,7 @@ function cameraToggleState(state) {
  if(state==='live'){
   slot.prepend(button);slot.hidden=false;$('history-camera-button').hidden=true;
  }else{
-  $('shutter-button').parentElement.prepend(button);slot.hidden=true;$('history-camera-button').hidden=false;
+  $('shutter-button').parentElement.prepend(button);slot.hidden=true;$('history-camera-button').hidden=!productData.account?.authenticated;
  }
 }
 function stopCamera() {
@@ -59,8 +59,16 @@ function turnOffCamera() {cameraWanted=false;stopCamera();}
 function cancelScan() {job++;controller?.abort();controller=null;setBusy(false);stopCamera();$('camera-button').focus({preventScroll:true});}
 const views=['scan','result','history','collection','ranking','assistant','account'];
 let currentWine=null,previousView='scan',collectionFilter='favorite',rankingMode='scans',productData={preferences:{},collection:[],recommendations:[]},wineCache=new Map(),viewJob=0,assistantAttachment=null;
+function syncAccountControls(account){
+ const authenticated=!!account?.authenticated;productData.account=account||{authenticated:false};
+ const label=$('header-account-label');label.textContent=authenticated?account.username:'Логин';label.parentElement.title=authenticated?account.username:'Войти в аккаунт';label.parentElement.setAttribute('aria-label',authenticated?'Личный кабинет: '+account.username:'Войти в аккаунт');
+ document.querySelectorAll('[data-view="history"]').forEach(button=>button.hidden=!authenticated||(button.id==='history-camera-button'&&!!stream));
+ $('catalog-history').hidden=!authenticated;
+ if(authenticated)document.querySelectorAll('.chat-auth-actions').forEach(actions=>actions.parentElement.replaceChildren('Вы вошли. Можно продолжить разговор с сомелье.'));
+ if(!authenticated&&currentView==='history')showView('account',false);
+}
 function showView(name,push=true) {
- if(!views.includes(name))name='scan';const changed=currentView!==name;
+ if(!views.includes(name))name='scan';if(name==='history'&&!productData.account?.authenticated)name='account';const changed=currentView!==name;
  if(changed)$('notice').hidden=true;
  if(name==='assistant'&&currentView==='result')attachScan(currentResult);
  if(name!=='scan'){cameraWanted=false;if(busy)cancelScan();else stopCamera();}
@@ -120,7 +128,7 @@ async function startCamera(automatic=false) {
  } catch(error) {
   if(generation!==cameraGeneration)return;
   stopCamera();cameraWanted=false;
-  scannerState('unavailable',error.name==='NotAllowedError'?'Разрешите камеру или загрузите готовое фото':error.name==='NotFoundError'?'Камера не найдена. Можно загрузить фото':'Камера недоступна. Попробуйте загрузить фото');
+  scannerState('unavailable',error.name==='NotAllowedError'?'Разрешите камеру или загрузите готовое фото вина':error.name==='NotFoundError'?'Камера не найдена. Можно загрузить фото':'Камера недоступна. Попробуйте загрузить фото');
  } finally {if(generation===cameraGeneration){cameraStarting=false;$('camera-button').disabled=busy;}}
 }
 $('camera-button').onclick=()=>cameraWanted?turnOffCamera():startCamera(false);
@@ -194,7 +202,7 @@ async function processFile(file) {
 }
 
 const esc=escapeHTML;
-async function api(path,body){const r=await fetch('/api/product/'+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(path==='assistant'?30000:12000)});let data;try{data=await r.json();}catch{throw Error('Сервис не ответил. Попробуйте ещё раз.');}if(!r.ok)throw Error(typeof data.detail==='string'?data.detail:'Не удалось сохранить. Попробуйте ещё раз.');return data;}
+async function api(path,body){const r=await fetch('/api/product/'+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(path==='assistant'?30000:12000)});let data;try{data=await r.json();}catch{throw Error('Сервис не ответил. Попробуйте ещё раз.');}if(!r.ok){const error=Error(typeof data.detail==='string'?data.detail:data.detail?.message||'Не удалось сохранить. Попробуйте ещё раз.');error.code=data.detail?.code;error.status=r.status;throw error;}return data;}
 function remember(w){wineCache.set(w.slug,w);return w;}
 function img(w,cls=''){return `<img class="${cls}" src="${esc(portalCardData[w.slug]?.bottleImage||w.image||'/assets/no-bottle.svg')}" alt="${esc(w.name)}" loading="lazy">`;}
 function handleBrokenImages(root){root.querySelectorAll('img').forEach(im=>im.addEventListener('error',()=>{if(!im.src.endsWith('/assets/no-bottle.svg')){im.src='/assets/no-bottle.svg';}},{once:true}));}
@@ -383,14 +391,14 @@ async function askAssistant(message){
   }
   for(const w of (['dish','dish_recipe','conversation'].includes(data.recommendation_type)?[]:(data.items||[]))){const result=document.createElement('div');result.className='chat-result';result.append(wineRow(w,w.category,()=>openWine(w)));const reason=document.createElement('p');reason.className='reason';reason.textContent=w.reason;result.append(reason);turn.append(result);}
   if(usedAttachment&&assistantAttachment===attachment)removeAssistantAttachment();else renderAssistantAttachment();
- }catch(e){turn.querySelector('.chat-answer').textContent=e.message+' Запрос сохранён в поле ввода — можно отправить ещё раз.';$('assistant-input').value=message;}
+ }catch(e){const answer=turn.querySelector('.chat-answer');answer.textContent=e.message;if(e.code==='assistant_sign_in'){const actions=document.createElement('div');actions.className='chat-auth-actions';for(const [mode,label] of [['login','Войти'],['register','Создать аккаунт']]){const button=document.createElement('button');button.type='button';button.className=mode==='login'?'cellar-primary':'text-button';button.textContent=label;button.onclick=()=>window.collectionUI?.signIn(mode);actions.append(button);}answer.append(actions);}else answer.append(' Запрос сохранён в поле ввода — можно отправить ещё раз.');$('assistant-input').value=message;}
  finally{chatBusy=false;$('send-button').disabled=false;$('voice-button').disabled=false;root.scrollTop=Math.max(0,root.scrollTop+turn.getBoundingClientRect().top-root.getBoundingClientRect().top);}
 }
 $('assistant-form').onsubmit=e=>{e.preventDefault();askAssistant($('assistant-input').value.trim());};$('assistant-input').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();askAssistant($('assistant-input').value.trim());}};document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>askAssistant(b.dataset.prompt));
 let speech=null;
 $('voice-button').onclick=()=>{const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Speech){notice('В этом браузере голосовой ввод недоступен. Используйте микрофон клавиатуры телефона или введите запрос.');$('assistant-input').focus();return;}if(speech){speech.stop();return;}speech=new Speech();speech.lang='ru-RU';speech.interimResults=true;speech.continuous=false;const before=$('assistant-input').value;speech.onstart=()=>{$('voice-button').classList.add('recording');$('voice-button').setAttribute('aria-label','Остановить запись');$('voice-status').textContent='Слушаю… Нажмите, чтобы остановить';};speech.onresult=e=>{$('assistant-input').value=(before+' '+Array.from(e.results).map(r=>r[0].transcript).join(' ')).trim().slice(0,1600);};speech.onerror=e=>{notice(e.error==='not-allowed'?'Разрешите микрофон в настройках браузера или напишите запрос.':'Не удалось распознать речь. Попробуйте ещё раз или напишите запрос.');};speech.onend=()=>{speech=null;$('voice-button').classList.remove('recording');$('voice-button').setAttribute('aria-label','Продиктовать запрос');$('voice-status').textContent='Проверьте текст и нажмите отправить';};try{speech.start();}catch{speech=null;notice('Голосовой ввод не запустился. Можно написать запрос.');}};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)speech?.stop();});
-async function initializeProduct(){const cached=store.get('wine-product',null);if(cached){productData=cached;renderDiscovery();updatePreferenceCopy();}try{const data=await api('bootstrap');productData=data;store.set('wine-product',data);data.collection.forEach(remember);renderDiscovery();updatePreferenceCopy();if($('assistant-mode'))$('assistant-mode').textContent=data.assistant_mode==='ai'?'ИИ-помощник · рекомендации по каталогу':'Подбор по каталогу';}catch{if(!cached){$('discovery-list').innerHTML=empty('info','Каталог пока недоступен','Проверьте интернет и обновите страницу.',false);}}}
+async function initializeProduct(){const cached=store.get('wine-product',null);if(cached){productData=cached;renderDiscovery();updatePreferenceCopy();}try{const data=await api('bootstrap');productData=data;syncAccountControls(data.account);store.set('wine-product',data);data.collection.forEach(remember);renderDiscovery();updatePreferenceCopy();if($('assistant-mode'))$('assistant-mode').textContent=data.assistant_mode==='ai'?'ИИ-помощник · рекомендации по каталогу':'Подбор по каталогу';}catch{if(!cached){$('discovery-list').innerHTML=empty('info','Каталог пока недоступен','Проверьте интернет и обновите страницу.',false);}}}
 const initPromise=Promise.all([initializeProduct(),loadPortalCardData()]);
 // Opening the scanner leaves the camera off until the visitor taps its control.
 cameraToggleState('idle');

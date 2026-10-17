@@ -17,3 +17,16 @@ models/
 .venv-portable/
 .env
 .env.*
+
+# Website runtime and private user data are kept outside Git.
+.pytest_cache/
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+wine_dataset/
+wine_media/
+wine_server/reports/
+ДОСТУП.md
+QR-Android.png
+!.env.example

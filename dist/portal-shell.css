@@ -99,3 +99,7 @@ body[data-screen=assistant]{background:#fefdfa}#assistant-view.chat-fullscreen{p
 @media(max-width:380px){.app-shell{padding-inline:16px}.collection-intro h1{font-size:34px}.wine-grid{gap:12px}.mini-visual{height:180px}.mini-copy{padding-inline:12px}.mini-wine h3{font-size:17px}.segmented{gap:16px}.segmented button{font-size:13px}.assistant-welcome h2{font-size:30px}.portal-dishes-many ul{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-height:700px) and (max-width:760px){.assistant-emblem{display:none}.assistant-welcome{margin:0}.assistant-welcome>p{margin-bottom:16px}.prompt-list button{min-height:52px}.prompt-icon{width:32px;height:32px}.chat-messages{padding:12px 0}}
 @media(prefers-reduced-motion:reduce){.mini-wine,.mini-visual>img{transition:none}}
+
+/* Fixed text slots keep wine cards and their actions aligned. */
+.mini-wine h3,.mini-wine .mini-meta{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-overflow:ellipsis;block-size:2lh;min-block-size:2lh;max-block-size:2lh}
+.mini-wine .mini-producer,.mini-wine .mini-category{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;block-size:1lh;min-block-size:1lh}

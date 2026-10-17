@@ -26,7 +26,7 @@ window.collectionUI=(()=>{
   if(q)wines=wines.filter(w=>[w.name,w.winery,w.grapes,w.note].join(' ').toLocaleLowerCase('ru').includes(q));if(color)wines=wines.filter(w=>w.category.toLowerCase().includes(color));
   wines.sort((a,b)=>b.updated-a.updated);
   const root=$c('collection-list');root.replaceChildren();
-  for(const w of wines){const card=miniWine(w);card.classList.add('cellar-wine');if(list)card.style.order=String(list.members.find(m=>m.slug===w.slug)?.slot||0);const foot=document.createElement('div');foot.className='cellar-card-footer';foot.innerHTML=`<div class="wine-statuses">${w.favorite?'<span>Хочу попробовать</span>':''}${w.quantity?`<span>${w.quantity} бут. дома</span>`:''}${w.tried?'<span>Пробовал</span>':''}</div>${w.note?`<p class="cellar-note">${e(w.note)}</p>`:''}<button class="text-button">Мои записи <span aria-hidden="true">↗</span></button>`;foot.querySelector('button').onclick=()=>editWine(w);card.append(foot);root.append(card);}
+  for(const w of wines){const card=miniWine(w);card.classList.add('cellar-wine');if(list)card.style.order=String(list.members.find(m=>m.slug===w.slug)?.slot||0);root.append(card);}
   if(list?.size&&!q&&!color){const used=new Set(list.members.map(m=>m.slot));for(let slot=0;slot<list.size;slot++){if(used.has(slot))continue;const button=document.createElement('button');button.className='collection-slot';button.style.order=String(slot);button.innerHTML=`<span class="slot-number">${String(slot+1).padStart(2,'0')}</span><span class="slot-plus" aria-hidden="true">+</span><strong>Место для открытия</strong><small>Выберите вино</small>`;button.onclick=()=>openCatalog({id:list.id,slot});root.append(button);}}
   if(list)root.replaceChildren(...[...root.children].sort((a,b)=>Number(a.style.order)-Number(b.style.order)));
   if(!root.children.length){const title=q||color?'Таких вин пока нет':'У каждого вина — своя история';const copy=q||color?'Измените поиск или цвет.':'Начните со скана или найдите знакомое вино в каталоге.';root.innerHTML=`<div class="cellar-empty"><span class="empty-glass" aria-hidden="true">${icons('glass')}</span><h2>${title}</h2><p>${copy}</p><button class="cellar-primary" id="empty-add">${q||color?'Сбросить фильтры':'Выбрать вино'}</button></div>`;$c('empty-add').onclick=()=>{if(q||color){$c('cellar-query').value='';$c('cellar-color').value='';render();}else openCatalog();};}
@@ -39,7 +39,7 @@ window.collectionUI=(()=>{
   handleBrokenImages(root);
   $c('entry-note-form').onsubmit=ev=>{ev.preventDefault();const form=ev.currentTarget,inputs=[...form.querySelectorAll('[data-entry-list]')];busy(ev.submitter,async()=>{
    form.querySelector('.form-error').hidden=true;inputs.forEach(input=>input.disabled=true);
-   try{for(const input of inputs){const selected=input.checked;if(selected===item.lists.includes(input.dataset.entryList))continue;await request('collection/lists/'+input.dataset.entryList,{action:selected?'add':'remove',slug:w.slug});}await refresh();paintWine();$c('entry-note-form').querySelector('button').focus({preventScroll:true});notice('Запись сохранена');}
+   try{for(const input of inputs){const selected=input.checked;if(selected===item.lists.includes(input.dataset.entryList))continue;await request('collection/lists/'+input.dataset.entryList,{action:selected?'add':'remove',slug:w.slug});}await refresh();closeDialog($c('collection-wine-dialog'));notice('Запись сохранена');}
    finally{inputs.forEach(input=>input.disabled=false);}
   },form);};
  }

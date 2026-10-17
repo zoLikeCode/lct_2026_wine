@@ -32,3 +32,15 @@ body[data-screen=scan] .app-header{display:none}body[data-screen=scan] .bottom-n
 @media(max-width:374px){.app-shell{padding-left:16px;padding-right:16px}.wine-grid{gap:24px 12px}.mini-visual{height:192px}.brand{font-size:21px}.segmented button{padding-left:10px;padding-right:10px}.collection-heading{gap:6px}.collection-heading>.text-button svg{display:none}.wine-info h1{font-size:28px}.bottom-nav{left:12px;right:12px}}
 @media(max-height:580px) and (max-width:760px){.capture-controls{bottom:calc(var(--nav-bottom) + 8px)}.scan-frame{top:10%;bottom:44%}.shutter-button{width:64px;height:64px}.capture-side{min-height:80px}.camera-feedback{bottom:calc(var(--nav-bottom) + 132px)}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}.spinner{border-right-color:white}}@supports not (backdrop-filter:blur(1px)){.app-header,.bottom-nav,.overlay-icon,.notice{background:#faf7ef}}
+
+.ranking-pagination{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:28px;padding-top:24px;border-top:1px solid var(--line)}
+.ranking-pagination[hidden]{display:none}
+.ranking-pagination button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;min-height:44px;padding:0;border:1px solid transparent;border-radius:50%;background:transparent;color:var(--muted);font:500 14px/1 var(--sans);font-variant-numeric:tabular-nums;transition:background .2s,border-color .2s,color .2s}
+.ranking-pagination button:hover:not(:disabled):not([aria-current=page]){background:var(--soft);border-color:var(--line);color:var(--wine)}
+.ranking-pagination button[aria-current=page]{background:var(--wine);border-color:var(--wine);color:var(--paper)}
+.ranking-pagination .ranking-page-arrow{border-color:var(--line);background:var(--paper);color:var(--wine)}
+.ranking-page-arrow svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.ranking-page-arrow.previous svg{transform:rotate(180deg)}
+.ranking-pagination button:disabled{opacity:.3;cursor:default}
+.ranking-pagination button:focus-visible{outline:2px solid var(--wine);outline-offset:4px}
+@media(max-width:600px){.ranking-pagination{gap:6px;margin-top:24px;padding-top:20px}.ranking-pagination button{flex-basis:36px;width:36px;min-height:44px;border-radius:22px;font-size:13px}.ranking-page-arrow svg{width:16px;height:16px}}

@@ -294,8 +294,35 @@ function renderCollection(){window.collectionUI?.render();}
 let searchJob=0,searchTimer;
 async function searchWines(){if(window.collectionUI){return window.collectionUI.search();}const q=$('wine-search').value.trim(),own=++searchJob,root=$('search-results');root.hidden=!q;if(!q)return;root.innerHTML='<p class="search-result-title">Ищем в каталоге…</p>';try{await initPromise;const data=await api('search?q='+encodeURIComponent(q));if(own!==searchJob)return;root.innerHTML=`<div class="search-result-heading"><p class="search-result-title">${data.items.length?'Найденные вина · '+data.items.length:'Не нашли такое вино. Попробуйте название винодельни или сорт.'}</p><button class="text-button" id="close-search" aria-label="Закрыть результаты поиска">${icons('close')}</button></div><div class="search-results-list"></div>`;$('close-search').onclick=()=>{$('wine-search').value='';searchWines();$('wine-search').focus();};data.items.forEach(w=>root.lastElementChild.append(wineRow(w,w.category+' · '+w.grapes,()=>openWine(w))));}catch(e){if(own===searchJob)root.textContent=e.message;}}
 $('catalog-search').onsubmit=e=>{e.preventDefault();clearTimeout(searchTimer);searchWines();};$('wine-search').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(searchWines,350);};
+const RANKING_PAGE_SIZE=7;
+const rankingPages={scans:1,rating:1},rankingData={scans:null,rating:null};
 let rankJob=0;
-async function loadRanking(){if($('ranking-note'))$('ranking-note').textContent=rankingMode==='scans'?'Сканы в приложении. Один человек может отсканировать вино несколько раз.':'Средняя оценка пользователей от 1 до 5. Рядом указано число оценок.';const own=++rankJob;document.querySelectorAll('[data-ranking]').forEach(b=>b.classList.toggle('active',b.dataset.ranking===rankingMode));$('ranking-list').innerHTML='<p class="muted">Собираем рейтинг…</p>';try{await initPromise;const data=await api('ranking?mode='+rankingMode);if(own!==rankJob)return;$('ranking-total').textContent=rankingMode==='scans'?`Всего сканов: ${data.total_scans}`:`Всего оценок: ${data.total_ratings}`;const root=$('ranking-list');root.replaceChildren();if(!data.items.length){root.innerHTML=empty(rankingMode==='scans'?'scan':'star',rankingMode==='scans'?'Первый скан — за вами.':'Первая оценка — за вами.',rankingMode==='scans'?'Здесь появятся вина, которые сканируют чаще всего.':'Поставьте оценку в карточке вина, чтобы начать общий рейтинг.',true);bindEmpty(root);}data.items.forEach((w,i)=>{const b=document.createElement('button');b.className='ranking-row';b.innerHTML=`<span class="rank-number">${String(i+1).padStart(2,'0')}</span>${img(w)}<span class="row-copy"><small>${esc(w.winery)}</small><b>${esc(w.name)}</b><small>${esc(w.category)}</small></span><span class="rank-value">${rankingMode==='scans'?w.scan_count:w.average_rating.toFixed(1)}<small>${rankingMode==='scans'?'сканирований':'из 5 · оценок: '+w.rating_count}</small></span>`;b.onclick=()=>openWine(w);handleBrokenImages(b);root.append(b);});}catch(e){if(own===rankJob)$('ranking-list').innerHTML=empty('info','Не удалось загрузить рейтинг',e.message,false);}}
+function changeRankingPage(page){
+ const data=rankingData[rankingMode];if(!data)return;const last=Math.max(1,Math.ceil(data.items.length/RANKING_PAGE_SIZE));
+ if(page<1||page>last||page===rankingPages[rankingMode])return;
+ rankingPages[rankingMode]=page;renderRanking(data);$('ranking-pagination').querySelector('[aria-current="page"]')?.focus({preventScroll:true});$('ranking-view').scrollIntoView({block:'start',behavior:'smooth'});
+}
+function renderRanking(data){
+ const mode=rankingMode,pageCount=Math.max(1,Math.ceil(data.items.length/RANKING_PAGE_SIZE));
+ const page=rankingPages[mode]=Math.min(rankingPages[mode],pageCount),offset=(page-1)*RANKING_PAGE_SIZE;
+ $('ranking-total').textContent=mode==='scans'?`Всего сканов: ${data.total_scans}`:`Всего оценок: ${data.total_ratings}`;
+ const root=$('ranking-list');root.replaceChildren();
+ if(!data.items.length){root.innerHTML=empty(mode==='scans'?'scan':'star',mode==='scans'?'Первый скан — за вами.':'Первая оценка — за вами.',mode==='scans'?'Здесь появятся вина, которые сканируют чаще всего.':'Поставьте оценку в карточке вина, чтобы начать общий рейтинг.',true);bindEmpty(root);}
+ data.items.slice(offset,offset+RANKING_PAGE_SIZE).forEach((w,i)=>{const b=document.createElement('button');b.className='ranking-row';b.innerHTML=`<span class="rank-number">${String(offset+i+1).padStart(2,'0')}</span>${img(w)}<span class="row-copy"><small>${esc(w.winery)}</small><b>${esc(w.name)}</b><small>${esc(w.category)}</small></span><span class="rank-value">${mode==='scans'?w.scan_count:w.average_rating.toFixed(1)}<small>${mode==='scans'?'сканирований':'из 5 · оценок: '+w.rating_count}</small></span>`;b.onclick=()=>openWine(w);handleBrokenImages(b);root.append(b);});
+ const nav=$('ranking-pagination');nav.replaceChildren();nav.hidden=pageCount<=1;
+ if(nav.hidden)return;
+ function button(label,target,ariaLabel){const b=document.createElement('button');b.type='button';if(label==='←'||label==='→'){b.className='ranking-page-arrow'+(label==='←'?' previous':'');b.innerHTML=icons('arrow');}else b.textContent=label;b.setAttribute('aria-label',ariaLabel);b.disabled=target<1||target>pageCount;if(target===page)b.setAttribute('aria-current','page');b.onclick=()=>changeRankingPage(target);nav.append(b);}
+ button('←',page-1,'Предыдущая страница');for(let n=1;n<=pageCount;n++)button(String(n),n,'Страница '+n);button('→',page+1,'Следующая страница');
+ const status=document.createElement('span');status.className='sr-only';status.setAttribute('aria-live','polite');status.textContent=`Страница ${page} из ${pageCount}`;nav.append(status);
+}
+async function loadRanking(){
+ const own=++rankJob,mode=rankingMode;
+ $('ranking-note').textContent=mode==='scans'?'Сканы в приложении. Один человек может отсканировать вино несколько раз.':'Средняя оценка пользователей от 1 до 5. Рядом указано число оценок.';
+ document.querySelectorAll('[data-ranking]').forEach(b=>b.classList.toggle('active',b.dataset.ranking===mode));
+ $('ranking-pagination').hidden=true;$('ranking-total').textContent='';$('ranking-list').innerHTML='<p class="muted">Собираем рейтинг…</p>';
+ try{await initPromise;const data=await api('ranking?mode='+mode);if(own!==rankJob)return;rankingData[mode]=data;renderRanking(data);}
+ catch(e){if(own===rankJob)$('ranking-list').innerHTML=empty('info','Не удалось загрузить рейтинг',e.message,false);}
+}
 document.querySelectorAll('[data-ranking]').forEach(b=>b.onclick=()=>{rankingMode=b.dataset.ranking;loadRanking();});
 function updatePreferenceCopy(){if(!$('preference-copy'))return;const n=Object.values(productData.preferences).filter(x=>x.rating>=4).length;$('preference-copy').textContent=n?`Вин в основе подбора: ${n}. Учитываем вина, которым вы поставили 4–5.`:'Сохраняйте вина и ставьте оценки — подбор станет ближе к вашему вкусу.';}
 const chatContext=[];let chatBusy=false,lastDish=null,conversationScanId=null;

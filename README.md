@@ -179,4 +179,4 @@ docs/portable.md       подробная инструкция по развёр
 
 ## Автодеплой сайта
 
-Push в `main` запускает проверки и обновление production. Актуальный frontend — `dist/`, API — `backend/`. [Устройство CI/CD, проверки и откат](docs/ci-cd.md).
+Push в `main` сразу обновляет production, без запуска автоматических тестов. Актуальный frontend — `dist/`, API — `backend/`. [Устройство CI/CD, проверки и откат](docs/ci-cd.md).

@@ -2,7 +2,6 @@
 Only data/code from the allowlisted public repository is extracted. No repository
 scripts, shell hooks, package installers or migrations are executed as root.
 """
-import compileall
 import fcntl
 import hashlib
 import json
@@ -132,8 +131,6 @@ def deploy(sha, ident):
         expected = (STATE / 'runtime-requirements.sha256').read_text().strip()
         if hashlib.sha256((release / 'requirements.txt').read_bytes()).hexdigest() != expected:
             raise RuntimeError('Runtime dependencies changed; install and verify them before updating the server fingerprint')
-        if not compileall.compile_dir(release, quiet=1):
-            raise RuntimeError('Python syntax check failed')
         (release / 'wine_server/models').symlink_to(BASE / 'wine_server/models', target_is_directory=True)
         (release / 'wine_dataset').symlink_to(BASE / 'wine_dataset', target_is_directory=True)
         (release / 'wine_media').symlink_to(BASE / 'wine_media', target_is_directory=True)

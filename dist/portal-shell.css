@@ -1,0 +1,101 @@
+/* Shared portal language: warm paper, authentic bottles and quiet glass controls. */
+:root{--bg:#fefdfa;--paper:#fffefa;--soft:#f8f1df;--line:#e9e3d8;--wine:#8f3d42;--deep:#712e33;--muted:#77716b;--glass:#fffefacc;--radius:32px}
+body{background:var(--bg)}
+.app-shell{max-width:1360px;padding:24px 48px 0}
+.app-header{height:80px;padding:0 24px;border-color:#eee8db;border-radius:28px;background:#fffefacc;box-shadow:inset 0 1px #fff,0 10px 32px #7c654305;backdrop-filter:blur(22px)}
+.brand{gap:0}.portal-logo{width:160px;height:40px;display:block}
+.desktop-nav{gap:8px}.desktop-nav button{padding:12px 20px;min-height:46px;font-size:14px}
+.desktop-nav button.active{background:#f8ecc9;color:var(--wine);font-weight:500}.desktop-nav button:hover{background:#faf3e1}
+.header-actions{gap:10px}.header-actions .icon-button,.install-button{width:44px;height:44px;border-color:#eae2d4;background:#fdf9ed}
+.page-view{padding-top:56px}.page-heading{margin:0 0 32px}h1{font-size:48px;line-height:1.15}.page-heading .lead{margin-top:16px;font-size:14px;line-height:1.65;color:var(--muted)}
+.text-button{font-size:13px;font-weight:500}.section-heading{gap:24px;margin-bottom:28px}.section-heading h2{font-size:32px}
+.button{border-radius:24px;min-height:48px}.button.secondary{background:#fffefa;border-color:#ddd6c8}
+.app-footer{margin-top:64px;padding:28px 0 32px;color:#837a70;border-color:var(--line)}
+/* A compact catalog search shares the heading; the personal collection stays central. */
+.collection-intro{display:flex;justify-content:space-between;align-items:center;gap:32px;margin-bottom:36px}
+.collection-intro .page-heading{margin:0;min-width:0}.collection-intro .search-box{max-width:400px;flex:0 1 400px;margin:0;min-height:58px;background:#fffefa;padding:5px 6px 5px 18px;border-color:#ded8ca;border-radius:30px}
+.search-box input{font-size:14px}.search-submit{display:flex;align-items:center;gap:10px;height:44px;padding:0 16px;border-radius:24px;background:#f8ecc9;font-size:13px;color:var(--wine)}.search-submit svg{width:18px;height:18px}
+.collection-heading{padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:28px}
+.segmented{padding:0;border:0;border-radius:0;gap:24px;background:none;min-height:48px}
+.segmented button{position:relative;background:none;border-radius:0;min-height:48px;padding:8px 0;font-size:15px;color:var(--muted)}
+.segmented button.active{background:none;box-shadow:none;font-weight:500;color:var(--wine)}
+.segmented button.active:after{content:'';position:absolute;left:0;right:0;bottom:-21px;height:2px;border-radius:2px;background:var(--wine)}
+.segmented span{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;border-radius:50%;background:#efe9dd;color:#7d7469;margin-left:8px;font-size:11px;padding:0 5px}
+.segmented button.active span{color:var(--wine);background:#f8ecc9}
+.wine-grid{gap:24px;align-items:stretch}
+.mini-wine{border-radius:28px;background:#fdf9ed;border:1px solid #f1ebdd;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.mini-wine-open{height:100%;display:flex;flex-direction:column;border-radius:28px}
+.mini-visual{flex:none;width:100%;height:260px;border:none;border-radius:0;background:radial-gradient(ellipse at 50% 78%,#eee5c84a,transparent 62%);box-shadow:none;margin:0;padding:34px 30px 18px;overflow:visible}
+.mini-visual>img{width:100%;height:100%;mix-blend-mode:multiply;object-fit:contain;filter:drop-shadow(0 8px 8px #75634b14);transition:transform .3s ease}
+.mini-copy{display:flex;flex-direction:column;flex:1;width:100%;padding:20px 24px 22px;min-width:0}
+.mini-wine h3{font:500 22px/1.28 var(--serif);margin:8px 0 12px;min-height:2.56em;overflow-wrap:anywhere}
+.mini-wine small{font-size:12px;line-height:1.5}.mini-producer{color:#82746b!important}.mini-category{color:#665b53!important}
+.mini-meta{font-size:11px;line-height:1.6;margin-top:6px;margin-bottom:18px;color:#82796f}
+.mini-open-label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:16px;border-top:1px solid #e5dcc7;font-size:12px;color:var(--wine)}.mini-open-label svg{width:18px;height:18px}
+.mini-save{right:14px;top:14px;border-color:#fff;border-radius:50%;background:#ffffffb3;box-shadow:0 4px 12px #73552506;z-index:2}
+.mini-rating{position:absolute;left:14px;top:14px;display:flex;align-items:center;gap:5px;height:36px;padding:5px 10px 5px 8px;border-radius:20px;background:#f8ecc9cc;backdrop-filter:blur(12px);color:var(--wine)}
+.mini-rating img{width:20px;height:24px;object-fit:contain;mix-blend-mode:normal}.mini-rating b{font:500 15px var(--sans)}.mini-rating small{font-size:9px;color:var(--wine)}
+@media(hover:hover){.mini-wine:hover{border-color:#dfd0ad;box-shadow:0 12px 28px #68542c09}.mini-wine-open:hover .mini-visual>img{transform:translateY(-5px)}.mini-save:hover{background:#fff}}
+.discovery-section{margin-top:56px;padding-top:40px;border-color:var(--line)}.discovery-section>.section-heading{margin-bottom:28px}.discovery-section h2{font-size:36px}
+.empty-state{background:#fdf9ed;border-color:#f1e9d9;padding:44px 24px;border-radius:28px}.empty-state>svg{width:36px;height:36px;margin-bottom:20px}.empty-state h2{font-size:30px}.empty-state p{font-size:14px;margin:12px auto 24px}
+.privacy-note{color:#7c746b;font-size:12px;line-height:1.7;margin:28px 0 0}
+#search-results{background:#fdf9ed;border:1px solid #ede5d4;border-radius:24px;padding:12px 24px;margin-bottom:32px}
+.search-result-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.search-result-title{margin:0;font-size:12px;color:var(--muted)}.search-result-heading .text-button{width:44px;flex:none}.search-results-list{margin:0}.search-results-list .wine-row:last-child{border-bottom:0}
+.wine-row{border-color:var(--line);gap:24px;padding:20px 12px;border-radius:8px}.wine-row img{width:56px;height:88px;mix-blend-mode:multiply}.row-copy b{font-size:21px;margin:5px 0 6px}.row-copy small{font-size:12px}.wine-row>svg{width:18px;height:18px;flex:none}
+/* Rankings remain editorial and compact, with counts aligned to each wine. */
+#ranking-view{max-width:1040px}.ranking-list{padding:0 24px;background:#fdf9ed;border:1px solid #f0e8d9;border-radius:28px;overflow:hidden}
+#ranking-view>.section-heading{padding-bottom:20px;margin-bottom:28px;border-bottom:1px solid var(--line)}
+#ranking-total{font-size:12px}.ranking-row{grid-template-columns:32px 56px minmax(0,1fr) 108px;padding:20px 0;gap:24px;border-color:#e9e0cd;min-height:128px}.ranking-row:first-child{border-top:0}
+.ranking-row img{width:56px;height:88px}.rank-number{font-size:24px;color:#b0a08a}.ranking-row:nth-child(-n+3) .rank-number{color:var(--wine)}.ranking-row .row-copy{gap:5px}.ranking-row .row-copy b{font-size:21px}.rank-value{font-size:26px}.rank-value small{font-size:11px;margin-top:6px;color:#85796f}
+#history-view{max-width:1040px;margin:auto}#history-view>.section-heading{margin-bottom:0}#history-view>.lead{margin:16px 0 32px;font-size:14px}
+#history-list{margin:0;border-radius:28px;background:#fdf9ed;border:1px solid #f0e8d9;padding:0 24px}#history-list>.wine-row:last-child{border-bottom:0}#history-list:has(.empty-state){padding:0;border:none}.history-list .empty-state{margin:0}
+/* The assistant stays an ordinary full-height chat, with an airy, useful empty state. */
+body[data-screen=assistant]{background:#fefdfa}#assistant-view.chat-fullscreen{padding-top:8px;padding-bottom:24px}
+.chat-messages{padding-top:20px;padding-bottom:20px}.assistant-welcome{max-width:640px;margin:clamp(16px,4vh,44px) auto 0;padding:0 8px}
+.assistant-emblem{width:64px;height:64px;display:grid;place-items:center;border:1px solid #f0e5c8;border-radius:24px;margin:0 auto 24px;background:linear-gradient(135deg,#fffdf7,#f8ecc9);box-shadow:inset 0 1px #fff,0 8px 24px #7a5a2708;color:var(--wine)}.assistant-emblem svg{width:30px;height:30px;stroke-width:1.3}
+.assistant-welcome h2{font-size:44px;line-height:1.2}.assistant-welcome>p{max-width:380px;font-size:14px;margin:16px auto 28px;line-height:1.7}
+.prompt-list{max-width:450px;gap:8px}.prompt-list button{display:flex;gap:14px;padding:10px 16px 10px 10px;border:1px solid #eee4d1;background:#fdf9ed;border-radius:18px;min-height:62px;font-size:13px}.prompt-list button>span:nth-child(2){flex:1}.prompt-list button>svg{width:18px;height:18px}
+.prompt-icon{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:13px;background:#fffdf6;color:var(--wine)}.prompt-icon svg{width:26px;height:26px;stroke-width:1.3}
+.composer{border-radius:28px;border-color:#dfd4bf;background:#fffef9;box-shadow:0 8px 32px #76593408;padding:14px 18px}.composer textarea{font-size:15px}.composer-bottom .icon-button{background:#f8f1df}.send-button{background:var(--wine)}
+.chat-user{background:#f8ecc9;border:1px solid #efe0b9;color:#564330;border-radius:22px 22px 4px 22px}.chat-answer{font-size:15px}.chat-result{padding:0 18px;margin-top:12px;background:#fdf9ed;border:1px solid #efe5d1;border-radius:24px}.chat-result .reason{padding-bottom:16px}
+/* Every pairing stays visible. No horizontal strip or hidden dishes. */
+.portal-dishes ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;overflow:visible;scroll-snap-type:none;gap:8px}
+.portal-dishes li{min-width:0;max-width:none;width:auto;padding:10px 6px;min-height:108px;flex:initial;scroll-snap-align:none}
+.portal-dishes li:only-child{grid-column:1/-1}
+.portal-dishes li>img{width:60px;height:60px;max-width:100%;object-fit:cover;aspect-ratio:1}.portal-dish-fallback{width:60px;height:60px;max-width:100%}
+.portal-dishes-many{flex-direction:column;gap:16px}.portal-dishes-many .portal-dishes-heading{flex:initial;flex-direction:row;align-items:center;gap:12px}.portal-dishes-many ul{grid-template-columns:repeat(3,minmax(0,1fr));flex:initial}
+.portal-dishes-many li{min-height:108px}.portal-dishes li>span:last-child{line-height:1.35}
+.portal-bottle-image{max-height:660px}
+/* Fullscreen scanner: no header branding, slogans or download button. */
+.finder-idle{background:radial-gradient(ellipse at 52% 43%,#fffdf6 0%,#f5efdf 52%,#e4dac7 100%)}
+.viewfinder:not(.live) .scan-frame{border-color:#8f3d4216;box-shadow:none;border-radius:38px}.viewfinder:not(.live) .scan-frame i{border-color:#a7856f80}
+body[data-screen=scan] .desktop-nav{background:#fffdf2d9;border-color:#fff;box-shadow:inset 0 1px #fff,0 8px 32px #4d35220c}.capture-controls{gap:28px}
+.overlay-icon{background:#fffdf3d9;border-color:#fffe;box-shadow:inset 0 1px #fff,0 6px 18px #46322410}.shutter-button{background:#fff9;box-shadow:0 0 0 5px #fff3,0 8px 24px #5d44361c}.shutter-core{background:var(--wine)}
+.capture-side>span:last-child,.shutter-slot>span{background:#fffdf2dc;font-size:11px}
+.notice{background:#fffdf6f5;border-color:#e8dfcc;border-radius:24px}dialog{background:#fdf9ed;border-color:#fff;border-radius:32px;padding:32px}
+/* Botanical engraving is confined to the margins; the content area stays clear. */
+@media(min-width:1200px){body:not([data-screen=scan]):not([data-screen=assistant]){background-image:linear-gradient(90deg,#fefdfabf 0%,#fefdfae6 10%,#fefdfa 23%,#fefdfa 77%,#fefdfae6 90%,#fefdfabf 100%),url('/assets/botanical-vine-v2.png');background-size:max(1440px,100%) auto;background-position:center top;background-repeat:no-repeat}}
+@media(max-width:1100px){.app-shell{padding:20px 32px 0}.app-header{padding:0 20px;gap:16px}.desktop-nav{gap:2px}.desktop-nav button{padding:12px 16px}.page-view{padding-top:44px}.collection-intro{gap:24px}.collection-intro .search-box{max-width:340px}.collection-intro h1{font-size:40px}.wine-grid{gap:20px;grid-template-columns:repeat(3,minmax(0,1fr))}.mini-visual{height:250px}.mini-copy{padding:16px 20px 20px}.mini-wine h3{font-size:21px}.portal-dishes-many ul{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:768px) and (max-width:1023px){.portal-mobile-details>.portal-metrics{grid-template-columns:1fr 1fr}.portal-mobile-details .portal-dishes{grid-column:1/-1}.portal-dishes-many ul{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:760px){
+ :root{--nav-bottom:calc(94px + env(safe-area-inset-bottom))}
+ .app-shell{padding:16px 20px 0}.app-header{height:64px;padding:0 16px;border-radius:22px;gap:16px}.portal-logo{width:132px;height:33px}.header-actions{gap:8px}.header-actions .icon-button,.header-actions .install-button{width:44px;height:44px;min-width:44px;min-height:44px}.header-actions svg{width:18px;height:18px}
+ .page-view{padding-top:32px}h1{font-size:36px;line-height:1.2}.page-heading{margin-bottom:28px}.page-heading .lead{margin-top:12px;font-size:13px;max-width:300px}
+ .collection-intro{display:block;margin-bottom:24px}.collection-intro h1{font-size:36px}.collection-intro .search-box{max-width:none;min-height:54px;margin-top:24px;padding:4px 5px 4px 14px;gap:8px}.search-box input{font-size:13px;min-width:0}.search-submit{padding:0 13px;gap:6px}.search-submit svg{width:16px}
+ .section-heading{gap:12px;margin-bottom:20px}.collection-heading{padding-bottom:16px;margin-bottom:24px}.collection-heading>.text-button{font-size:0;width:44px;flex:none;justify-content:flex-end}.collection-heading>.text-button svg{width:20px;height:20px}
+ .segmented{gap:20px}.segmented button{font-size:14px;min-height:44px}.segmented span{margin-left:5px;font-size:10px;min-width:22px;height:22px}.segmented button.active:after{bottom:-17px}
+ .wine-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.mini-wine{border-radius:22px}.mini-visual{height:192px;padding:40px 20px 12px}.mini-copy{padding:12px 14px 16px}.mini-wine h3{font-size:18px;line-height:1.25;margin:8px 0 10px;min-height:2.5em}.mini-wine small{font-size:11px;line-height:1.5}.mini-meta{font-size:10px;margin-top:5px;margin-bottom:14px}.mini-open-label{padding-top:12px;font-size:11px}.mini-open-label svg{width:16px}.mini-save{width:44px;height:44px;right:8px;top:8px}.mini-save svg{width:17px;height:17px}.mini-rating{left:8px;top:10px;padding:4px 7px;height:32px;gap:3px}.mini-rating img{width:16px;height:20px}.mini-rating b{font-size:12px}.mini-rating small{display:none}
+ .discovery-section{margin-top:36px;padding-top:28px}.discovery-section>.section-heading{align-items:flex-start;flex-direction:column;gap:4px;margin-bottom:20px}.discovery-section h2{font-size:30px}.discovery-section .text-button{min-height:36px;font-size:12px}.empty-state{padding:32px 20px;border-radius:24px}.empty-state h2{font-size:26px}.empty-state p{font-size:13px}
+ #search-results{padding:8px 14px;margin-bottom:24px;border-radius:22px}.search-results-list .wine-row{padding:16px 0;gap:14px}.wine-row{gap:16px;padding:18px 0}.wine-row img{width:44px;height:76px}.row-copy b{font-size:18px}.row-copy small{font-size:11px}.wine-row>svg{width:16px;height:16px}
+ #ranking-view>.section-heading{align-items:flex-start;flex-direction:column;gap:18px;padding-bottom:16px;margin-bottom:20px}#ranking-view .segmented button.active:after{bottom:-1px}#ranking-view .segmented{width:100%;border-bottom:1px solid var(--line);padding-bottom:8px;justify-content:space-between;gap:12px}#ranking-total{font-size:11px}
+ .ranking-list{padding:0 16px;border-radius:24px}.ranking-row{grid-template-columns:20px 40px minmax(0,1fr);gap:8px 12px;padding:18px 0;min-height:0}.rank-number{grid-row:1/3;font-size:20px;align-self:center}.ranking-row img{grid-row:1/3;width:40px;height:80px}.ranking-row .row-copy b{font-size:18px;line-height:1.3}.ranking-row .row-copy small{font-size:10px}.ranking-row .row-copy{gap:4px}.rank-value{grid-column:3;display:flex;align-items:baseline;gap:6px;text-align:left;font-size:19px}.rank-value small{display:inline;font-size:10px;margin:0;line-height:1.4}.ranking-row .row-copy b{overflow-wrap:anywhere}
+ #history-view>.lead{font-size:13px;margin:12px 0 24px}#history-list{padding:0 16px;border-radius:24px}.privacy-note{font-size:11px;line-height:1.7;margin-top:24px}.app-footer{margin-top:36px;padding:24px 0 calc(110px + env(safe-area-inset-bottom));font-size:10px;gap:12px}
+ .bottom-nav{left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));height:68px;padding:6px;border:1px solid #fff;background:#fffdf0e8;border-radius:24px;box-shadow:inset 0 1px #fff,0 8px 40px #49311d1a;backdrop-filter:blur(24px)}.bottom-nav button{border-radius:19px;gap:4px;font-size:10px;color:#847767}.bottom-nav button.active{background:#f8ecc9;color:var(--wine)}.bottom-nav button svg{width:21px;height:21px;stroke-width:1.5}.bottom-nav button.active:after{display:none}
+ body[data-screen=assistant] .app-shell{padding-top:12px}#assistant-view.chat-fullscreen{padding-top:0;padding-bottom:var(--nav-bottom)}.chat-messages{padding:20px 0 12px}.assistant-welcome{margin:8px auto 0;padding:0}.assistant-emblem{width:54px;height:54px;border-radius:20px;margin-bottom:20px}.assistant-emblem svg{width:27px;height:27px}.assistant-welcome h2{font-size:32px}.assistant-welcome>p{font-size:13px;max-width:280px;margin:12px auto 24px}.prompt-list{gap:8px}.prompt-list button{min-height:58px;font-size:12px;padding:8px 12px 8px 8px;gap:12px;border-radius:17px}.prompt-icon{width:38px;height:38px}.composer{border-radius:24px;padding:10px 12px;margin-top:6px}.composer textarea{font-size:16px;min-height:44px}.chat-user{font-size:14px}.chat-answer{font-size:14px}.chat-result{padding:0 12px}.chat-result .reason{padding-left:0}.chat-result .wine-row img{width:40px;height:72px}.chat-result .row-copy b{font-size:18px}
+ .portal-dishes-many ul{grid-template-columns:repeat(3,minmax(0,1fr))}.portal-dishes li{padding:10px 5px}.portal-dishes li>img,.portal-dish-fallback{width:56px;height:56px}.portal-dishes li>span:last-child{font-size:10px}.portal-dishes-many li{min-height:108px}
+ .capture-controls{gap:12px;grid-template-columns:88px 104px 88px;bottom:calc(112px + env(safe-area-inset-bottom))}.scan-frame{top:18%;bottom:34%;width:min(320px,calc(100% - 72px))}.capture-side{font-size:11px}.capture-side>span:last-child,.shutter-slot>span{font-size:10px;padding:4px 7px}.shutter-button{width:80px;height:80px}.overlay-icon{width:52px;height:52px}.camera-feedback{bottom:calc(240px + env(safe-area-inset-bottom));font-size:12px}
+ dialog{padding:24px;border-radius:28px}.notice{bottom:calc(94px + env(safe-area-inset-bottom));font-size:13px;padding-left:16px}
+}
+@media(max-width:380px){.app-shell{padding-inline:16px}.collection-intro h1{font-size:34px}.wine-grid{gap:12px}.mini-visual{height:180px}.mini-copy{padding-inline:12px}.mini-wine h3{font-size:17px}.segmented{gap:16px}.segmented button{font-size:13px}.assistant-welcome h2{font-size:30px}.portal-dishes-many ul{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-height:700px) and (max-width:760px){.assistant-emblem{display:none}.assistant-welcome{margin:0}.assistant-welcome>p{margin-bottom:16px}.prompt-list button{min-height:52px}.prompt-icon{width:32px;height:32px}.chat-messages{padding:12px 0}}
+@media(prefers-reduced-motion:reduce){.mini-wine,.mini-visual>img{transition:none}}

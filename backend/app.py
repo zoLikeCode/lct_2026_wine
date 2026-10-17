@@ -12,7 +12,7 @@ from product import Product
 from ml_client import WineMLClient,WineMLError
 
 ROOT=Path(__file__).resolve().parent
-MOBILE_ROOT=Path(os.environ.get('WINE_FRONTEND_DIST',ROOT/'static/mobile')).resolve()
+MOBILE_ROOT=Path(os.environ.get('WINE_FRONTEND_DIST',ROOT.parent/'dist' if (ROOT.parent/'dist/index.html').is_file() else ROOT/'static/mobile')).resolve()
 DATASET=Path(os.environ.get('WINE_DATASET',ROOT.parent/'wine_dataset'))
 MAX_BYTES=24*1024*1024
 RUNPOD_MODEL_VERSION='qwen'
@@ -113,21 +113,25 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
         if request.method=='POST' and path.startswith('/api/product/') and int(request.headers.get('content-length','0'))>8192:return JSONResponse({'detail':'Запрос слишком большой'},status_code=413)
         if path.startswith('/admin/api/') and path!='/admin/api/login' and not admin(request):
             return JSONResponse({'detail':'Войдите в админку'},status_code=401)
-        public_product=bool((request.method=='GET' and re.fullmatch(r'/api/product/(bootstrap|search|ranking|recommendations|history|wines/[^/]+(?:/image)?|scans/[^/]+/image)',path)) or (request.method=='POST' and re.fullmatch(r'/api/product/(assistant|preferences/[^/]+)',path)))
+        public_product=bool((request.method=='GET' and re.fullmatch(r'/api/product/(bootstrap|account|collection|search|ranking|recommendations|history|wines/[^/]+(?:/image)?|scans/[^/]+/image)',path)) or (request.method=='POST' and re.fullmatch(r'/api/product/(assistant|preferences/[^/]+|account/(register|login|recover|logout|revoke|name|password)|collection/(wines/[^/]+|stock/[^/]+|lists(?:/[^/]+)?))',path)))
         if path.startswith('/api/') and (request.method,path) not in public_scanner_routes and not public_product and not admin(request):
             return JSONResponse({'detail':'Войдите в админку'},status_code=401)
+        if request.method=='POST' and (path.startswith('/api/product/collection/') or path.startswith('/api/product/preferences/')) and request.cookies.get('wine_account') and not product.collection.session(request):
+            return JSONResponse({'detail':'Сессия завершена. Войдите снова'},status_code=401)
         new_profile=None
         if (public_product and not re.fullmatch(r'/api/product/wines/[^/]+/image',path)) or path=='/api/predict':
             request.state.profile,new_profile=product.profile(request)
         try:response=await call_next(request)
         except (ValueError,OSError,KeyError) as e:response=JSONResponse({'detail':str(e)},status_code=409)
-        if new_profile:response.set_cookie('wine_profile',new_profile,secure=cookie_secure,httponly=True,samesite='lax',max_age=365*86400)
+        if new_profile and not path.startswith('/api/product/account/'):response.set_cookie('wine_profile',new_profile,secure=cookie_secure,httponly=True,samesite='lax',max_age=365*86400)
         response.headers.update({'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer',
            'Permissions-Policy':'camera=(self), microphone=(self), geolocation=()',
            'X-Frame-Options':'DENY'})
         if '/api/' in path:response.headers['Cache-Control']='no-store'
         elif path.startswith('/admin/static/') or path in {'/app.js','/app.css','/manifest.webmanifest','/chat.css'}:response.headers['Cache-Control']='no-cache'
         return response
+
+    product.collection.routes(app,cookie_secure)
 
     def readiness():
         if backend=='local':
@@ -357,7 +361,7 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
         profile=request.state.profile;prefs=product.preferences(profile)
         return {'preferences':prefs,'collection':product.cards_for([s for s,p in prefs.items() if p['favorite'] or p['rating']],profile),
                 'recommendations':product.recommendations(profile,limit=4),'assistant_mode':'ai' if product.ai_enabled else 'catalog',
-                'catalog_count':len(product.cards)}
+                'catalog_count':len(product.cards),'account':product.collection.account(request)}
 
     @app.get('/api/product/search')
     def product_search(request:Request,q:str=''):
@@ -393,7 +397,9 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
     def product_recommendations(request:Request):return {'items':product.recommendations(request.state.profile)}
 
     @app.get('/api/product/history')
-    def product_history(request:Request):return {'items':product.history(request.state.profile)}
+    def product_history(request:Request):
+        if not product.collection.session(request):raise HTTPException(401,'Войдите, чтобы открыть историю сканирований')
+        return {'items':product.history(request.state.profile)}
 
     @app.get('/api/product/scans/{scan_id}/image')
     def product_scan_image(scan_id:str,request:Request):
@@ -413,7 +419,13 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
     async def product_assistant(body:dict,request:Request):
         context=body.get('context',[])
         if not isinstance(context,list):raise HTTPException(422,'Некорректный контекст')
-        return await asyncio.to_thread(product.assistant,request.state.profile,body.get('message',''),context,body.get('scan_id'),body.get('intent'),body.get('dish_name'))
+        token=product.collection.claim_guest_assistant(request)
+        success=False
+        try:
+            result=await asyncio.to_thread(product.assistant,request.state.profile,body.get('message',''),context,body.get('scan_id'),body.get('intent'),body.get('dish_name'))
+            success=True
+            return result
+        finally:product.collection.finish_guest_assistant(request.state.profile,token,success)
 
     @app.get('/admin')
     @app.get('/admin/')

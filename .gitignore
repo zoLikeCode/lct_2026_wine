@@ -13,3 +13,6 @@ __pycache__/
 models/
 wine_media/
 wine_dataset/images/
+
+.pytest_cache/
+.coverage

@@ -113,7 +113,7 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
         if request.method=='POST' and path.startswith('/api/product/') and int(request.headers.get('content-length','0'))>8192:return JSONResponse({'detail':'Запрос слишком большой'},status_code=413)
         if path.startswith('/admin/api/') and path!='/admin/api/login' and not admin(request):
             return JSONResponse({'detail':'Войдите в админку'},status_code=401)
-        public_product=bool((request.method=='GET' and re.fullmatch(r'/api/product/(bootstrap|account|collection|search|ranking|recommendations|history|wines/[^/]+(?:/image)?|scans/[^/]+/image)',path)) or (request.method=='POST' and re.fullmatch(r'/api/product/(assistant|preferences/[^/]+|account/(register|login|recover|logout|revoke|name|password)|collection/(wines/[^/]+|stock/[^/]+|lists(?:/[^/]+)?))',path)))
+        public_product=bool((request.method=='GET' and re.fullmatch(r'/api/product/(bootstrap|account|collection|collection/lists/[^/]+/suggestions|search|ranking|recommendations|taste|taste/onboarding|history|wines/[^/]+(?:/image)?|scans/[^/]+/image)',path)) or (request.method=='POST' and re.fullmatch(r'/api/product/(assistant|preferences/[^/]+|taste/onboarding|recommendations/feedback|account/(register|login|recover|logout|revoke|name|password)|collection/(wines/[^/]+|stock/[^/]+|lists(?:/[^/]+)?))',path)))
         if path.startswith('/api/') and (request.method,path) not in public_scanner_routes and not public_product and not admin(request):
             return JSONResponse({'detail':'Войдите в админку'},status_code=401)
         if request.method=='POST' and (path.startswith('/api/product/collection/') or path.startswith('/api/product/preferences/')) and request.cookies.get('wine_account') and not product.collection.session(request):
@@ -132,6 +132,7 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
         return response
 
     product.collection.routes(app,cookie_secure)
+    product.recs.routes(app)
 
     def readiness():
         if backend=='local':
@@ -359,8 +360,9 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
     @app.get('/api/product/bootstrap')
     def product_bootstrap(request:Request):
         profile=request.state.profile;prefs=product.preferences(profile)
+        feed=product.recs.endpoint(profile,'for_you','',4)
         return {'preferences':prefs,'collection':product.cards_for([s for s,p in prefs.items() if p['favorite'] or p['rating']],profile),
-                'recommendations':product.recommendations(profile,limit=4),'assistant_mode':'ai' if product.ai_enabled else 'catalog',
+                'recommendations':feed['items'],'recommendations_request_id':feed['request_id'],'assistant_mode':'ai' if product.ai_enabled else 'catalog',
                 'catalog_count':len(product.cards),'account':product.collection.account(request)}
 
     @app.get('/api/product/search')
@@ -394,7 +396,8 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
     def product_ranking(request:Request,mode:str='scans'):return product.ranking(mode,request.state.profile)
 
     @app.get('/api/product/recommendations')
-    def product_recommendations(request:Request):return {'items':product.recommendations(request.state.profile)}
+    def product_recommendations(request:Request,mode:str='for_you',q:str='',limit:int=8):
+        return product.recs.endpoint(request.state.profile,mode,q,limit)
 
     @app.get('/api/product/history')
     def product_history(request:Request):

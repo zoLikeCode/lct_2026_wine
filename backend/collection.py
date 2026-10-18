@@ -147,6 +147,7 @@ class Collection:
         # Guest quantity operations describe an old balance. Do not make them
         # undoable against the merged balance; retain them under the archived id.
         for table in ('collection_lists','collection_members','wine_profile_scans'):db.execute('UPDATE '+table+' SET profile=? WHERE profile=?',(target,source))
+        self.product.recs.merge_guest(db,source,target)
         db.execute('DELETE FROM wine_preferences WHERE profile=?',(source,));db.execute('DELETE FROM collection_entries WHERE profile=?',(source,))
         db.execute('DELETE FROM wine_profiles WHERE id=?',(source,))
 

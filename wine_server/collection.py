@@ -39,6 +39,8 @@ class Collection:
             CREATE TABLE IF NOT EXISTS wine_auth_limits(key TEXT PRIMARY KEY,started REAL,attempts INTEGER);
             CREATE TABLE IF NOT EXISTS wine_guest_assistant(profile TEXT PRIMARY KEY,state TEXT,token TEXT,updated REAL);
             ''')
+        from shelves import Shelves
+        self.shelves=Shelves(self)
         # Equal-cost password verification for unknown usernames.
         self.dummy=password_hash(secrets.token_urlsafe(24))
 
@@ -146,7 +148,10 @@ class Collection:
                 db.execute('INSERT INTO collection_events VALUES(?,?,?,?,?,?,?,?)',(ident,target,r['slug'],delta,'merge',ident,None,time.time()))
         # Guest quantity operations describe an old balance. Do not make them
         # undoable against the merged balance; retain them under the archived id.
-        for table in ('collection_lists','collection_members','wine_profile_scans'):db.execute('UPDATE '+table+' SET profile=? WHERE profile=?',(target,source))
+        for table in ('collection_comments','collection_copies','collection_saves','collection_badges'):
+            db.execute('UPDATE OR IGNORE '+table+' SET profile=? WHERE profile=?',(target,source))
+            db.execute('DELETE FROM '+table+' WHERE profile=?',(source,))
+        for table in ('collection_lists','collection_members','collection_messages','wine_profile_scans'):db.execute('UPDATE '+table+' SET profile=? WHERE profile=?',(target,source))
         db.execute('DELETE FROM wine_preferences WHERE profile=?',(source,));db.execute('DELETE FROM collection_entries WHERE profile=?',(source,))
         db.execute('DELETE FROM wine_profiles WHERE id=?',(source,))
 
@@ -199,7 +204,8 @@ class Collection:
         for w in cards:
             e=entries.get(w['slug'],{});w.update(quantity=e.get('quantity',0),tried=bool(e.get('tried') or w['rating']),note=e.get('note',''),version=e.get('version',0),updated=max(e.get('updated',0),pref_times.get(w['slug'],0)),lists=[m['list_id'] for m in members if m['slug']==w['slug']])
         for l in lists:l['members']=[m for m in members if m['list_id']==l['id']]
-        return {'items':cards,'lists':lists,'events':events,'counts':{'all':len(cards),'wish':sum(w['favorite'] for w in cards),'owned':sum(w['quantity']>0 for w in cards),'tried':sum(w['tried'] for w in cards),'bottles':sum(w['quantity'] for w in cards)}}
+        snapshot={'items':cards,'lists':lists,'events':events,'counts':{'all':len(cards),'wish':sum(w['favorite'] for w in cards),'owned':sum(w['quantity']>0 for w in cards),'tried':sum(w['tried'] for w in cards),'bottles':sum(w['quantity'] for w in cards)}}
+        return self.shelves.augment(profile,snapshot)
 
     def ensure_entry(self,db,profile,slug):db.execute('INSERT OR IGNORE INTO collection_entries(profile,slug,updated) VALUES(?,?,?)',(profile,slug,time.time()))
 
@@ -252,7 +258,8 @@ class Collection:
             if not row:raise HTTPException(404,'Подборка не найдена')
             action=body.get('action')
             if action=='delete':
-                db.execute('DELETE FROM collection_members WHERE list_id=?',(ident,));db.execute('DELETE FROM collection_lists WHERE id=?',(ident,))
+                db.execute('DELETE FROM collection_messages WHERE list_id=?',(ident,))
+                db.execute('DELETE FROM collection_members WHERE list_id=?',(ident,));db.execute('DELETE FROM collection_lists WHERE id=?',(ident,));db.execute('DELETE FROM collection_list_meta WHERE list_id=?',(ident,));db.execute('DELETE FROM collection_comments WHERE list_id=?',(ident,));db.execute('DELETE FROM collection_copies WHERE list_id=?',(ident,))
             elif action=='rename':
                 name=text(body.get('name',''),80,'Название')
                 if not name:raise HTTPException(422,'Введите название')
@@ -273,6 +280,7 @@ class Collection:
         return {'ok':True}
 
     def routes(self,app,secure):
+        self.shelves.routes(app)
         from fastapi import Request
         @app.get('/api/product/account')
         def account(request:Request):return self.account(request)

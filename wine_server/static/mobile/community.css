@@ -1,0 +1,143 @@
+/* Exploration plates: quiet ink, real catalogue bottles and readable progress. */
+body{min-height:100dvh}
+.ranking-list,#history-list{background:#f8f6f1;border-color:#e5dfd7}
+.ranking-row{border-color:#e3dcd3}
+.achievement-detail .earned-badge,.achievement-special .earned-badge,.account-achievements{background:#f1ece7;color:#7d454a;border-color:#d8cac5}
+.community-discovery{display:flex;align-items:center;gap:18px;padding:8px 0 24px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.community-discovery>img{width:64px;height:64px;object-fit:contain}
+.community-discovery>div{display:grid;gap:6px;min-width:0}
+.community-discovery strong{font:400 24px/1.2 var(--serif)}
+.community-discovery>div>span{font-size:12px;color:#746b64}
+.community-discovery>button{margin-left:auto;flex-shrink:0;min-height:44px}
+.community-filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 28px}
+.community-filters button{border:1px solid #ded8d2;border-radius:22px;padding:10px 18px;min-height:44px;background:transparent;font:500 12px var(--sans);color:#635a55;cursor:pointer}
+.community-filters button.active{background:#843f49;border-color:#843f49;color:white}
+.shelf-theme{position:absolute;left:20px;top:18px;z-index:2;background:#fffef6e8;border:1px solid #ffffff60;padding:7px 13px;border-radius:18px;font:500 10px var(--sans);color:#6e4a3e}
+.editorial-cover .shelf-cover-meta>span:first-child{color:var(--wine)}
+.achievement-heading{display:flex;align-items:center;justify-content:space-between;gap:28px;margin:8px 0 38px}
+.achievement-heading h2{font:400 clamp(32px,4vw,48px)/1.15 var(--serif);margin:10px 0 14px;overflow-wrap:anywhere}
+.achievement-heading p{font-size:14px;line-height:1.6;color:#746b64;margin:0}
+.achievement-total{display:grid;gap:8px;text-align:right;flex-shrink:0}
+.achievement-total strong{font:400 45px/1 var(--serif);color:var(--wine)}
+.achievement-total strong span{font-size:26px;color:#8a817a}
+.achievement-total small{font-size:12px;color:#746b64}
+.achievement-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.achievement-card{position:relative;display:flex;flex-direction:column;align-items:center;min-width:0;padding:22px 28px 26px;border:1px solid #ded8d1;border-radius:16px;background:#fbfaf7;color:var(--ink);text-align:center;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+.achievement-card:hover{border-color:#9c7774;box-shadow:0 8px 28px #69464c0a}
+.achievement-card.is-earned{border-color:#b18d83;background:#fcfaf6}
+.achievement-state{align-self:flex-end;font:500 10px/1.5 var(--sans);color:#756c65;letter-spacing:.03em}
+.is-earned .achievement-state{color:#843f49}
+.achievement-art{height:184px;display:grid;place-items:center;margin:4px 0 12px}
+.achievement-art img{width:184px;height:184px;object-fit:contain;filter:saturate(.65);opacity:.78}
+.is-earned .achievement-art img{filter:none;opacity:1}
+.achievement-title{font:400 27px/1.2 var(--serif);margin-bottom:8px}
+.achievement-status{font:500 10px/1.4 var(--sans);text-transform:uppercase;letter-spacing:.09em;color:var(--wine);min-height:28px}
+.achievement-description{font:400 12px/1.65 var(--sans);color:#746b64;margin:10px 0 24px;max-width:260px}
+.achievement-meter{display:flex;align-items:center;gap:14px;width:100%;margin-top:auto;font:500 11px var(--sans);color:#746b64;font-variant-numeric:tabular-nums}
+.achievement-meter>span{white-space:nowrap}
+.achievement-meter progress,.achievement-detail progress{appearance:none;border:0;height:3px;width:100%;border-radius:4px;background:#e7e1da;overflow:hidden}
+.achievement-meter progress::-webkit-progress-bar,.achievement-detail progress::-webkit-progress-bar{background:#e7e1da}
+.achievement-meter progress::-webkit-progress-value,.achievement-detail progress::-webkit-progress-value{background:#8b424c;border-radius:4px}
+.achievement-meter progress::-moz-progress-bar,.achievement-detail progress::-moz-progress-bar{background:#8b424c}
+.achievement-footnote{font:400 12px/1.8 var(--sans);color:#746b64;max-width:640px;margin:28px 0 40px}
+.achievement-special{margin:0;padding:32px 0;border-top:1px solid var(--line)}
+.achievement-special .challenge-symbol{width:140px;height:140px;display:block;flex-shrink:0;border:0;border-radius:0;background:transparent}
+.achievement-special .challenge-symbol img{width:100%;height:100%;object-fit:contain}
+.achievement-dialog{max-width:440px}
+.achievement-detail{text-align:center;padding:0 12px 12px}
+.achievement-detail>img{width:200px;height:200px;object-fit:contain;display:block;margin:0 auto 12px}
+.achievement-detail h2{font:400 34px/1.2 var(--serif);margin:0 0 12px}
+.achievement-detail>p{font-size:14px;line-height:1.7;color:#746b64;margin:18px 0}
+.achievement-detail .achievement-detail-progress{font-size:12px;margin:10px 0 24px}
+.achievement-detail .cellar-primary{width:100%;min-height:48px}
+.account-achievements{border:1px solid #d9c8bd;cursor:pointer;min-height:44px}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid #8c434c;outline-offset:4px}
+.cellar-dialog{max-height:calc(100dvh - 32px);overscroll-behavior:contain}
+@media(min-width:701px) and (max-width:1100px){
+ #collection-view .cellar-toolbar{gap:16px}
+ #collection-view .cellar-tabs{gap:20px}
+ #collection-view .cellar-tabs button{font-size:12px}
+ .achievement-grid{gap:16px}.achievement-card{padding:18px 18px 24px}.achievement-title{font-size:25px}
+}
+@media(max-width:700px){
+ .shelf-cover-scene .shelf-cutout:nth-of-type(n){display:block}
+ .shelf-cover-scene .shelf-cutout ~ .shelf-cutout ~ .shelf-cutout ~ .shelf-cutout{display:none}
+ .shelf-cover-scene{height:270px;padding:38px 24px 51px}
+ .shelf-cover-scene .shelf-cutout{height:174px}
+ #collection-view .cellar-toolbar{display:flex;flex-wrap:wrap;gap:16px;padding-bottom:20px;margin-bottom:22px}
+ #collection-view .cellar-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:4px 18px}
+ #collection-view .cellar-tabs button{font-size:12px;justify-content:space-between;padding:12px 0;min-height:46px}
+ #collection-view .cellar-tabs button.active:after{bottom:0}
+ #collection-view #cellar-add{margin-left:auto;min-height:44px}
+ .community-discovery{gap:12px;padding:0 0 20px;flex-wrap:wrap}
+ .community-discovery>img{width:56px;height:56px}.community-discovery strong{font-size:22px}
+ .community-discovery>div>span{font-size:11px}.community-discovery>button{margin-left:auto;font-size:12px}
+ .community-filters{gap:6px;margin-bottom:24px}.community-filters button{font-size:11px;padding:10px 14px}
+ .shelf-theme{top:14px;left:14px;font-size:10px;padding:6px 11px}
+ .achievement-heading{display:block;margin:2px 0 26px}.achievement-heading h2{font-size:34px;margin:8px 0 12px}
+ .achievement-heading p{font-size:13px;max-width:280px}
+ .achievement-total{display:flex;align-items:baseline;gap:12px;text-align:left;margin-top:22px}
+ .achievement-total strong{font-size:32px}.achievement-total strong span{font-size:22px}.achievement-total small{font-size:11px}
+ .achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .achievement-card{padding:14px 12px 18px;border-radius:12px}
+ .achievement-state{font-size:10px}.achievement-art{height:120px;margin:5px 0 10px}
+ .achievement-art img{width:120px;height:120px;max-width:100%}
+ .achievement-title{font-size:21px;line-height:1.22;min-height:52px;display:grid;place-items:center}
+ .achievement-status{font-size:10px;letter-spacing:.04em;min-height:28px}
+ .achievement-description{font-size:12px;line-height:1.6;margin:10px 0 18px}
+ .achievement-meter{gap:8px;font-size:10px}.achievement-footnote{font-size:11px;margin:22px 0 30px}
+ .achievement-special{grid-template-columns:60px minmax(0,1fr);gap:12px;padding-top:24px}
+ .achievement-special .challenge-symbol{width:60px;height:80px}
+ .achievement-special .challenge-copy h2{font-size:24px}
+ .achievement-dialog{width:calc(100% - 24px)}
+ .achievement-detail>img{width:160px;height:160px}
+}
+@media(prefers-reduced-motion:reduce){.achievement-card{transition:none}}
+
+/* Rankings and conversations use the existing portal type and quiet rules. */
+#ranking-view{padding-top:32px}
+#ranking-view .ranking-toolbar{gap:20px;align-items:center;min-height:76px;margin-bottom:8px}
+#ranking-view .segmented{flex-wrap:wrap;gap:28px}
+#ranking-view .segmented button{min-height:48px;white-space:normal}
+#ranking-view .segmented button.active:after{bottom:-12px}
+#ranking-total:empty{display:none}
+.ranking-collection-row{grid-template-columns:42px 170px minmax(0,1fr) 150px;gap:28px;min-height:180px}
+.ranking-bottles{height:136px;display:flex;align-items:flex-end;justify-content:center;gap:7px}
+.ranking-row .ranking-bottles img{width:46px;height:126px;object-fit:contain}
+.ranking-collection-row .rank-value small{display:block;line-height:1.5;max-width:140px}
+.shelf-discussion.conversation{display:block;max-width:760px;margin:0 auto;padding:12px 0 32px}
+.discussion-thread{min-width:0}.discussion-empty,.discussion-private{font:400 13px/1.7 var(--sans);color:var(--muted);margin:12px 0 28px}
+.conversation .collection-comment{padding:18px 0;margin:0;border-bottom:1px solid var(--line)}
+.conversation .message-meta{align-items:baseline;flex-wrap:wrap;gap:8px 20px}.message-meta strong{overflow-wrap:anywhere}
+.conversation .collection-comment p{margin:12px 0 4px}
+.collection-comment blockquote{margin:14px 0 8px;padding:10px 14px;border-left:2px solid #b78c90;background:#f1ede980;border-radius:0 6px 6px 0;font-size:12px;line-height:1.6}
+.collection-comment blockquote strong{display:block;font-size:11px;color:var(--wine)}
+.collection-comment blockquote span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.conversation .message-actions{justify-content:flex-start;gap:18px}.message-actions button{min-height:44px;font-size:11px;color:var(--wine)}
+.message-deleted{font-style:italic;color:var(--muted)}
+#shelf-comment-form{margin-top:26px;gap:14px}#shelf-comment-form textarea{resize:vertical;min-height:112px;max-height:320px;width:100%;font:400 14px/1.6 var(--sans);padding:16px;border:1px solid var(--line);border-radius:12px;background:#fffdfa;color:var(--ink)}
+#shelf-comment-form .comment-actions{justify-content:flex-end}.reply-context{display:flex;align-items:center;gap:12px;border-left:2px solid var(--wine);padding-left:12px;color:var(--wine);font-size:12px}.reply-context[hidden]{display:none}.reply-context button{margin-left:auto;background:none;border:0;min-width:44px;min-height:44px;color:var(--wine);font-size:24px;cursor:pointer}
+.discussion-more{min-height:44px;margin-bottom:12px}
+@media(max-width:700px){
+ #ranking-view{padding-top:16px}
+ #ranking-view .ranking-toolbar{min-height:70px;padding-bottom:0;gap:12px;border-bottom:0}
+ #ranking-view .segmented{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding-bottom:4px;align-items:stretch}
+ #ranking-view .segmented button{font-size:12px;line-height:1.5;min-height:52px;padding:6px 0}
+ #ranking-view .segmented button.active:after{bottom:-5px}
+ .ranking-collection-row{grid-template-columns:18px 80px minmax(0,1fr);gap:10px;min-height:150px}
+ .ranking-bottles{grid-row:1/3;height:112px;gap:0}.ranking-row .ranking-bottles img{width:27px;height:104px}
+ .ranking-collection-row .row-copy b{font-size:19px}.ranking-collection-row .rank-value{display:block;font-size:22px}.ranking-collection-row .rank-value small{display:block;font-size:10px;max-width:none}
+ .shelf-discussion.conversation{padding-top:0}.conversation .collection-comment p{font-size:13px}.conversation .message-meta{font-size:12px}
+ #shelf-comment-form textarea{font-size:16px}#shelf-comment-form .cellar-primary{min-height:46px}
+}
+
+.wine-collections{margin:64px auto 24px;max-width:1040px;padding-top:28px;border-top:1px solid var(--line)}
+.wine-collections[hidden]{display:none}
+.wine-collections h2{font:400 36px/1.2 var(--serif);margin:0 0 24px;color:var(--ink)}
+.wine-collection-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:36px}
+.wine-collection-link{display:grid;grid-template-columns:100px minmax(0,1fr) 20px;gap:22px;align-items:center;min-height:140px;width:100%;padding:20px 0;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;color:var(--ink);cursor:pointer}
+.wine-collection-bottles{height:100px;display:flex;align-items:flex-end;justify-content:center;gap:2px}.wine-collection-bottles img{width:31px;height:100px;object-fit:contain}
+.wine-collection-copy{display:grid;gap:7px;min-width:0}.wine-collection-copy strong{font:400 24px/1.2 var(--serif);overflow-wrap:anywhere}.wine-collection-copy>span,.wine-collection-copy small{font:400 11px/1.5 var(--sans);color:var(--muted)}.wine-collection-arrow{font-size:18px;color:var(--wine)}
+.wine-collection-link:hover .wine-collection-copy strong{color:var(--wine)}
+@media(max-width:700px){#result-view{padding-bottom:calc(100px + env(safe-area-inset-bottom))}}
+@media(max-width:700px){.wine-collections{margin-top:40px;padding-top:24px}.wine-collections h2{font-size:30px;margin-bottom:12px}.wine-collection-list{grid-template-columns:1fr}.wine-collection-link{grid-template-columns:86px minmax(0,1fr) 18px;gap:16px;min-height:124px;padding:16px 0}.wine-collection-bottles{height:92px}.wine-collection-bottles img{width:27px;height:92px}.wine-collection-copy strong{font-size:23px}}

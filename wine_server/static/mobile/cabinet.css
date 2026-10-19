@@ -1,0 +1,66 @@
+/* A quiet architectural display. Only the cabinet has perspective; captions stay upright. */
+body[data-screen=collection]{background-image:none!important;background-color:#fcfaf6}
+#collection-view{max-width:1240px}
+.shelf-detail-heading{margin-bottom:34px}.shelf-detail-heading h2{font-size:44px;letter-spacing:-.025em}
+.cellar-scene{--stage-height:360px;--stage-pad:46px;--deck-y:406px;position:relative;isolation:isolate;margin:0 0 18px}
+.cellar-room{position:relative}
+.cellar-back{position:absolute;inset:0 0 auto;height:calc(var(--deck-y) + 26px);border-radius:12px 12px 2px 2px;background:radial-gradient(ellipse at 50% -20%,#a58e7252,transparent 73%),linear-gradient(110deg,#211b1e,#3d3030 48%,#241d20);box-shadow:inset 0 1px 0 #c4b19840,inset 0 24px 35px #0e0a1033;overflow:hidden}
+.cellar-back:after{content:'';position:absolute;inset:18px 24px 24px;border:1px solid #d4bfa016;border-bottom:0;border-radius:3px 3px 0 0;background:linear-gradient(90deg,#100a1033,transparent 14%,transparent 86%,#100a102b)}
+.cellar-wall{position:absolute;top:0;height:calc(var(--deck-y) + 26px);width:25px;background:linear-gradient(90deg,#62514a33,#15111588);pointer-events:none}
+.cellar-wall-left{left:0;clip-path:polygon(0 0,100% 18px,100% calc(100% - 26px),0 100%)}.cellar-wall-right{right:0;transform:scaleX(-1);clip-path:polygon(0 0,100% 18px,100% calc(100% - 26px),0 100%)}
+.cellar-ceiling{position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,#e9d4b84a,transparent)}
+.cellar-deck{position:absolute;top:calc(var(--deck-y) - 6px);height:32px;left:0;right:0;clip-path:polygon(24px 0,calc(100% - 24px) 0,100% 100%,0 100%);background:linear-gradient(180deg,#4a3c36,#827260);border-bottom:1px solid #bdab8b70}
+.cellar-fascia{position:absolute;top:calc(var(--deck-y) + 26px);height:9px;left:0;right:0;background:linear-gradient(#786653,#453830 65%,#322927);border-top:1px solid #d6c2a17a;border-radius:0 0 3px 3px;box-shadow:0 14px 20px -10px #35252055}
+.cellar-track{position:relative;display:flex;align-items:stretch;gap:0;min-width:0;padding:var(--stage-pad) 32px 18px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding-inline:32px;scrollbar-width:none}
+.cellar-track::-webkit-scrollbar{display:none}
+.cellar-slot{position:relative;flex:0 0 240px;min-width:0;text-align:left;scroll-snap-align:center;padding-bottom:49px}
+.cellar-slot:first-child{margin-left:auto}.cellar-slot:last-child{margin-right:auto}
+.cellar-bottle{position:relative;display:flex;flex-direction:column;align-items:stretch;width:100%;padding:0 23px;border:0;background:none;color:var(--ink);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cellar-bottle-stage{position:relative;display:flex;align-items:flex-end;justify-content:center;width:100%;height:var(--stage-height);flex-shrink:0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.cellar-bottle-stage:before{content:'';position:absolute;inset:-10px -20px 0;background:radial-gradient(ellipse at 50% 65%,#f3d6ab15,transparent 69%);pointer-events:none;transition:opacity .4s;opacity:.4}
+.cellar-bottle-stage img{display:block;position:relative;height:322px;width:auto;max-width:none;object-fit:contain;mix-blend-mode:normal;filter:drop-shadow(8px 7px 6px #0c070c66);transform-origin:50% 100%;transition:transform .3s cubic-bezier(.2,.7,.2,1),filter .3s;pointer-events:none;-webkit-user-drag:none}
+.cellar-contact-shadow{position:absolute;bottom:-5px;left:50%;width:85px;height:14px;border-radius:50%;background:#130f0fcc;filter:blur(5px);transform:translateX(-36%) skewX(-30deg);pointer-events:none}
+.cellar-label{display:block;margin:60px 0 0;min-height:83px}
+.cellar-label strong{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:400 20px/1.28 var(--serif);min-height:2.56em;overflow-wrap:anywhere;letter-spacing:-.015em}
+.cellar-label small{display:block;margin-top:10px;color:#776c63;font-size:11px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cellar-bottle-controls{position:absolute;bottom:0;left:23px;right:23px;display:flex;justify-content:space-between;align-items:center;min-height:44px}
+.cellar-position{font-size:10px;font-variant-numeric:tabular-nums;letter-spacing:.12em;color:#a09282}
+.cellar-control-group{display:flex;gap:1px}.cellar-bottle-edit,.cellar-grip{width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:#8e7d6c;cursor:pointer;padding:0}
+.cellar-bottle-edit{font-size:16px;letter-spacing:2px}.cellar-grip{cursor:grab;touch-action:none}.cellar-grip svg{width:17px;height:17px;fill:currentColor}.cellar-grip:hover,.cellar-bottle-edit:hover{color:var(--wine);background:#ede6dc}
+.cellar-track.single-bottle .cellar-slot{flex-basis:300px}.cellar-track.single-bottle .cellar-bottle-stage img{height:338px}.cellar-track.single-bottle .cellar-label{text-align:center}.cellar-track.single-bottle .cellar-bottle-controls{justify-content:center}.cellar-track.single-bottle .cellar-position{display:none}
+.cellar-track.empty{height:calc(var(--deck-y) + 65px);align-items:center;justify-content:center;padding-bottom:110px}
+.cellar-instructions{display:flex;justify-content:space-between;align-items:center;min-height:48px;border-top:1px solid #ded5c5;padding:10px 0;color:#8c7e70;font-size:11px;line-height:1.5;gap:12px;margin-top:16px}.cellar-instructions .touch-copy{display:none}.cellar-save-status{color:var(--wine);font-variant-numeric:tabular-nums}
+.cellar-scroll{position:absolute;top:calc(var(--deck-y) * .52);width:40px;height:40px;display:grid;place-items:center;padding:0;border:1px solid #b4a18a55;border-radius:50%;background:#302527a6;backdrop-filter:blur(10px);color:#f2e3cd;font:400 29px/1 var(--serif);z-index:5;cursor:pointer;transition:opacity .2s,background .2s}.cellar-prev{left:12px}.cellar-next{right:12px}.cellar-scroll:disabled{opacity:.18;cursor:default}.cellar-scroll:hover:enabled{background:#695047}
+.cellar-scene.reorderable .cellar-bottle-stage{cursor:grab}
+.cellar-scene.is-dragging .cellar-track{scroll-snap-type:none;scroll-behavior:auto}.cellar-scene.is-saving .cellar-grip{cursor:progress}
+.cellar-slot.is-dragged .cellar-bottle-stage img{opacity:.13;filter:grayscale(1)}.cellar-slot.is-dragged .cellar-contact-shadow{opacity:0}.cellar-slot.is-dragged .cellar-label{opacity:.4}
+.cellar-slot.is-dragged .cellar-bottle-stage:after{content:'';position:absolute;bottom:-13px;width:105px;height:7px;border-radius:50%;border:1px solid #e3c99599;background:#e3c99520;box-shadow:0 0 20px #e3c99533}
+.cellar-drag-ghost{position:fixed;z-index:1000;pointer-events:none;user-select:none;display:flex;align-items:flex-end;justify-content:center;transform-origin:center 70%;will-change:transform}
+.cellar-drag-ghost img{display:block;max-width:none;object-fit:contain;filter:drop-shadow(16px 25px 12px #130b1659);height:100%;width:auto;pointer-events:none}
+.cellar-dragging,.cellar-dragging *{cursor:grabbing!important;user-select:none!important;-webkit-user-select:none!important}
+.bottle-action-name{font:400 25px/1.3 var(--serif);margin:20px 0 24px;overflow-wrap:anywhere}.bottle-action-reorder{padding:20px 0;border-block:1px solid var(--line);margin-bottom:18px}.bottle-action-reorder p{font-size:12px;color:var(--muted);margin-bottom:14px}.bottle-action-reorder>div{display:flex;gap:12px}.bottle-action-reorder button{flex:1}
+/* Collection covers echo the quiet cabinet without tilting the titles or photographs. */
+.shelf-cover-scene{height:300px;border-radius:8px 8px 2px 2px;background:radial-gradient(ellipse at 50% -30%,#b79d7852,transparent 75%),linear-gradient(110deg,#261e22,#403131,#271e22);padding-bottom:34px;border:0;transform:none;box-shadow:0 10px 18px -18px #322423}
+.shelf-cover-scene:before{inset:16px 19px 26px;border:1px solid #b8a17b1a;border-bottom:0;box-shadow:inset 20px 0 25px -22px #09070c99,inset -20px 0 25px -22px #09070c99}
+.shelf-cover-scene:after{bottom:8px;left:0;right:0;height:26px;clip-path:polygon(18px 0,calc(100% - 18px) 0,100% 100%,0 100%);background:linear-gradient(#493c35,#85725b);z-index:0}
+.shelf-cover-ledge{bottom:0;height:8px;z-index:2;background:linear-gradient(#8f7b60,#4c3b30);border-top:1px solid #c6ae8b77;box-shadow:none}
+.shelf-cover-scene .shelf-cutout{z-index:1;height:221px}.shelf-cover-scene .shelf-cutout img{filter:drop-shadow(8px 6px 5px #11090d70)}
+.shelf-cover:hover .shelf-cutout{transform:translateY(-4px)}.shelf-cover-meta{margin-top:24px}
+@media(hover:hover){.cellar-bottle:hover img,.cellar-bottle:focus-visible img{transform:translateY(-6px)}.cellar-bottle:hover .cellar-bottle-stage:before{opacity:1}}
+@media(max-width:1100px){.cellar-slot{flex-basis:214px}.cellar-track{padding-inline:20px}.cellar-bottle{padding-inline:17px}.cellar-bottle-controls{left:17px;right:17px}.shelf-detail-heading h2{font-size:38px}}
+@media(max-width:700px){
+ #collection-view{padding-bottom:110px}.shelf-detail-heading{margin-bottom:26px}.shelf-detail-heading h2{font-size:30px;letter-spacing:-.02em}.shelf-detail-actions{margin-top:17px}
+ .cellar-scene{--stage-height:248px;--stage-pad:28px;--deck-y:276px;margin-inline:-8px}
+ .cellar-back{border-radius:7px 7px 2px 2px}.cellar-back:after{inset:12px 16px 24px}.cellar-wall{width:17px}.cellar-deck{clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 100%,0 100%)}
+ .cellar-track{padding-inline:20px;padding-bottom:9px;scroll-padding-inline:20px}.cellar-slot{flex-basis:160px;padding-bottom:45px}.cellar-bottle{padding-inline:10px}.cellar-bottle-stage img{height:229px}.cellar-contact-shadow{width:67px;height:11px;bottom:-4px;filter:blur(4px)}
+ .cellar-label{margin-top:52px;min-height:76px}.cellar-label strong{font-size:17px;line-height:1.3;min-height:2.6em}.cellar-label small{font-size:11px;margin-top:9px}
+ .cellar-bottle-controls{left:10px;right:10px}.cellar-position{font-size:9px}.cellar-bottle-edit,.cellar-grip{width:44px;height:44px}
+ .cellar-track.single-bottle .cellar-slot{flex-basis:250px}.cellar-track.single-bottle .cellar-bottle-stage img{height:239px}.cellar-track.single-bottle .cellar-label strong{font-size:22px}.cellar-track.single-bottle .cellar-label{min-height:82px}
+ .cellar-scroll{width:44px;height:44px;border-radius:20px;top:calc(var(--deck-y) * .53)}.cellar-prev{left:7px}.cellar-next{right:7px}
+ .cellar-instructions{position:absolute;top:11px;left:17px;right:17px;display:grid;grid-template-columns:minmax(0,1fr) 112px;margin:0;padding:0;border:0;color:#c6b4a6;font-size:10px;gap:15px;min-height:30px;pointer-events:none}.cellar-instructions .mouse-copy{display:none}.cellar-instructions .touch-copy{display:inline}.cellar-save-status{white-space:normal;text-align:right;color:#efdbc0}
+ .shelf-cover-scene{height:254px;padding-bottom:32px}.shelf-cover-scene .shelf-cutout{height:185px}.shelf-cover-meta{margin-top:20px}
+}
+@media(prefers-reduced-motion:reduce){.cellar-bottle-stage img,.cellar-bottle-stage:before,.cellar-scroll,.shelf-cover .shelf-cutout{transition:none}.cellar-bottle:hover img,.cellar-bottle:focus-visible img,.shelf-cover:hover .shelf-cutout{transform:none}}
+
+.cellar-slot.is-dragged .cellar-bottle:hover img{transform:none}
+.cellar-scene.is-dragging .cellar-scroll{opacity:0;pointer-events:none}

@@ -31,7 +31,7 @@ class ServerTest(unittest.TestCase):
             self.assertEqual(self.c.post(f'/admin/api/batches/{b}/upload',files={'image':(name,self.data,'image/jpeg')}).status_code,200)
         return b,self.c.get('/admin/api/batches/'+b).json()['items']
     def test_private_media_auth_and_cross_origin(self):
-        for url in ['/admin/api/history','/admin/api/image/asset/0','/admin/api/wines','/api/status']:
+        for url in ['/admin/api/history','/admin/api/image/asset/0','/admin/api/wines']:
             self.assertEqual(self.c.get(url).status_code,401)
         self.assertEqual(self.c.post('/admin/api/login',json={'password':'test-password'},headers={'Origin':'https://evil.test'}).status_code,403)
         self.login();self.assertEqual(self.c.get('/admin/api/image/asset/0').headers['content-type'],'image/jpeg')

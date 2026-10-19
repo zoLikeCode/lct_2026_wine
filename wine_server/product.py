@@ -124,6 +124,14 @@ def is_wine_selection(message,has_scan=False):
     return bool(re.search(style,q) and re.search(r'\b(?:к|для|под)\s+\w+',q) and
                 not re.search(r'\b(?:почему|зачем|что такое|объясни|расскажи)\b',q))
 
+def is_collection_selection(message):
+    q=normalized(message)
+    noun=r'\b(?:коллекц|подборк|полк|набор)\w*\b'
+    return bool(re.search(noun,q) and (
+        re.search(r'\b(?:подбер|посовет|порекоменд|покаж|найд|выбер|предлож|ищ|хоч|нуж|какую|какие)\w*\b',q)
+        or re.search(noun+r'\s+(?:к|для|под|на)\b',q)
+        or q in ('коллекции','подборки')))
+
 class Product:
     def __init__(self,store):
         self.store=store
@@ -283,7 +291,8 @@ class Product:
                 self._giga_config=config
             return self._giga_client
 
-    def recommendations(self,profile,query='',limit=8):
+    def recommendation_candidates(self,profile,query=''):
+        """Shared catalogue constraints and evidence for wines and collections."""
         q=normalized(query);prefs=self.preferences(profile)
         positives=[(s,3) for s,p in prefs.items() if p['rating']>=4]
         # Saving or scanning is intent, not evidence of taste.
@@ -321,6 +330,10 @@ class Product:
             if not reasons:reasons.append('Вино из каталога «Своё Вино»'+('; '+', '.join(w['pairings'][:2]) if w['pairings'] else ''))
             result.append((score,slug,' · '.join(reasons[:2])))
         result.sort(key=lambda r:(-r[0],self.cards[r[1]]['name']))
+        return result
+
+    def recommendations(self,profile,query='',limit=8):
+        result=self.recommendation_candidates(profile,query)
         chosen=[];remaining=result[:];winery_counts=collections.Counter()
         # Diversify equal/near-equal candidates while retaining explicit query constraints.
         while remaining and len(chosen)<limit:
@@ -448,7 +461,7 @@ class Product:
 
     def assistant(self,profile,message,context=None,scan_id=None,intent=None,dish_name=None):
         if not isinstance(message,str) or len(message)>1600 or not 1<=len(message.strip())<=1600:raise HTTPException(422,'Напишите запрос от 1 до 1600 символов')
-        if intent not in (None,'dish_pairing','dish_recipe','wine_recommendation'):raise HTTPException(422,'Неизвестный тип запроса')
+        if intent not in (None,'dish_pairing','dish_recipe','wine_recommendation','collection_recommendation'):raise HTTPException(422,'Неизвестный тип запроса')
         if intent in ('dish_pairing','dish_recipe') and scan_id is None:raise HTTPException(422,'Для подбора блюда нужен скан вина')
         if intent=='dish_recipe' and (not isinstance(dish_name,str) or not 2<=len(dish_name.strip())<=120
                 or any(ord(ch)<32 for ch in dish_name) or '<' in dish_name or '>' in dish_name):
@@ -474,6 +487,11 @@ class Product:
                 return self.dish_pairing(profile,message,previous_queries,scan,recognized)
             return {'text':'Для этого скана не найдено вина в каталоге, поэтому не могу подобрать к нему блюдо.',
                     'items':[],'recommendation_type':'dish','wine':None,'dishes':[],'mode':'catalog','warning':None}
+        collection_followup=(not intent and previous_queries and is_collection_selection(previous_queries[-1])
+            and re.match(r'^(?:а\s+)?(?:(?:к|для|под|только|без)\b|(?:бел|красн|розов)\w*)',normalized(message))
+            and len(message.split())<=8)
+        if intent=='collection_recommendation' or (not intent and is_collection_selection(message)) or collection_followup:
+            return self.collection.shelves.recommendations(profile,message)
         if intent!='wine_recommendation' and not is_wine_selection(message,scan is not None):
             return self.conversation(message,history)
         # A short wine follow-up may reuse a prior wine request. Unrelated chat

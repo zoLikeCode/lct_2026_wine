@@ -23,13 +23,13 @@
 .prompt-list button,.account-block,.auth-panel,.list-cover,.collection-slot,#history-list,.chat-result{background:#f5f3efcc;border-color:#e3dfd8}
 .prompt-list button:hover,.list-cover:hover{background:#eeebe5}.prompt-icon{background:transparent}
 .assistant-emblem{background:#f1eeea;border-color:#e4dfd7;box-shadow:inset 0 1px #fff}.chat-user{background:#ece7df;border-color:#dfd8ce}
-body[data-screen=scan],body[data-screen=scan] .viewfinder,body[data-screen=scan] .finder-idle{background:#8b8a85}
-body[data-screen=scan] .viewfinder .scan-frame{border-color:#fffc;box-shadow:0 0 0 100vmax #14161740}
-body[data-screen=scan] .viewfinder .scan-frame i{border-color:#fff}.scan-frame-reticle:before,.scan-frame-reticle:after{background:#fff}
-body[data-screen=scan] .capture-side>span:last-child,body[data-screen=scan] .shutter-slot>span{color:#fff}
-body[data-screen=scan] .overlay-icon{background:#ffffff29;border-color:#ffffff70;color:#fff}
-body[data-screen=scan] .desktop-nav{background:#ffffffd6;border-color:#fffc}
-body[data-screen=scan] .camera-feedback{background:#fdfdf5e6;color:#4f4b46;border-color:#fff8;backdrop-filter:blur(20px)}
+/* Scanner colours are owned by scanner.css, including the live-camera contrast. */
+.mini-wine{background:#f5f3ef;border-color:#e5e1da}
+.mini-visual{background:radial-gradient(ellipse at 50% 78%,#d9d5ce33,transparent 62%)}
+.mini-open-label,.cellar-card-footer>.text-button{border-color:#e0dcd5}
+.mini-rating{background:#ffffffd9}.wine-statuses span{background:#ebe7e1;color:#685c56}
+.mini-wine:hover{border-color:#ccc5bb;box-shadow:0 12px 28px #36302a08}
+#search-results,.cellar-empty{background:#f5f3ef;border-color:#e5e1da}
 
 .bottom-nav button.active{background:#ebe6dd}.account-monogram,.account-avatar{background:#eae5dc}
 

@@ -76,13 +76,17 @@ class RecsysServiceTest(unittest.TestCase):
         self.assertEqual(res['free'],5);self.assertNotIn('merlo',[w['slug'] for w in res['items']])
         with self.assertRaises(Exception):self.r.list_suggestions('p2',lid)
 
-    def test_list_suggestions_follow_what_is_on_the_shelf(self):
+    def rich_catalog(self):
+        """The eleven-wine catalog of test_recsys instead of the two-wine fixture."""
         sys.path.insert(0,str(Path(__file__).resolve().parent))
         from test_recsys import CARDS
         from recsys import Recommender
         self.p.cards={s:{**w,'slug':s,'image':'','portal_url':''} for s,w in CARDS.items()}
-        self.p.search={s:w['name'].lower() for s,w in self.p.cards.items()}
+        self.p.search={s:' '.join([w['name'],w['category'],w['grapes'],w['region']]).lower() for s,w in self.p.cards.items()}
         self.p.recsys=self.r.rec=Recommender(self.p.cards)
+
+    def test_list_suggestions_follow_what_is_on_the_shelf(self):
+        self.rich_catalog()
         lid=self.p.collection.save_list('p1',{'name':'Пятница','goal':'','size':0})['id']
         for slug in ('sweet-1','sap-3'):self.p.collection.list_action('p1',lid,{'action':'add','slug':slug})
         items=self.r.list_suggestions('p1',lid,6)['items']
@@ -90,6 +94,26 @@ class RecsysServiceTest(unittest.TestCase):
         self.assertIn('sweet-2',slugs[:2])  # a newcomer: the shelf itself decides, not the catalog order
         self.assertNotIn('sap-3-2021',slugs)  # another vintage of a wine already on the shelf
         self.assertIn('из этой коллекции',items[0]['reason'])
+
+    def test_search_to_add_a_wine_is_ranked_by_fit_not_by_name(self):
+        self.rich_catalog()
+        lid=self.p.collection.save_list('p1',{'name':'Пятница','goal':'','size':0})['id']
+        self.p.collection.list_action('p1',lid,{'action':'add','slug':'sweet-1'})
+        # «кубань» matches every wine equally, so the order is the fit; by name «Брют Белое» would lead.
+        found=self.p.search_catalog('кубань','p1',list_id=lid)
+        self.assertEqual(found[0]['slug'],'sweet-2');self.assertIn('из этой коллекции',found[0]['reason'])
+        self.assertNotIn('sweet-1',[w['slug'] for w in found])  # already on the shelf
+        self.assertEqual(len(self.p.search_catalog('кубань','p1',limit=3,list_id=lid)),3)
+        with self.assertRaises(Exception):self.p.search_catalog('кубань','p2',list_id=lid)  # someone else's shelf
+        # Without a shelf: the user's taste. Saperavi rated 5 → Saperavi first.
+        self.p.update('p1','sap-1',{'rating':5})
+        self.assertTrue(self.p.search_catalog('кубань','p1')[0]['slug'].startswith('sap-'))
+        # A title match still beats fit: a Saperavi whose text only mentions muscat goes after the Muscats,
+        # even on a Saperavi shelf.
+        self.p.search['sap-2']+=' нотки муската'
+        reds=self.p.collection.save_list('p1',{'name':'Красные','goal':'','size':0})['id']
+        self.p.collection.list_action('p1',reds,{'action':'add','slug':'sap-3'})
+        self.assertEqual([w['slug'] for w in self.p.search_catalog('муск','p1',list_id=reds)][-1],'sap-2')
 
     def test_guest_onboarding_survives_merge(self):
         self.r.save_onboarding('guest',{'tiles':['bubbles']})

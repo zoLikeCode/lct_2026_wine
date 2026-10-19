@@ -367,8 +367,8 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
                 'catalog_count':len(product.cards),'account':product.collection.account(request)}
 
     @app.get('/api/product/search')
-    def product_search(request:Request,q:str=''):
-        return {'items':product.search_catalog(q[:160],request.state.profile)}
+    def product_search(request:Request,q:str='',list_id:str=''):
+        return {'items':product.search_catalog(q[:160],request.state.profile,list_id=list_id or None)}
 
     @app.get('/api/product/wines/{slug}')
     def product_wine(slug:str,request:Request):return product.wine_detail(slug,request.state.profile)

@@ -219,15 +219,17 @@ class Product:
         stats=self.aggregates();prefs=self.preferences(profile)
         return [self.card(s,profile,stats,prefs) for s in slugs if s in self.cards]
 
-    def search_catalog(self,q,profile,limit=30):
+    def search_catalog(self,q,profile,limit=30,list_id=None):
+        """Search for a wine to add: every word must match; closer titles first, then what fits — the
+        selection being filled (list_id) or the user's taste — so the cut to `limit` keeps the best."""
         words=normalized(q).split()
         if not words:return []
-        ranked=[]
+        matches=[]
         for slug,w in self.cards.items():
             title=normalized(' '.join([w['name'],w['winery'],w['grapes']]))
-            if all(word in self.search[slug] for word in words):ranked.append((sum(word in title for word in words),slug))
-        ranked.sort(key=lambda x:(-x[0],self.cards[x[1]]['name']))
-        return self.cards_for([s for _,s in ranked[:limit]],profile)
+            if all(word in self.search[slug] for word in words):matches.append((sum(word in title for word in words),slug))
+        ranked,reasons=self.recs.rank_search(profile,matches,list_id)
+        return [{**w,'reason':reasons[w['slug']]} if w['slug'] in reasons else w for w in self.cards_for(ranked[:limit],profile)]
 
     def history(self,profile):
         with self.store.db() as db:

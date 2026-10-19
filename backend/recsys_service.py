@@ -360,18 +360,20 @@ class RecsysService:
         extra = {s: {'refill_of': s} for s in finished}
         return self._cards(chosen, profile, extra), None
 
-    def list_suggestions(self, profile, list_id, limit=None):
-        """Fill a selection («подборка») for its occasion: taste + occasion fit + closeness to the
-        wines already in it + range of styles; bottles the user already owns come first when they fit."""
+    def own_list(self, profile, list_id):
+        """One of the user's selections and the wines on it; someone else's is a 404."""
         with self.store.db() as db:
             row = db.execute('SELECT * FROM collection_lists WHERE id=? AND profile=?', (list_id, profile)).fetchone()
             if not row:
                 raise HTTPException(404, 'Подборка не найдена')
             members = {r['slug'] for r in db.execute('SELECT slug FROM collection_members WHERE list_id=?', (list_id,))}
-        free = (row['size'] or 6) - len(members) if row['size'] else 6
-        limit = max(1, min(limit or free or 6, 24))
-        if free <= 0 and row['size']:
-            return {'list_id': list_id, 'items': [], 'free': 0, 'occasion': None, 'empty': 'Все места заполнены'}
+        return row, members
+
+    def list_fit(self, profile, row, members):
+        """How well every catalog wine fits a selection: taste + occasion fit + closeness to the wines
+        already in it; bottles the user owns get a nudge. Returns {slug: (score, why)} with why the
+        reason without the «Есть у вас» part ('' when there is nothing to say), and the occasion rule
+        and collection signals it was built from."""
         signals, virtual, labels, personal, source, conf, penalty, prior = self._context(profile)
         text = _norm(row['name'] + ' ' + (row['goal'] or ''))
         rule = {}
@@ -379,25 +381,19 @@ class RecsysService:
             if any(k in text for k in keys):
                 for k, v in r.items():
                     rule.setdefault(k, v)
-        hidden = self.hidden(profile)
         pos = self.rec.profile(signals)[0]
         levels = {sweetness_level(self.rec.styles[i]) for i, w in pos.items() if w >= 0.5}
         guard = sum(pos.values()) >= 2 and rule.get('occasion') != 'dessert'
         # What is already on the shelf says what the shelf is about, whatever its name: the closest
-        # member to every wine (cosine), and no other vintage of a wine that is already there.
+        # member to every wine (cosine).
         inside = [self.rec.index[s] for s in members if s in self.rec.index][:24]
         cohesion, near = [0.0] * len(self.rec.slugs), [None] * len(self.rec.slugs)
         for m in inside:
             for j, v in enumerate(self.rec.sims_to(m)):
                 if v > cohesion[j]:
                     cohesion[j], near[j] = v, m
-        groups = {self.rec.dupe[m] for m in inside}
-        scored = []
+        out = {}
         for slug, i in self.rec.index.items():
-            if slug in members or slug in hidden or (signals.get(slug, {}).get('rating') or 3) <= 2:
-                continue
-            if self.rec.dupe[i] in groups:
-                continue
             w, prof = self.p.cards[slug], self.rec.taste.get(slug, {})
             fit, why = 0.0, []
             sparkling = self.rec.styles[i][2]
@@ -430,13 +426,52 @@ class RecsysService:
                 why.append('похоже на «' + self.p.cards[self.rec.slugs[near[i]]]['name'] + '» из этой коллекции')
             elif liked >= 0.4:
                 why.append('похоже на «' + self.p.cards[self.rec.slugs[src]]['name'] + '»')
-            reason = ('Есть у вас · ' if owned else '') + ('; '.join(why[:2]) if why else 'для разнообразия коллекции')
-            scored.append((score, slug, reason[0].upper() + reason[1:]))
+            out[slug] = (score, '; '.join(why[:2]))
+        return out, rule, signals
+
+    @staticmethod
+    def _reason(why, owned, filler=''):
+        """«Есть у вас · …» and why (or the filler), capitalised; '' when there is nothing to say."""
+        reason = ' · '.join(x for x in ('есть у вас' if owned else '', why or filler) if x)
+        return reason[:1].upper() + reason[1:]
+
+    def list_suggestions(self, profile, list_id, limit=None):
+        """Fill a selection («подборка»): the wines that fit it best (list_fit) and are not on it yet —
+        no other vintage of one that is, nothing hidden or disliked — with a range of styles."""
+        row, members = self.own_list(profile, list_id)
+        free = (row['size'] or 6) - len(members) if row['size'] else 6
+        limit = max(1, min(limit or free or 6, 24))
+        if free <= 0 and row['size']:
+            return {'list_id': list_id, 'items': [], 'free': 0, 'occasion': None, 'empty': 'Все места заполнены'}
+        fit, rule, signals = self.list_fit(profile, row, members)
+        hidden = self.hidden(profile)
+        groups = {self.rec.dupe[self.rec.index[s]] for s in members if s in self.rec.index}
+        scored = [(score, slug, self._reason(why, signals.get(slug, {}).get('quantity'), 'для разнообразия коллекции'))
+                  for slug, (score, why) in fit.items()
+                  if slug not in members and slug not in hidden and (signals.get(slug, {}).get('rating') or 3) > 2
+                  and self.rec.dupe[self.rec.index[slug]] not in groups]
         chosen = self.rec.diversify(scored, limit, per_winery=2, style_repeat=0.15)
         extra = {s: {'owned': True, 'quantity': v['quantity']} for s, v in signals.items() if v.get('quantity')}
         occasion = OCCASIONS.get(rule.get('occasion')) if rule else None
         return {'list_id': list_id, 'items': self._cards(chosen, profile, extra), 'free': free, 'occasion': occasion,
                 'request_id': self.log_impressions(profile, [{'slug': x[1]} for x in chosen], 'list'), 'empty': None}
+
+    def rank_search(self, profile, matches, list_id=None):
+        """Order catalog search matches [(relevance, slug)] for adding a wine: relevance to the query
+        first, then fit — to the selection being filled (list_fit, with its reason) or, without one, to
+        the user's taste (popularity for a newcomer). Wines already on the selection are left out.
+        Returns the ordered slugs and {slug: reason}."""
+        if list_id:
+            row, members = self.own_list(profile, list_id)
+            fit, _, signals = self.list_fit(profile, row, members)
+            matches = [m for m in matches if m[1] not in members]
+            reasons = {s: self._reason(why, signals.get(s, {}).get('quantity')) for s, (_, why) in fit.items()}
+        else:
+            _, _, _, personal, _, conf, penalty, prior = self._context(profile)
+            fit = {s: (conf * personal[i] + (1 - conf) * prior[i] - 0.6 * penalty[i], '') for s, i in self.rec.index.items()}
+            reasons = {}
+        ranked = sorted(matches, key=lambda m: (-m[0], -fit.get(m[1], (0.0, ''))[0], self.p.cards[m[1]]['name']))
+        return [s for _, s in ranked], {s: r for s, r in reasons.items() if r}
 
     def kind_of(self, i):
         """Passport tab of catalog wine i: red / white / rose / sparkling (or None: orange, unknown)."""

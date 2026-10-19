@@ -129,7 +129,7 @@ RUNPOD_URL=https://<POD_ID>-8080.proxy.runpod.net bash start.sh
 |---|---|---|
 | `POST` | `/api/predict` | скан: фото → вино, альтернативы, `no_wine` |
 | `GET` | `/api/status` | готова ли модель |
-| `GET` | `/api/product/search?q=` | поиск по каталогу |
+| `GET` | `/api/product/search?q=&list_id=` | поиск по каталогу, ранжированный по вкусу или по коллекции |
 | `GET` | `/api/product/wines/{slug}` | карточка вина |
 | `POST` | `/api/product/preferences/{slug}` | избранное и оценка |
 | `GET` | `/api/product/ranking?mode=scans\|rating` | топ вин |

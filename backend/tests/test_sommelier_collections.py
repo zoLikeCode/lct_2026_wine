@@ -89,3 +89,11 @@ class SommelierCollectionsTest(ShelvesTest):
             other.post('/api/product/shelves/'+public+'/copy',json={})  # saved already: nothing new to suggest
             self.assertEqual(other.get('/api/product/shelves/for-you').json()['items'],[])
             self.assertEqual(other.get('/api/product/shelves/for-you?limit=99').status_code,422)
+
+    def test_search_for_a_shelf_skips_its_wines_and_stays_private(self):
+        shelf=self.white_shelf(self.c)
+        found=self.c.get('/api/product/search',params={'q':'тестовая','list_id':shelf}).json()['items']
+        self.assertEqual([w['slug'] for w in found],['merlo'])  # cabernet is already on the shelf
+        self.assertEqual(len(self.c.get('/api/product/search',params={'q':'тестовая'}).json()['items']),2)
+        with TestClient(self.app) as other:
+            self.assertEqual(other.get('/api/product/search',params={'q':'тестовая','list_id':shelf}).status_code,404)

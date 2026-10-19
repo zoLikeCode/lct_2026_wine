@@ -110,13 +110,14 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
                 return JSONResponse({'detail':'Недопустимый источник запроса'},status_code=403)
             length=request.headers.get('content-length','0')
             if not length.isdigit() or int(length)>MAX_BYTES+65536:return JSONResponse({'detail':'Файл больше 24 МБ'},status_code=413)
-        if request.method=='POST' and path.startswith('/api/product/') and int(request.headers.get('content-length','0'))>8192:return JSONResponse({'detail':'Запрос слишком большой'},status_code=413)
+        product_body_limit=65536 if re.fullmatch(r'/api/product/shelves/[a-zA-Z0-9_-]+/reorder',path) else 8192
+        if request.method=='POST' and path.startswith('/api/product/') and int(request.headers.get('content-length','0'))>product_body_limit:return JSONResponse({'detail':'Запрос слишком большой'},status_code=413)
         if path.startswith('/admin/api/') and path!='/admin/api/login' and not admin(request):
             return JSONResponse({'detail':'Войдите в админку'},status_code=401)
-        public_product=bool((request.method=='GET' and re.fullmatch(r'/api/product/(bootstrap|account|collection|collection/lists/[^/]+/suggestions|search|ranking|recommendations|taste|taste/onboarding|history|wines/[^/]+(?:/image)?|scans/[^/]+/image)',path)) or (request.method=='POST' and re.fullmatch(r'/api/product/(assistant|preferences/[^/]+|taste/onboarding|recommendations/feedback|account/(register|login|recover|logout|revoke|name|password)|collection/(wines/[^/]+|stock/[^/]+|lists(?:/[^/]+)?))',path)))
+        public_product=bool((request.method=='GET' and re.fullmatch(r'/api/product/(bootstrap|account|collection|collection/lists/[^/]+/suggestions|taste|taste/onboarding|shelves(?:/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)?)?|search|ranking|recommendations|history|wines/[^/]+(?:/image)?|scans/[^/]+/image)',path)) or (request.method=='POST' and re.fullmatch(r'/api/product/(taste/onboarding|recommendations/feedback|shelves/[a-zA-Z0-9_-]+/(?:settings|copy|comment|reorder)|assistant|preferences/[^/]+|account/(register|login|recover|logout|revoke|name|password)|collection/(wines/[^/]+|stock/[^/]+|lists(?:/[^/]+)?))',path)))
         if path.startswith('/api/') and (request.method,path) not in public_scanner_routes and not public_product and not admin(request):
             return JSONResponse({'detail':'Войдите в админку'},status_code=401)
-        if request.method=='POST' and (path.startswith('/api/product/collection/') or path.startswith('/api/product/preferences/')) and request.cookies.get('wine_account') and not product.collection.session(request):
+        if request.method=='POST' and (path.startswith('/api/product/collection/') or path.startswith('/api/product/shelves/') or path.startswith('/api/product/preferences/')) and request.cookies.get('wine_account') and not product.collection.session(request):
             return JSONResponse({'detail':'Сессия завершена. Войдите снова'},status_code=401)
         new_profile=None
         if (public_product and not re.fullmatch(r'/api/product/wines/[^/]+/image',path)) or path=='/api/predict':

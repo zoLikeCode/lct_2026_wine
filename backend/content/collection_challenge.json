@@ -1,0 +1,64 @@
+{
+  "id": "five-discoveries-2026-10",
+  "title": "Пять дорогих открытий",
+  "description": "Пять вин из нашего каталога для особого знакомства. Найдите каждое сканером — соберите свой статус.",
+  "badge": "Коллекционер редкостей",
+  "price_note": "Редакционная подборка дорогих вин. Цены из открытых карточек магазинов относятся к указанным годам и объёмам; актуальную цену уточняйте у источника. Это не рейтинг всего рынка. Прогресс учитывает вино из каталога, без отдельной проверки года и объёма.",
+  "wines": [
+    {
+      "slug": "usadba-divnomorskoe-rebo-rebo-krasnoe-suhoe-165",
+      "price": 11810,
+      "vintage": "2020",
+      "volume": "0,75 л",
+      "source_name": "Sabonis",
+      "source_url": "https://sabonis.ru/productDetail/vino-usadba-divnomorskoe-rebo-znmp-2",
+      "price_note": "",
+      "checked_at": "18.10.2026",
+      "catalog_url": "https://vino-svoe.ru/wines/usadba-divnomorskoe-rebo-rebo-krasnoe-suhoe-165"
+    },
+    {
+      "slug": "vinodelnya-vedernikov-vedernikov-krasnostop-zolotovskiy-magnum-krasnoe-suhoe-145",
+      "price": 11210,
+      "vintage": "2020",
+      "volume": "1,5 л · магнум",
+      "source_name": "Sabonis",
+      "source_url": "https://sabonis.ru/productDetail/vino-vinodelnia-vedernikov-krasnostop-zolotovskii-vyderzhannoe-zgu-dolina-dona-1",
+      "price_note": "",
+      "checked_at": "18.10.2026",
+      "catalog_url": "https://vino-svoe.ru/wines/vinodelnya-vedernikov-vedernikov-krasnostop-zolotovskiy-magnum-krasnoe-suhoe-145"
+    },
+    {
+      "slug": "uppa-winery-nebbiolo-krasnoe-suhoe-14",
+      "price": 8640,
+      "vintage": "2021",
+      "volume": "0,75 л",
+      "source_name": "КРЮ ПРОФИ",
+      "source_url": "https://www.cru.ru/wine/russia/pavel-shvets-nebbiolo-2021-075/",
+      "price_note": "",
+      "checked_at": "18.10.2026",
+      "catalog_url": "https://vino-svoe.ru/wines/uppa-winery-nebbiolo-krasnoe-suhoe-14"
+    },
+    {
+      "slug": "imenie-sikory-semeynoe-nasledie-kaberne-sovinon-krasnoe-suhoe-14",
+      "price": 7820,
+      "vintage": "2020",
+      "volume": "0,75 л",
+      "source_name": "Sabonis",
+      "source_url": "https://sabonis.ru/productDetail/vino-sikory-semeinoe-nasledie-zgu-semigore-1",
+      "price_note": "Цена со скидкой на странице магазина.",
+      "checked_at": "18.10.2026",
+      "catalog_url": "https://vino-svoe.ru/wines/imenie-sikory-semeynoe-nasledie-kaberne-sovinon-krasnoe-suhoe-14"
+    },
+    {
+      "slug": "uppa-winery-sovinon-blan-rezerva-beloe-suhoe-12",
+      "price": 7425,
+      "vintage": "2022",
+      "volume": "0,75 л",
+      "source_name": "Sabonis",
+      "source_url": "https://sabonis.ru/productDetail/vino-pavel-shvets-sovinon-blan-rezerva-organik-dolina-r-chernaia",
+      "price_note": "Цена со скидкой на странице магазина.",
+      "checked_at": "18.10.2026",
+      "catalog_url": "https://vino-svoe.ru/wines/uppa-winery-sovinon-blan-rezerva-beloe-suhoe-12"
+    }
+  ]
+}

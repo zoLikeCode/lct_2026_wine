@@ -16,3 +16,22 @@ wine_dataset/images/
 
 .pytest_cache/
 .coverage
+
+# From feat/wine-product-collection-account
+outputs/
+# Portable release assets are distributed separately from source.
+*.safetensors
+*.pth
+*.ckpt
+*.zip
+*.tar.gz
+.venv-portable/
+.env.*
+# Website runtime and private user data are kept outside Git.
+*.sqlite
+*.db
+/wine_dataset/
+wine_server/reports/
+ДОСТУП.md
+QR-Android.png
+!.env.example

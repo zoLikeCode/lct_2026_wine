@@ -16,7 +16,7 @@ PREFIX = Path('wine-portable')
 
 BACKEND = (
     'app.py', 'annotation_formats.py', 'data_store.py', 'duplicates.py',
-    'exports.py', 'gigachat_client.py', 'ml_client.py', 'product.py',
+    'exports.py', 'gigachat_client.py', 'ml_client.py', 'product.py', 'collection.py',
 )
 PORTABLE = ('start.sh', 'bootstrap_dataset.py', 'requirements.txt',
             'README.md', '.env.example', '.gitignore')

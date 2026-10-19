@@ -69,7 +69,7 @@ body[data-screen=assistant]{background:#fefdfa}#assistant-view.chat-fullscreen{p
 /* Fullscreen scanner: no header branding, slogans or download button. */
 .finder-idle{background:radial-gradient(ellipse at 52% 43%,#fffdf6 0%,#f5efdf 52%,#e4dac7 100%)}
 .viewfinder:not(.live) .scan-frame{border-color:#8f3d4216;box-shadow:none;border-radius:38px}.viewfinder:not(.live) .scan-frame i{border-color:#a7856f80}
-.capture-controls{gap:28px}
+body[data-screen=scan] .desktop-nav{background:#fffdf2d9;border-color:#fff;box-shadow:inset 0 1px #fff,0 8px 32px #4d35220c}.capture-controls{gap:28px}
 .overlay-icon{background:#fffdf3d9;border-color:#fffe;box-shadow:inset 0 1px #fff,0 6px 18px #46322410}.shutter-button{background:#fff9;box-shadow:0 0 0 5px #fff3,0 8px 24px #5d44361c}.shutter-core{background:var(--wine)}
 .capture-side>span:last-child,.shutter-slot>span{background:#fffdf2dc;font-size:11px}
 .notice{background:#fffdf6f5;border-color:#e8dfcc;border-radius:24px}dialog{background:#fdf9ed;border-color:#fff;border-radius:32px;padding:32px}
@@ -99,7 +99,3 @@ body[data-screen=assistant]{background:#fefdfa}#assistant-view.chat-fullscreen{p
 @media(max-width:380px){.app-shell{padding-inline:16px}.collection-intro h1{font-size:34px}.wine-grid{gap:12px}.mini-visual{height:180px}.mini-copy{padding-inline:12px}.mini-wine h3{font-size:17px}.segmented{gap:16px}.segmented button{font-size:13px}.assistant-welcome h2{font-size:30px}.portal-dishes-many ul{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-height:700px) and (max-width:760px){.assistant-emblem{display:none}.assistant-welcome{margin:0}.assistant-welcome>p{margin-bottom:16px}.prompt-list button{min-height:52px}.prompt-icon{width:32px;height:32px}.chat-messages{padding:12px 0}}
 @media(prefers-reduced-motion:reduce){.mini-wine,.mini-visual>img{transition:none}}
-
-/* Fixed text slots keep wine cards and their actions aligned. */
-.mini-wine h3,.mini-wine .mini-meta{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-overflow:ellipsis;block-size:2lh;min-block-size:2lh;max-block-size:2lh}
-.mini-wine .mini-producer,.mini-wine .mini-category{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;block-size:1lh;min-block-size:1lh}

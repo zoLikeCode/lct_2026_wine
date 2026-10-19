@@ -1,0 +1,58 @@
+[
+  {
+    "filename": "70.45_04-09-2026_13-35-37.webp",
+    "sha256": "3eb309e8e4b139ef15566a45fe8fef1a940b8dca4bf15d8a6b5fe0523a69cb52",
+    "model_version": "refined-7db54690044e-linux-onnx-fp32-ppocr5-cyrillic",
+    "slug": "kuban-vino-vysokiy-bereg-merlo-krasnoe-suhoe-135",
+    "recognized_text": [],
+    "top5": [
+      "kuban-vino-vysokiy-bereg-merlo-krasnoe-suhoe-135",
+      "v2r-sovinon-blan-beloe-suhoe-13",
+      "esse-sovinon-blan-fyume-beloe-suhoe-128",
+      "fanagoriya-tochka-saperavi-krasnoe-suhoe-14",
+      "le-k2-pino-nuar-pi-krasnoe-suhoe-133"
+    ]
+  },
+  {
+    "filename": "93.97_28-08-2026_16-02-48.webp",
+    "sha256": "895c254a8654a4648c2dee1e2c6c5e002141b8c48ff82de680fe70a27d686896",
+    "model_version": "refined-7db54690044e-linux-onnx-fp32-ppocr5-cyrillic",
+    "slug": "golubitskoe-estate-chardonnay",
+    "recognized_text": [
+      "AB.R",
+      "GOLUBITSKOE",
+      "—ESTATE-",
+      "CHARDONNAY",
+      "TAMAGNE",
+      "2024"
+    ],
+    "top5": [
+      "golubitskoe-estate-chardonnay",
+      "golubitskoe-estate-shardone-rezerv-beloe-suhoe-135",
+      "mantra-estate-chardonnay-shardone-beloe-suhoe-135",
+      "nikolaev-i-synovya-shardone-beloe-suhoe-125",
+      "stn-winery-chardonnay-vol2-shardone-beloe-suhoe-105"
+    ]
+  },
+  {
+    "filename": "96.27_20-08-2026_16-26-30.webp",
+    "sha256": "d754e4474418b54b8888617dffa08263c7bfb96e26a700ff7578d050a8737501",
+    "model_version": "refined-7db54690044e-linux-onnx-fp32-ppocr5-cyrillic",
+    "slug": "zhemchuzhnaya-9-pino-nuar-muskat-rozovyj-1",
+    "recognized_text": [
+      "1606",
+      "АРАТТИ",
+      "ПИНО НУАР",
+      "МУСКАТ РОЗОВЫЙ",
+      "РОЗОВОЕ ПОЛУСУХОЕ",
+      "2024"
+    ],
+    "top5": [
+      "zhemchuzhnaya-9-pino-nuar-muskat-rozovyj-1",
+      "zhemchuzhnaya-9-pino-nuar-muskat-rozovyj-2",
+      "zhemchuzhnaya-9-pino-nuar-muskat-rozovyj",
+      "zhemchuzhnaya-9-muskat-rozovyj-pino-gri",
+      "zhemchuzhnaya-9-muskat-rozovyj-kaberne-sovinon"
+    ]
+  }
+]

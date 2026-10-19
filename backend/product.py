@@ -124,6 +124,14 @@ def is_wine_selection(message,has_scan=False):
     return bool(re.search(style,q) and re.search(r'\b(?:к|для|под)\s+\w+',q) and
                 not re.search(r'\b(?:почему|зачем|что такое|объясни|расскажи)\b',q))
 
+def is_collection_selection(message):
+    q=normalized(message)
+    noun=r'\b(?:коллекц|подборк|полк|набор)\w*\b'
+    return bool(re.search(noun,q) and (
+        re.search(r'\b(?:подбер|посовет|порекоменд|покаж|найд|выбер|предлож|ищ|хоч|нуж|какую|какие)\w*\b',q)
+        or re.search(noun+r'\s+(?:к|для|под|на)\b',q)
+        or q in ('коллекции','подборки')))
+
 class Product:
     def __init__(self,store):
         self.store=store
@@ -304,11 +312,11 @@ class Product:
         for slug in self.recs.not_for_me(profile):sig[slug]['not_for_me']=True
         return {s:v for s,v in sig.items() if s in self.cards}
 
-    def recommendations(self,profile,query='',limit=8):
+    def _ranked(self,profile,query='',exclude_seen=True):
         """Hard constraints from the query (colour, sweetness, food) filter the catalog; the order
         inside them is taste: similarity to the user's own collection, blended with popularity
-        while the collection is still small. WINE_RECSYS=legacy restores the previous rules."""
-        if os.environ.get('WINE_RECSYS','').strip().lower()=='legacy':return self.recommendations_legacy(profile,query,limit)
+        while the collection is still small. Returns (score, slug, reason) rows and the slot plan
+        for diversify(). exclude_seen=False keeps wines the user already knows (for shelves)."""
         q=normalized(query);prefs=self.preferences(profile);rec=self.recsys
         signals=self.taste_signals(profile)
         virtual,labels=self.recs.onboarding_seeds(profile);answers=self.recs.answers(profile)
@@ -325,7 +333,7 @@ class Product:
         tokens=[t for t in q.split() if len(t)>3 and t not in {'вино','хочу','меня','моих','моим','вкусу','вечер','ужин','подбери','посоветуй','сегодня','какое','основе','предпочтений'}]
         # Recommend what the user has not had yet (the wishlist stays: it is what they want). A query
         # may still return bottles they keep at home — that is the cheapest good answer.
-        seen={s for s,v in signals.items() if v.get('rating') or v.get('opened') or v.get('tried') or v.get('not_for_me') or (v.get('quantity') and not wanted_food)}|self.recs.hidden(profile)
+        seen=({s for s,v in signals.items() if v.get('rating') or v.get('opened') or v.get('tried') or v.get('not_for_me') or (v.get('quantity') and not wanted_food)}|self.recs.hidden(profile)) if exclude_seen else set()
         owned={s for s,v in signals.items() if v.get('quantity')}
         # Sweetness the user has actually liked: a dry-wine drinker should not get semi-sweet in the feed
         # just because the grape matches. Only once there is enough evidence to tell.
@@ -362,7 +370,7 @@ class Product:
             if wanted_food and i is not None and sweetness_level(rec.styles[i])=='sweet' and not any('десерт' in t for targets in wanted_food for t in targets):
                 score-=6  # a sweet wine with shashlik or fish, whatever the portal tags say
             if slug in owned:score+=2;reasons.append('Есть у вас: '+str(signals[slug]['quantity'])+' бут.')
-            if strict_answers and i is not None and not self.recs.fits_answers(answers,rec.styles[i]):continue
+            if strict_answers and exclude_seen and i is not None and not self.recs.fits_answers(answers,rec.styles[i]):continue
             if mine>0 and mine>=common and source[i] not in (None,i) and rec.similarity_to_source(i,source[i],virtual)>=0.4:reasons.append(rec.why(i,source[i],signals,labels))
             if p.get('rating',0)>=4:score+=3;reasons.append('Ваша оценка: '+str(p['rating'])+' из 5')
             if not reasons:
@@ -388,9 +396,25 @@ class Product:
             # so a newcomer sees dry red and white first, not one bottle of every rare style.
             interests={slug:rec.interest(rec.index[slug]) for _,slug,_ in result}
             shares=rec.style_shares()
-        chosen=rec.diversify(result,limit,interests=interests,shares=shares)
+        return result,interests,shares
+
+    def recommendation_candidates(self,profile,query=''):
+        """Shared catalogue constraints and evidence for wines and collections (shelves rank the
+        wines inside a collection with these scores, so they include wines the user knows)."""
+        if os.environ.get('WINE_RECSYS','').strip().lower()=='legacy':return self.recommendation_candidates_legacy(profile,query)
+        result,_,_=self._ranked(profile,query,exclude_seen=False)
+        result.sort(key=lambda r:(-r[0],self.cards[r[1]]['name']))
+        return result
+
+    def recommendations(self,profile,query='',limit=8):
+        """Wines to suggest: taste-ranked candidates, then slots split between the user's tastes,
+        near-copies and repeated grapes thinned out. WINE_RECSYS=legacy restores the previous rules."""
+        if os.environ.get('WINE_RECSYS','').strip().lower()=='legacy':return self.recommendations_legacy(profile,query,limit)
+        result,interests,shares=self._ranked(profile,query)
+        chosen=self.recsys.diversify(result,limit,interests=interests,shares=shares)
         cards=self.cards_for([x[1] for x in chosen],profile)
         return [{**w,'reason':x[2]} for w,x in zip(cards,chosen)]
+
 
     def cellar_answer(self,profile,message):
         """«Что открыть из моей коллекции?» — answer from the user's own bottles, not the catalog."""
@@ -403,7 +427,8 @@ class Product:
               +(' Ещё подойдут: '+', '.join('«'+w['name']+'»' for w in items[1:])+'.' if len(items)>1 else ''))
         return {'text':text,'items':items,'recommendation_type':'cellar','mode':'catalog','warning':None}
 
-    def recommendations_legacy(self,profile,query='',limit=8):
+    def recommendation_candidates_legacy(self,profile,query=''):
+        """Previous rules, kept for WINE_RECSYS=legacy."""
         q=normalized(query);prefs=self.preferences(profile)
         positives=[(s,3) for s,p in prefs.items() if p['rating']>=4]
         # Saving or scanning is intent, not evidence of taste.
@@ -436,10 +461,15 @@ class Product:
             pref_score=sum(min(affinity[(k,w[k])],9)*v for k,v in [('category',.45),('winery',.9),('grapes',.65)])
             score+=pref_score
             if pref_score:reasons.append('Близко к сортам вин, которым вы поставили 4–5')
-            if p.get('rating',0)>=4 and slug in owned:reasons.append('Ваша оценка: '+str(p['rating'])+' из 5')
+            if p.get('rating',0)>=4:score+=3;reasons.append('Ваша оценка: '+str(p['rating'])+' из 5')
+
             if not reasons:reasons.append('Вино из каталога «Своё Вино»'+('; '+', '.join(w['pairings'][:2]) if w['pairings'] else ''))
             result.append((score,slug,' · '.join(reasons[:2])))
         result.sort(key=lambda r:(-r[0],self.cards[r[1]]['name']))
+        return result
+
+    def recommendations_legacy(self,profile,query='',limit=8):
+        result=self.recommendation_candidates_legacy(profile,query)
         chosen=[];remaining=result[:];winery_counts=collections.Counter()
         # Diversify equal/near-equal candidates while retaining explicit query constraints.
         while remaining and len(chosen)<limit:
@@ -567,7 +597,7 @@ class Product:
 
     def assistant(self,profile,message,context=None,scan_id=None,intent=None,dish_name=None):
         if not isinstance(message,str) or len(message)>1600 or not 1<=len(message.strip())<=1600:raise HTTPException(422,'Напишите запрос от 1 до 1600 символов')
-        if intent not in (None,'dish_pairing','dish_recipe','wine_recommendation'):raise HTTPException(422,'Неизвестный тип запроса')
+        if intent not in (None,'dish_pairing','dish_recipe','wine_recommendation','collection_recommendation'):raise HTTPException(422,'Неизвестный тип запроса')
         if intent in ('dish_pairing','dish_recipe') and scan_id is None:raise HTTPException(422,'Для подбора блюда нужен скан вина')
         if intent=='dish_recipe' and (not isinstance(dish_name,str) or not 2<=len(dish_name.strip())<=120
                 or any(ord(ch)<32 for ch in dish_name) or '<' in dish_name or '>' in dish_name):
@@ -593,10 +623,15 @@ class Product:
                 return self.dish_pairing(profile,message,previous_queries,scan,recognized)
             return {'text':'Для этого скана не найдено вина в каталоге, поэтому не могу подобрать к нему блюдо.',
                     'items':[],'recommendation_type':'dish','wine':None,'dishes':[],'mode':'catalog','warning':None}
-        if not scan and re.search(r'(?:из|в)\s+(?:мо\w+\s+)?(?:коллекци|погреб|запас)|что\s+(?:бы\s+)?открыть|(?:у\s+меня|дома)\s+(?:есть\s+)?(?:\w+\s+){0,2}(?:вин|бутыл)|из\s+того\s+что\s+есть',normalized(message)):
+        if not scan and re.search(r'из\s+(?:мо\w+\s+)?(?:погреб|запас|бутыл)|в\s+мо\w+\s+погреб|что\s+(?:бы\s+)?открыть|(?:у\s+меня|дома)\s+(?:есть\s+)?(?:\w+\s+){0,2}(?:вин|бутыл)|из\s+того\s+что\s+есть',normalized(message)):
             return self.cellar_answer(profile,message)
         if intent is None and re.search(r'(?:в|по)\s+мо\w+\s+вкус|что\s+(?:бы\s+)?(?:мне\s+)?(?:попробовать|выпить)|что\s+мне\s+понрав',normalized(message)):
             intent='wine_recommendation'  # «что-то в моём вкусе» typed by hand means the same as the chip
+        collection_followup=(not intent and previous_queries and is_collection_selection(previous_queries[-1])
+            and re.match(r'^(?:а\s+)?(?:(?:к|для|под|только|без)\b|(?:бел|красн|розов)\w*)',normalized(message))
+            and len(message.split())<=8)
+        if intent=='collection_recommendation' or (not intent and is_collection_selection(message)) or collection_followup:
+            return self.collection.shelves.recommendations(profile,message)
         if intent!='wine_recommendation' and not is_wine_selection(message,scan is not None):
             return self.conversation(message,history)
         # A short wine follow-up may reuse a prior wine request. Unrelated chat

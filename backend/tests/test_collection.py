@@ -18,7 +18,7 @@ class CollectionTest(unittest.TestCase):
     def snapshot(self,client=None):return (client or self.c).get('/api/product/collection').json()
     def test_legacy_preferences_and_no_invented_inventory(self):
         self.c.post('/api/product/preferences/merlo',json={'favorite':True,'rating':5})
-        data=self.snapshot();self.assertEqual(data['counts'],{'all':1,'wish':1,'owned':0,'tried':1,'bottles':0})
+        data=self.snapshot();self.assertEqual(data['counts'],{'all':1,'wish':1,'owned':0,'tried':1,'bottles':0,'liked_rated':1})
         self.assertEqual(data['items'][0]['rating'],5)
         with TestClient(self.app) as other:self.assertEqual(self.snapshot(other)['items'],[])
     def test_register_preserves_guest_and_seals_guest_cookie(self):

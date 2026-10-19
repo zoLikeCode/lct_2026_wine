@@ -1,0 +1,116 @@
+{
+  "profiles": [
+    {
+      "id": "demo-anna",
+      "name": "Анна",
+      "bio": "Собираю разные взгляды на один сорт.",
+      "achievements": [
+        "first-label",
+        "five-labels",
+        "three-wineries"
+      ],
+      "collections": [
+        {
+          "id": "demo-anna-cabernet",
+          "name": "Семь граней Каберне",
+          "description": "Каберне Совиньон от разных российских виноделен.",
+          "slugs": [
+            "cantiani-cabernet-sauvignon",
+            "fanagoriya-100-ottenkov-krasnogo-kaberne-kaberne-sovinon-krasnoe-suhoe-135",
+            "usadba-rodnoe-gnezdo-4-elements-kaberne-sovinon-krasnoe-suhoe-15",
+            "chteau-le-grand-vostock-cabernet-sauvignon-kaberne-sovinon-krasnoe-suhoe-14",
+            "agora-blek-stoun",
+            "fanagoriya-cru-lermont-cabernet-sauvignon-kaberne-sovinon-krasnoe-suhoe-13",
+            "cantiani-cabernet-sauvignon-reserve-2024"
+          ]
+        },
+        {
+          "id": "demo-anna-white",
+          "name": "Белое настроение",
+          "description": "Моя подборка белых вин.",
+          "slugs": [
+            "avtohtonnoe-vino-kryma-beloe-suhoe",
+            "aligote-barrel-2024",
+            "fanagoriya-100-ottenkov-shardone-beloe-suhoe-14",
+            "usadba-rodnoe-gnezdo-4-elements-risling-beloe-polusuhoe-12",
+            "shato-pino-agpoezdnik-beloe-shardone-suhoe-13",
+            "olymp-winery-adagum-chardonnay-shardone-beloe-suhoe-11",
+            "agora-yachting-chardonnay"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "demo-mikhail",
+      "name": "Михаил",
+      "bio": "Открываю российские регионы через вино.",
+      "achievements": [
+        "first-label",
+        "five-labels",
+        "fifteen-labels",
+        "three-regions",
+        "three-wineries"
+      ],
+      "collections": [
+        {
+          "id": "demo-mikhail-don",
+          "name": "Знакомство с Доном",
+          "description": "Четыре вина из Долины Дона.",
+          "slugs": [
+            "vinodelnya-vedernikov-5050-tsimlyanskiy-sibirkovyy-ekstra-bryut-beloe-12",
+            "vinodelnya-molchanova-ice-wine-tsvetochnyy-beloe-sladkoe-11",
+            "vinabani-aligote-beloe-suhoe-12",
+            "vina-arpachina-arpachino-aligote-ekstra-bryut-beloe-115"
+          ]
+        },
+        {
+          "id": "demo-mikhail-red",
+          "name": "Красная нить",
+          "description": "Разные сорта и почерки виноделен.",
+          "slugs": [
+            "usadba-rodnoe-gnezdo-4-elements-kaberne-sovinon-krasnoe-suhoe-15",
+            "olymp-winery-adagum-cabernet-franc-kaberne-fran-krasnoe-suhoe-11",
+            "agora-rosa-viva-cabernet-franc",
+            "alma-valley-locantita-merlot-cabernet-franc",
+            "cantiani-cabernet-sauvignon",
+            "fanagoriya-100-ottenkov-krasnogo-kaberne-kaberne-sovinon-krasnoe-suhoe-135"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "demo-elena",
+      "name": "Елена",
+      "bio": "Люблю открывать новые оттенки и стили.",
+      "achievements": [
+        "first-label",
+        "five-labels",
+        "three-colors"
+      ],
+      "collections": [
+        {
+          "id": "demo-elena-bubbles",
+          "name": "Повод собраться",
+          "description": "Игристые вина для знакомства.",
+          "slugs": [
+            "fanagoriya-5-elements-bryut-beloe-pino-gri-igristoe-bryut-beloe-125",
+            "vinodelnya-vedernikov-5050-tsimlyanskiy-sibirkovyy-ekstra-bryut-beloe-12",
+            "agora-rosa-viva-beloe-bryut",
+            "di-caspico-rozovoe-bryut"
+          ]
+        },
+        {
+          "id": "demo-elena-rose",
+          "name": "Розовая палитра",
+          "description": "Розовые вина разных производителей.",
+          "slugs": [
+            "usadba-rodnoe-gnezdo-4-elements-sira-roze-rozovoe-polusuhoe-135",
+            "fanagoriya-5-elements-bryut-rozovoe-saperavi-igristoe-bryut-rozovoe-125",
+            "abrau-dyurso-abrau-estates-roze-kaberne-sovinon-rozovoe-suhoe-12",
+            "olymp-winery-adagum-estate-rose-kaberne-sovinon-rozovoe-suhoe-11"
+          ]
+        }
+      ]
+    }
+  ]
+}

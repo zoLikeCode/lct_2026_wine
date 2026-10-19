@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "author": "Редакция приложения",
+  "collections": [
+    {
+      "id": "editorial-white-table",
+      "name": "Белые к рыбе",
+      "description": "Четыре белых вина, в сочетаниях которых на портале указаны рыба или морепродукты.",
+      "theme": "К столу",
+      "slugs": [
+        "avtohtonnoe-vino-kryma-beloe-suhoe",
+        "aligote-barrel-2024",
+        "fanagoriya-100-ottenkov-shardone-beloe-suhoe-14",
+        "usadba-rodnoe-gnezdo-4-elements-risling-beloe-polusuhoe-12"
+      ]
+    },
+    {
+      "id": "editorial-red-table",
+      "name": "Красные к ужину",
+      "description": "Красные вина разных производителей. В карточках портала — сочетания с мясом и стейками.",
+      "theme": "К столу",
+      "slugs": [
+        "usadba-rodnoe-gnezdo-4-elements-kaberne-sovinon-krasnoe-suhoe-15",
+        "olymp-winery-adagum-cabernet-franc-kaberne-fran-krasnoe-suhoe-11",
+        "agora-rosa-viva-cabernet-franc",
+        "alma-valley-locantita-merlot-cabernet-franc"
+      ]
+    },
+    {
+      "id": "editorial-rose",
+      "name": "В розовом цвете",
+      "description": "Четыре розовых вина от разных виноделен. Сравните сорта и найдите своё.",
+      "theme": "Цвет",
+      "slugs": [
+        "usadba-rodnoe-gnezdo-4-elements-sira-roze-rozovoe-polusuhoe-135",
+        "fanagoriya-5-elements-bryut-rozovoe-saperavi-igristoe-bryut-rozovoe-125",
+        "abrau-dyurso-abrau-estates-roze-kaberne-sovinon-rozovoe-suhoe-12",
+        "olymp-winery-adagum-estate-rose-kaberne-sovinon-rozovoe-suhoe-11"
+      ]
+    },
+    {
+      "id": "editorial-bubbles",
+      "name": "Игристое настроение",
+      "description": "Брют от четырёх виноделен: разные сорта и регионы в одной подборке.",
+      "theme": "Игристое",
+      "slugs": [
+        "fanagoriya-5-elements-bryut-beloe-pino-gri-igristoe-bryut-beloe-125",
+        "vinodelnya-vedernikov-5050-tsimlyanskiy-sibirkovyy-ekstra-bryut-beloe-12",
+        "agora-rosa-viva-beloe-bryut",
+        "di-caspico-rozovoe-bryut"
+      ]
+    },
+    {
+      "id": "editorial-chardonnay",
+      "name": "Четыре взгляда на Шардоне",
+      "description": "Один сорт, четыре винодельни. Рассмотрите, как по-разному они описывают свои вина.",
+      "theme": "Сорт",
+      "slugs": [
+        "fanagoriya-100-ottenkov-shardone-beloe-suhoe-14",
+        "shato-pino-agpoezdnik-beloe-shardone-suhoe-13",
+        "olymp-winery-adagum-chardonnay-shardone-beloe-suhoe-11",
+        "agora-yachting-chardonnay"
+      ]
+    },
+    {
+      "id": "editorial-don",
+      "name": "С берегов Дона",
+      "description": "Вина из Долины Дона — региона, указанного в каталоге «Своё Вино».",
+      "theme": "Регион",
+      "slugs": [
+        "vinodelnya-vedernikov-5050-tsimlyanskiy-sibirkovyy-ekstra-bryut-beloe-12",
+        "vinodelnya-molchanova-ice-wine-tsvetochnyy-beloe-sladkoe-11",
+        "vinabani-aligote-beloe-suhoe-12",
+        "vina-arpachina-arpachino-aligote-ekstra-bryut-beloe-115"
+      ]
+    }
+  ]
+}

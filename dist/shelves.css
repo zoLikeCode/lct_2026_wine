@@ -145,3 +145,8 @@ body[data-screen=collection]{min-height:100svh}
 @media(max-width:700px){.shelf-suggest{margin-bottom:24px;padding-top:24px}.shelf-suggest-head h3{font-size:24px}
  .shelf-suggest-list{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:84%;gap:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;padding-bottom:6px}
  .shelf-suggest-card{scroll-snap-align:start}}
+/* «Подобрать с сомелье»: opens the assistant with this collection attached. */
+.shelf-sommelier{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:11px 18px;border:1px solid var(--wine);border-radius:24px;color:var(--wine);font-size:12px;font-weight:500;line-height:1.4;white-space:nowrap}
+.shelf-sommelier svg{width:16px;height:16px}
+.shelf-sommelier:hover{background:#843f440a}
+@media(max-width:700px){.shelf-detail-actions{flex-wrap:wrap}.shelf-sommelier{order:3;flex-basis:100%;min-height:44px;padding:10px 16px}}

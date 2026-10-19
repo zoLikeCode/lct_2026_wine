@@ -435,9 +435,10 @@ class RecsysService:
         reason = ' · '.join(x for x in ('есть у вас' if owned else '', why or filler) if x)
         return reason[:1].upper() + reason[1:]
 
-    def list_suggestions(self, profile, list_id, limit=None):
+    def list_suggestions(self, profile, list_id, limit=None, allowed=None):
         """Fill a selection («подборка»): the wines that fit it best (list_fit) and are not on it yet —
-        no other vintage of one that is, nothing hidden or disliked — with a range of styles."""
+        no other vintage of one that is, nothing hidden or disliked — with a range of styles.
+        `allowed`: only these slugs (the chat narrows them by the colour, sweetness or dish asked for)."""
         row, members = self.own_list(profile, list_id)
         free = (row['size'] or 6) - len(members) if row['size'] else 6
         limit = max(1, min(limit or free or 6, 24))
@@ -449,7 +450,7 @@ class RecsysService:
         scored = [(score, slug, self._reason(why, signals.get(slug, {}).get('quantity'), 'для разнообразия коллекции'))
                   for slug, (score, why) in fit.items()
                   if slug not in members and slug not in hidden and (signals.get(slug, {}).get('rating') or 3) > 2
-                  and self.rec.dupe[self.rec.index[slug]] not in groups]
+                  and self.rec.dupe[self.rec.index[slug]] not in groups and (allowed is None or slug in allowed)]
         chosen = self.rec.diversify(scored, limit, per_winery=2, style_repeat=0.15)
         extra = {s: {'owned': True, 'quantity': v['quantity']} for s, v in signals.items() if v.get('quantity')}
         occasion = OCCASIONS.get(rule.get('occasion')) if rule else None

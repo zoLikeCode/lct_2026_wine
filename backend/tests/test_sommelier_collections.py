@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 from test_shelves import ShelvesTest
@@ -97,3 +98,35 @@ class SommelierCollectionsTest(ShelvesTest):
         self.assertEqual(len(self.c.get('/api/product/search',params={'q':'тестовая'}).json()['items']),2)
         with TestClient(self.app) as other:
             self.assertEqual(other.get('/api/product/search',params={'q':'тестовая','list_id':shelf}).status_code,404)
+
+    def test_sommelier_fills_an_attached_collection(self):
+        shelf=self.create('Шашлыки на даче')  # merlo is on it
+        ask=lambda message,**extra:self.c.post('/api/product/assistant',json={'message':message,'intent':'collection_fill','list_id':shelf,**extra})
+        answer=ask('Что добавить в эту коллекцию?').json()
+        self.assertEqual((answer['recommendation_type'],answer['list_id'],answer['mode']),('collection_fill',shelf,'catalog'))
+        self.assertEqual([w['slug'] for w in answer['items']],['cabernet']);self.assertTrue(answer['items'][0]['reason'])
+        self.assertIn('«Шашлыки на даче»',answer['text'])
+        red=ask('А что-нибудь красное?').json()  # the only red is already on the shelf
+        self.assertEqual(red['items'],[]);self.assertIn('Попробуйте изменить',red['text'])
+        self.assertEqual(self.c.post('/api/product/assistant',json={'message':'Что добавить?','intent':'collection_fill'}).status_code,422)
+        with TestClient(self.app) as other:  # someone else's collection cannot be attached
+            self.assertEqual(other.post('/api/product/assistant',json={'message':'Что добавить?','intent':'collection_fill','list_id':shelf}).status_code,404)
+        # With the model: its own system prompt, the collection in the request, and only candidates come back.
+        seen={}
+        class FakeGiga:
+            def __init__(self,slugs):self.slugs=slugs
+            def complete(self,payload,image_bytes=None):
+                seen.update(system=payload['messages'][0]['content'],data=json.loads(payload['messages'][1]['content']))
+                return {'choices':[{'message':{'content':json.dumps({'text':'Добавьте белый рислинг для контраста.','slugs':self.slugs})}}]}
+        env={'WINE_ASSISTANT_PROVIDER':'gigachat','WINE_GIGACHAT_AUTH_KEY':'Y2lkOnRlc3Q=','WINE_GIGACHAT_CLIENT_ID':'cid','WINE_ASSISTANT_MODEL':'GigaChat-2'}
+        product=self.app.state.product
+        with patch.dict('os.environ',env),patch.object(product,'gigachat',return_value=FakeGiga(['cabernet'])):
+            answer=ask('Что добавить в эту коллекцию?').json()
+        self.assertEqual((answer['mode'],[w['slug'] for w in answer['items']]),('ai',['cabernet']))
+        self.assertIn('собрать коллекцию',seen['system'])
+        self.assertEqual(seen['data']['collection']['name'],'Шашлыки на даче')
+        self.assertEqual([w['name'] for w in seen['data']['collection']['wines']],[product.cards['merlo']['name']])
+        self.assertEqual([w['slug'] for w in seen['data']['candidates']],['cabernet'])
+        with patch.dict('os.environ',env),patch.object(product,'gigachat',return_value=FakeGiga(['merlo'])):
+            answer=ask('Что добавить в эту коллекцию?').json()  # merlo is not a candidate: back to the catalog answer
+        self.assertEqual((answer['mode'],[w['slug'] for w in answer['items']]),('catalog',['cabernet']));self.assertTrue(answer['warning'])

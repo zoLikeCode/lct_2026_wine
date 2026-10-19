@@ -426,7 +426,7 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
         token=product.collection.claim_guest_assistant(request)
         success=False
         try:
-            result=await asyncio.to_thread(product.assistant,request.state.profile,body.get('message',''),context,body.get('scan_id'),body.get('intent'),body.get('dish_name'))
+            result=await asyncio.to_thread(product.assistant,request.state.profile,body.get('message',''),context,body.get('scan_id'),body.get('intent'),body.get('dish_name'),body.get('list_id'))
             success=True
             return result
         finally:product.collection.finish_guest_assistant(request.state.profile,token,success)

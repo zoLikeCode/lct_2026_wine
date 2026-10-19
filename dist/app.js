@@ -368,6 +368,11 @@ function asksForWineRecommendation(message){
 function asksForCollectionRecommendation(message){
  return /(?:подбер|посовет|порекоменд|покаж|найд|выбер|предлож|ищ|хоч|нуж|какую|какие).{0,90}(?:коллекц|подборк|полк|набор)|(?:коллекц|подборк|полк|набор)\S*\s+(?:к|для|под|на)\s/i.test(message)||/^(?:коллекции|подборки)$/i.test(message.trim());
 }
+function addToListButton(listId,w){
+ const button=document.createElement('button');button.type='button';button.className='text-button chat-add-to-list';button.textContent='+ В коллекцию';
+ button.onclick=async()=>{button.disabled=true;try{await api('collection/lists/'+encodeURIComponent(listId),{action:'add',slug:w.slug});button.textContent='Добавлено в коллекцию ✓';window.collectionUI?.refresh();}catch(error){button.disabled=false;notice(error.message);}};
+ return button;
+}
 function collectionRecommendationCard(shelf){
  const card=document.createElement('article');card.className='chat-collection';
  const count=Number(shelf.wine_count)||0,matched=Number(shelf.matched_count)||0;
@@ -378,12 +383,17 @@ function collectionRecommendationCard(shelf){
 }
 function renderAssistantAttachment(){
  const box=$('assistant-attachment');box.hidden=!assistantAttachment;
- $('assistant-input').placeholder=assistantAttachment?.intent==='dish_pairing'?'Какое блюдо приготовить?':assistantAttachment?'Спросите о снимке…':lastDish?'Вопрос о блюде или рецепте…':'Спросите о вине или блюде…';
+ const shelf=assistantAttachment?.intent==='collection_fill';
+ $('assistant-input').placeholder=shelf?'Что добавить в коллекцию?':assistantAttachment?.intent==='dish_pairing'?'Какое блюдо приготовить?':assistantAttachment?'Спросите о снимке…':lastDish?'Вопрос о блюде или рецепте…':'Спросите о вине или блюде…';
  const welcome=$('chat-messages').querySelector('.assistant-welcome');
- if(welcome){welcome.querySelector('h2').textContent=assistantAttachment?.intent==='dish_pairing'?'Что приготовить к этому вину?':assistantAttachment?'Поможем разобраться со снимком':'Чем помочь?';welcome.querySelector('p').textContent=assistantAttachment?.intent==='dish_pairing'?'Фото вина уже прикреплено. Спросите о блюде или отправьте готовый запрос.':assistantAttachment?'Фото уже прикреплено. Спросите, что на нём.':'Подберём вино, блюдо или коллекцию под ваш вкус.';welcome.querySelector('.prompt-list').hidden=!!assistantAttachment;}
+ if(welcome){welcome.querySelector('h2').textContent=shelf?'Подберём вина в коллекцию':assistantAttachment?.intent==='dish_pairing'?'Что приготовить к этому вину?':assistantAttachment?'Поможем разобраться со снимком':'Чем помочь?';welcome.querySelector('p').textContent=shelf?'Коллекция «'+assistantAttachment.name+'» прикреплена: сомелье видит её вина и повод. Спросите, чем её дополнить, или отправьте готовый запрос.':assistantAttachment?.intent==='dish_pairing'?'Фото вина уже прикреплено. Спросите о блюде или отправьте готовый запрос.':assistantAttachment?'Фото уже прикреплено. Спросите, что на нём.':'Подберём вино, блюдо или коллекцию под ваш вкус.';welcome.querySelector('.prompt-list').hidden=!!assistantAttachment;}
  if(!assistantAttachment)return;
  $('attachment-image').src=assistantAttachment.preview;
+ $('attachment-image').alt=shelf?'Бутылка из коллекции':'Прикреплённый снимок этикетки';
  $('attachment-label').textContent=assistantAttachment.name||'Снимок скана';
+ box.querySelector('strong').textContent=shelf?'Коллекция':'Фото этикетки';
+ box.querySelector('.attachment-disclosure').textContent=shelf?'Состав коллекции будет отправлен помощнику':'Фото будет отправлено помощнику';
+ $('remove-attachment').setAttribute('aria-label',shelf?'Убрать прикреплённую коллекцию':'Убрать прикреплённое фото');
 }
 function attachScan(entry){
  if(!entry?.server_id)return;
@@ -394,21 +404,29 @@ function attachScan(entry){
  assistantAttachment.intent=!entry.no_wine&&entry.wine?.slug===currentWine?.slug?'dish_pairing':null;
  renderAssistantAttachment();
 }
+// «Подобрать с сомелье» on one of the user's collections: the collection stays attached for the
+// whole conversation (follow-ups like «а белое?» stay about it) until the user removes it.
+function askAboutCollection(list){
+ if(assistantAttachment?.listId!==list.id){chatContext.length=0;lastDish=null;}
+ assistantAttachment={listId:list.id,name:list.name,intent:'collection_fill',preview:list.wines?.[0]?(portalCardData[list.wines[0].slug]?.bottleImage||list.wines[0].image):'/assets/no-bottle.svg'};
+ showView('assistant');renderAssistantAttachment();
+ $('assistant-input').value='Что добавить в эту коллекцию?';$('assistant-input').focus();
+}
 function removeAssistantAttachment(){assistantAttachment=null;renderAssistantAttachment();}
 $('remove-attachment').onclick=removeAssistantAttachment;
 async function askAssistant(message){
- const attachment=assistantAttachment;
- message=message.trim()||(attachment?.intent==='dish_pairing'?'Что приготовить к этому вину?':attachment?'Помоги определить вино на фото.':'');
+ const attachment=assistantAttachment,forCollection=attachment?.intent==='collection_fill';
+ message=message.trim()||(forCollection?'Что добавить в эту коллекцию?':attachment?.intent==='dish_pairing'?'Что приготовить к этому вину?':attachment?'Помоги определить вино на фото.':'');
  if(chatBusy||!message)return;
- const collectionSwitch=asksForCollectionRecommendation(message);
- const wineSwitch=!collectionSwitch&&asksForWineRecommendation(message);
- const recipeFollowup=!collectionSwitch&&!wineSwitch&&!!lastDish&&isRecipeFollowup(message)&&(!attachment||attachment.scanId===lastDish.scanId);
- const dishPairing=!!attachment&&!collectionSwitch&&!wineSwitch&&!recipeFollowup&&asksForDishWithWine(message);
- const usedAttachment=!!attachment&&!collectionSwitch&&(dishPairing||asksAboutScan(message)||wineSwitch);
- const intent=collectionSwitch?'collection_recommendation':recipeFollowup?'dish_recipe':dishPairing?'dish_pairing':null;
+ const collectionSwitch=!forCollection&&asksForCollectionRecommendation(message);
+ const wineSwitch=!forCollection&&!collectionSwitch&&asksForWineRecommendation(message);
+ const recipeFollowup=!forCollection&&!collectionSwitch&&!wineSwitch&&!!lastDish&&isRecipeFollowup(message)&&(!attachment||attachment.scanId===lastDish.scanId);
+ const dishPairing=!forCollection&&!!attachment&&!collectionSwitch&&!wineSwitch&&!recipeFollowup&&asksForDishWithWine(message);
+ const usedAttachment=!forCollection&&!!attachment&&!collectionSwitch&&(dishPairing||asksAboutScan(message)||wineSwitch);
+ const intent=forCollection?'collection_fill':collectionSwitch?'collection_recommendation':recipeFollowup?'dish_recipe':dishPairing?'dish_pairing':null;
  const scanId=recipeFollowup?lastDish.scanId:usedAttachment?attachment.scanId:null;
  const previousContext=wineSwitch?[]:chatContext.slice(-6).map(turn=>({...turn}));
- const request={message,context:previousContext,...(scanId?{scan_id:scanId}:{}),...(intent?{intent}:{}),...(recipeFollowup?{dish_name:lastDish.name}:{})};
+ const request={message,context:previousContext,...(scanId?{scan_id:scanId}:{}),...(intent?{intent}:{}),...(forCollection?{list_id:attachment.listId}:{}),...(recipeFollowup?{dish_name:lastDish.name}:{})};
  // Keep the whole JSON request below the backend's 8192-byte body limit.
  const encoder=new TextEncoder();
  while(encoder.encode(JSON.stringify(request)).length>7600&&previousContext.length){
@@ -422,6 +440,7 @@ async function askAssistant(message){
  if(intent==='dish_pairing')turn.querySelector('.chat-answer').textContent='Подбираем блюдо…';
  if(intent==='dish_recipe')turn.querySelector('.chat-answer').textContent='Готовим рецепт…';
  if(collectionSwitch)turn.querySelector('.chat-answer').textContent='Подбираем коллекции…';
+ if(forCollection)turn.querySelector('.chat-answer').textContent='Подбираем вина в коллекцию…';
  root.append(turn);root.scrollTop=root.scrollHeight;
  try{
   await initPromise;
@@ -454,7 +473,7 @@ async function askAssistant(message){
    }
    turn.append(panel);
   }
-  for(const w of (['dish','dish_recipe','conversation'].includes(data.recommendation_type)?[]:(data.items||[]))){const result=document.createElement('div');result.className='chat-result';result.append(wineRow(w,w.category,()=>openWine(w)));const reason=document.createElement('p');reason.className='reason';reason.textContent=w.reason;result.append(reason);turn.append(result);}
+  for(const w of (['dish','dish_recipe','conversation'].includes(data.recommendation_type)?[]:(data.items||[]))){const result=document.createElement('div');result.className='chat-result';result.append(wineRow(w,w.category,()=>openWine(w)));const reason=document.createElement('p');reason.className='reason';reason.textContent=w.reason;result.append(reason);if(data.list_id)result.append(addToListButton(data.list_id,w));turn.append(result);}
   if(usedAttachment&&assistantAttachment===attachment)removeAssistantAttachment();else renderAssistantAttachment();
  }catch(e){const answer=turn.querySelector('.chat-answer');answer.textContent=e.message;if(e.code==='assistant_sign_in'){const actions=document.createElement('div');actions.className='chat-auth-actions';for(const [mode,label] of [['login','Войти'],['register','Создать аккаунт']]){const button=document.createElement('button');button.type='button';button.className=mode==='login'?'cellar-primary':'text-button';button.textContent=label;button.onclick=()=>window.collectionUI?.signIn(mode);actions.append(button);}answer.append(actions);}else answer.append(' Запрос сохранён в поле ввода — можно отправить ещё раз.');$('assistant-input').value=message;}
  finally{chatBusy=false;$('send-button').disabled=false;$('voice-button').disabled=false;root.scrollTop=Math.max(0,root.scrollTop+turn.getBoundingClientRect().top-root.getBoundingClientRect().top);}

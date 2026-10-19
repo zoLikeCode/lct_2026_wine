@@ -140,7 +140,7 @@ RUNPOD_URL=https://<POD_ID>-8080.proxy.runpod.net bash start.sh
 | `GET`/`POST` | `/api/product/taste/swipe` | винный свайп: колода и «хочу / не моё» |
 | `GET` | `/api/product/taste?kind=` | вкусовой профиль (обзор или по стилю) |
 | `GET` | `/api/product/history` | история сканов пользователя |
-| `POST` | `/api/product/assistant` | помощник: подбор к блюду, рецепт, вопросы о вине |
+| `POST` | `/api/product/assistant` | помощник: подбор к блюду, рецепт, вопросы о вине, подбор вин в коллекцию (`intent: collection_fill`) |
 | | `/admin/api/*` | админка (по паролю) |
 
 **Модель** (`ml/service`, GPU):

@@ -211,6 +211,10 @@ class Product:
         pref=(prefs if prefs is not None else self.preferences(profile) if profile else {}).get(slug,{'rating':0,'favorite':False})
         return {**self.cards[slug],**ratings.get(slug,{'average_rating':None,'rating_count':0}),'scan_count':scans[slug],**pref}
 
+    def wine_detail(self,slug,profile):
+        """Card for the wine page: the card plus its taste sheet (axes, aromas, match with the user)."""
+        return {**self.card(slug,profile),'taste':self.recs.wine_taste(slug,profile)}
+
     def cards_for(self,slugs,profile):
         stats=self.aggregates();prefs=self.preferences(profile)
         return [self.card(s,profile,stats,prefs) for s in slugs if s in self.cards]
@@ -310,6 +314,8 @@ class Product:
                 except (ValueError,TypeError,AttributeError):continue
                 if slug:sig[slug]['scanned']=True
         for slug in self.recs.not_for_me(profile):sig[slug]['not_for_me']=True
+        for slug,verdict in self.recs.swipes(profile).items():
+            if verdict in ('like','nope'):sig[slug]['swipe']=verdict
         return {s:v for s,v in sig.items() if s in self.cards}
 
     def _ranked(self,profile,query='',exclude_seen=True):
@@ -333,7 +339,7 @@ class Product:
         tokens=[t for t in q.split() if len(t)>3 and t not in {'вино','хочу','меня','моих','моим','вкусу','вечер','ужин','подбери','посоветуй','сегодня','какое','основе','предпочтений'}]
         # Recommend what the user has not had yet (the wishlist stays: it is what they want). A query
         # may still return bottles they keep at home — that is the cheapest good answer.
-        seen=({s for s,v in signals.items() if v.get('rating') or v.get('opened') or v.get('tried') or v.get('not_for_me') or (v.get('quantity') and not wanted_food)}|self.recs.hidden(profile)) if exclude_seen else set()
+        seen=({s for s,v in signals.items() if v.get('rating') or v.get('opened') or v.get('tried') or v.get('not_for_me') or v.get('swipe')=='nope' or (v.get('quantity') and not wanted_food)}|self.recs.hidden(profile)) if exclude_seen else set()
         owned={s for s,v in signals.items() if v.get('quantity')}
         # Sweetness the user has actually liked: a dry-wine drinker should not get semi-sweet in the feed
         # just because the grape matches. Only once there is enough evidence to tell.
@@ -406,11 +412,13 @@ class Product:
         result.sort(key=lambda r:(-r[0],self.cards[r[1]]['name']))
         return result
 
-    def recommendations(self,profile,query='',limit=8):
+    def recommendations(self,profile,query='',limit=8,exclude=()):
         """Wines to suggest: taste-ranked candidates, then slots split between the user's tastes,
-        near-copies and repeated grapes thinned out. WINE_RECSYS=legacy restores the previous rules."""
+        near-copies and repeated grapes thinned out. WINE_RECSYS=legacy restores the previous rules.
+        `exclude`: slugs to leave out (the swipe deck skips wines already swiped)."""
         if os.environ.get('WINE_RECSYS','').strip().lower()=='legacy':return self.recommendations_legacy(profile,query,limit)
         result,interests,shares=self._ranked(profile,query)
+        if exclude:result=[r for r in result if r[1] not in exclude]
         chosen=self.recsys.diversify(result,limit,interests=interests,shares=shares)
         cards=self.cards_for([x[1] for x in chosen],profile)
         return [{**w,'reason':x[2]} for w,x in zip(cards,chosen)]

@@ -83,4 +83,79 @@ class RecsysServiceTest(unittest.TestCase):
         self.assertEqual(self.r.answers('account')['tiles'],['bubbles'])
         self.assertIn('merlo',self.r.hidden('account'));self.assertIsNone(self.r.answers('guest'))
 
+    RED_LOVER={'wine':'red','coffee':'black','chocolate':'dark','juice':'apple','sugar':'none','aroma':'berries'}
+
+    def test_quiz_validates_and_builds_the_passport(self):
+        options=self.r.quiz_options('p1')
+        self.assertEqual(len(options['questions']),6);self.assertEqual(options['answers'],{})
+        self.assertTrue(all(o['insight'] for q in options['questions'] for o in q['options']))
+        for bad in [{'answers':{'wine':'blue'}},{'answers':{'nope':'red'}},{'answers':['red']},'x']:
+            with self.assertRaises(Exception):self.r.save_quiz('p1',bad)
+        res=self.r.save_quiz('p1',{'answers':self.RED_LOVER})
+        passport=res['passport'];axes={a['axis']:a['value'] for a in passport['axes']}
+        self.assertEqual(passport['stage'],'learning');self.assertEqual(passport['quiz'],self.RED_LOVER)
+        self.assertGreaterEqual(axes['body'],4);self.assertGreaterEqual(axes['tannin'],4);self.assertEqual(axes['sweetness'],1)
+        self.assertEqual(passport['aromas'][0]['id'],'red_berries')  # the aroma question speaks first
+        self.assertIn('красные',passport['summary'])
+        self.assertTrue(all(w['reason'] for w in res['recommendations']['items']))
+        self.assertEqual(self.r.answers('p1')['colors'],['красное'])
+        self.assertEqual(self.r.quiz_options('p1')['answers'],self.RED_LOVER)
+        # a skipped question is simply absent; a retake replaces the old answers
+        self.r.save_quiz('p1',{'answers':{'wine':'white','juice':'grapefruit'}})
+        self.assertEqual(self.r.answers('p1')['colors'],['белое','розовое'])
+        self.assertNotIn('tannin',{a['axis'] for a in self.r.passport('p1')['axes']})
+
+    def test_passport_tabs_narrow_to_one_kind(self):
+        self.r.save_quiz('p1',{'answers':self.RED_LOVER})
+        self.assertTrue(self.r.passport('p1','red')['axes'])
+        white=self.r.passport('p1','white')
+        self.assertEqual(white['stage'],'new');self.assertEqual(white['axes'],[])
+        self.assertEqual([t['id'] for t in white['tabs']],['red','white','rose','sparkling'])
+        self.p.update('p1','merlo',{'rating':5})
+        self.assertEqual({t['id']:t['count'] for t in self.r.passport('p1')['tabs']}['red'],1)
+        with self.assertRaises(Exception):self.r.passport('p1','orange')
+
+    def test_wine_taste_has_scales_and_a_match_only_with_a_profile(self):
+        sheet=self.p.wine_detail('merlo','p1')['taste']
+        self.assertEqual([s['axis'] for s in sheet['scales']],['body','tannin','sweetness','acidity'])
+        self.assertTrue(all(1<=s['value']<=5 and s['low'] and s['high'] for s in sheet['scales']))
+        self.assertIsNone(sheet['match'])
+        self.r.save_quiz('p1',{'answers':self.RED_LOVER})
+        match=self.p.wine_detail('merlo','p1')['taste']['match']
+        self.assertTrue(10<=match['percent']<=99 and match['note'])
+        self.assertEqual(set(match['yours']),{'body','tannin','sweetness','acidity'})
+        self.p.cards['cabernet'].update(category='Белое сухое',description='Свежее, с нотами лимона')
+        self.r.rec.styles[self.r.rec.index['cabernet']]=('белое','сухое',False)
+        self.assertNotIn('tannin',[s['axis'] for s in self.r.wine_taste('cabernet')['scales']])
+
+    def test_swipes_train_taste_fill_likes_and_undo_cleanly(self):
+        deck=self.r.deck('p1',5)
+        self.assertTrue(deck['items']);self.assertIn('taste',deck['items'][0]);self.assertEqual(deck['swiped'],0)
+        first=deck['items'][0]['slug']
+        res=self.r.swipe('p1',{'slug':first,'verdict':'like'})
+        self.assertEqual(res['passport']['swiped'],1)
+        self.assertTrue(self.p.preferences('p1')[first]['favorite'])  # «хочу попробовать» lands in Лайки
+        self.assertGreater(self.p.recsys.evidence(self.p.taste_signals('p1')[first]),0)
+        self.assertNotIn(first,[w['slug'] for w in self.r.deck('p1',5)['items']])
+        self.r.swipe('p1',{'slug':first,'verdict':'nope'})  # changed their mind: the like goes away
+        self.assertFalse(self.p.preferences('p1')[first]['favorite'])
+        self.assertLess(self.p.recsys.evidence(self.p.taste_signals('p1')[first]),0)
+        self.assertNotIn(first,[w['slug'] for w in self.p.recommendations('p1','',8)])
+        self.r.swipe('p1',{'slug':first,'verdict':'undo'})
+        self.assertEqual(self.r.swipes('p1'),{});self.assertNotIn('swipe',self.p.taste_signals('p1').get(first,{}))
+        # a wine that was already liked stays liked after undo
+        self.p.update('p1','merlo',{'favorite':True})
+        self.r.swipe('p1',{'slug':'merlo','verdict':'like'});self.r.swipe('p1',{'slug':'merlo','verdict':'undo'})
+        self.assertTrue(self.p.preferences('p1')['merlo']['favorite'])
+        for bad in [{'slug':first,'verdict':'love'},{'slug':'missing','verdict':'like'},'x']:
+            with self.assertRaises(Exception):self.r.swipe('p1',bad)
+        with self.assertRaises(Exception):self.r.deck('p1',0)
+
+    def test_guest_quiz_and_swipes_survive_merge(self):
+        self.r.save_quiz('guest',{'answers':{'wine':'red'}})
+        self.r.swipe('guest',{'slug':'merlo','verdict':'nope'})
+        with self.store.db() as db:self.r.merge_guest(db,'guest','account')
+        self.assertEqual(self.r.answers('account')['quiz'],{'wine':'red'})
+        self.assertEqual(self.r.swipes('account'),{'merlo':'nope'});self.assertEqual(self.r.swipes('guest'),{})
+
 if __name__=='__main__':unittest.main()

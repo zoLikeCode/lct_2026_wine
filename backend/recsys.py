@@ -84,7 +84,9 @@ def norm(text):
 
 def style_of(card):
     text = norm(card.get('category', '') + ' ' + card.get('name', ''))
-    color = next((c for root, c in COLORS if root in text), '')
+    # The category decides the colour; the name only when the category has none
+    # («Красностоп. Шато Тамань» is a rosé).
+    color = next((c for part in (norm(card.get('category', '')), text) for root, c in COLORS if root in part), '')
     sweet = next((s for root, s in SWEETNESS if root in text), '')
     sparkling = 'брют' in sweet or 'игрист' in text
     return color, sweet, sparkling
@@ -237,6 +239,11 @@ class Recommender:
             w += 0.25
         if sig.get('not_for_me'):  # «не то» on a recommendation: a mild dislike
             return -0.5
+        # A swipe judges the description, not the glass: weaker than any rating.
+        if sig.get('swipe') == 'nope':
+            return -0.4
+        if sig.get('swipe') == 'like':
+            w += 0.35
         # Wishlist, scans and bottles given away are intent, not taste: they add nothing
         # (product rule, see test_wishlist_does_not_train_taste).
         return min(w, 0.9)

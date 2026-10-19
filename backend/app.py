@@ -114,7 +114,7 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
         if request.method=='POST' and path.startswith('/api/product/') and int(request.headers.get('content-length','0'))>product_body_limit:return JSONResponse({'detail':'Запрос слишком большой'},status_code=413)
         if path.startswith('/admin/api/') and path!='/admin/api/login' and not admin(request):
             return JSONResponse({'detail':'Войдите в админку'},status_code=401)
-        public_product=bool((request.method=='GET' and re.fullmatch(r'/api/product/(bootstrap|account|collection|collection/lists/[^/]+/suggestions|taste|taste/onboarding|shelves(?:/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)?)?|search|ranking|recommendations|history|wines/[^/]+(?:/image)?|scans/[^/]+/image)',path)) or (request.method=='POST' and re.fullmatch(r'/api/product/(taste/onboarding|recommendations/feedback|shelves/[a-zA-Z0-9_-]+/(?:settings|copy|comment|reorder)|assistant|preferences/[^/]+|account/(register|login|recover|logout|revoke|name|password)|collection/(wines/[^/]+|stock/[^/]+|lists(?:/[^/]+)?))',path)))
+        public_product=bool((request.method=='GET' and re.fullmatch(r'/api/product/(bootstrap|account|collection|collection/lists/[^/]+/suggestions|taste|taste/onboarding|taste/quiz|taste/swipe|shelves(?:/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)?)?|search|ranking|recommendations|history|wines/[^/]+(?:/image)?|scans/[^/]+/image)',path)) or (request.method=='POST' and re.fullmatch(r'/api/product/(taste/onboarding|taste/quiz|taste/swipe|recommendations/feedback|shelves/[a-zA-Z0-9_-]+/(?:settings|copy|comment|reorder)|assistant|preferences/[^/]+|account/(register|login|recover|logout|revoke|name|password)|collection/(wines/[^/]+|stock/[^/]+|lists(?:/[^/]+)?))',path)))
         if path.startswith('/api/') and (request.method,path) not in public_scanner_routes and not public_product and not admin(request):
             return JSONResponse({'detail':'Войдите в админку'},status_code=401)
         if request.method=='POST' and (path.startswith('/api/product/collection/') or path.startswith('/api/product/shelves/') or path.startswith('/api/product/preferences/')) and request.cookies.get('wine_account') and not product.collection.session(request):
@@ -129,7 +129,7 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
            'Permissions-Policy':'camera=(self), microphone=(self), geolocation=()',
            'X-Frame-Options':'DENY'})
         if '/api/' in path:response.headers['Cache-Control']='no-store'
-        elif path.startswith('/admin/static/') or path in {'/app.js','/app.css','/manifest.webmanifest','/chat.css'}:response.headers['Cache-Control']='no-cache'
+        elif path.startswith('/admin/static/') or path in {'/app.js','/app.css','/manifest.webmanifest','/chat.css','/taste.js','/taste.css'}:response.headers['Cache-Control']='no-cache'
         return response
 
     product.collection.routes(app,cookie_secure)
@@ -371,7 +371,7 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
         return {'items':product.search_catalog(q[:160],request.state.profile)}
 
     @app.get('/api/product/wines/{slug}')
-    def product_wine(slug:str,request:Request):return product.card(slug,request.state.profile)
+    def product_wine(slug:str,request:Request):return product.wine_detail(slug,request.state.profile)
 
     @app.get('/api/product/wines/{slug}/image')
     def product_image(slug:str):
@@ -443,7 +443,7 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
 
     def mobile_page():
         folder=MOBILE_ROOT;html=(folder/'index.html').read_text()
-        for name in ('app.js', 'chat.css', 'app.css'):
+        for name in ('app.js', 'chat.css', 'app.css', 'taste.js', 'taste.css'):
             version=hashlib.sha256((folder/name).read_bytes()).hexdigest()[:12]
             html=html.replace(f'/{name}"',f'/{name}?v={version}"')
         return HTMLResponse(html,headers={'Cache-Control':'no-cache'})

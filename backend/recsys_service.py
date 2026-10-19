@@ -10,12 +10,23 @@ import uuid
 from fastapi import HTTPException
 
 from recsys import grapes_of, sweetness_level
-from taste import AROMAS, AXES, AXIS_NAMES, OCCASIONS, TILES
+from taste import AROMAS, AXES, AXIS_NAMES, OCCASIONS, QUIZ, QUIZ_OPTIONS, TILES, quiz_label, quiz_profile
 
 MODES = ('for_you', 'new', 'cellar', 'refill')
 HIDE_DAYS = 30
 COLORS = {'красное', 'белое', 'розовое', 'оранжевое'}
 SWEETS = {'сухое', 'полусухое', 'полусладкое', 'сладкое'}
+VERDICTS = ('like', 'nope', 'skip')
+# Passport tabs: which wines each one covers (colour of a still wine, or any sparkling).
+KINDS = {'red': ('Красное', 'красное'), 'white': ('Белое', 'белое'), 'rose': ('Розовое', 'розовое'),
+         'sparkling': ('Игристое', None)}
+# Wine page scales, Vivino-style: (axis, left end, right end). Tannin only for still reds.
+SCALES = (('body', 'Лёгкое', 'Насыщенное'), ('tannin', 'Мягкое', 'Терпкое'),
+          ('sweetness', 'Сухое', 'Сладкое'), ('acidity', 'Округлое', 'Освежающее'))
+# How a wine differs from the user's taste on one axis: (more, less).
+AXIS_WORDS = {'body': ('насыщеннее', 'легче'), 'tannin': ('терпче', 'мягче'), 'sweetness': ('слаще', 'суше'),
+              'acidity': ('кислотнее', 'мягче по кислотности')}
+AXIS_GENITIVE = {'body': 'телу', 'tannin': 'танинам', 'sweetness': 'сладости', 'acidity': 'кислотности'}
 # Occasion words in a list's name/goal → what suits it (sparkling, sweetness, dishes, taste occasions).
 OCCASION_RULES = [
     (('нов', 'праздн', 'рожд', 'свадьб', 'юбил', 'торжеств', 'корпорат', 'вечеринк'), {'sparkling': 1.0, 'occasion': 'celebration'}),
@@ -45,6 +56,8 @@ class RecsysService:
                 action TEXT,position INTEGER,request_id TEXT,created REAL);
             CREATE INDEX IF NOT EXISTS recsys_events_profile ON recsys_events(profile,action,created);
             CREATE TABLE IF NOT EXISTS recsys_onboarding(profile TEXT PRIMARY KEY,answers TEXT,updated REAL);
+            CREATE TABLE IF NOT EXISTS recsys_swipes(profile TEXT,slug TEXT,verdict TEXT,favorited INTEGER DEFAULT 0,
+                created REAL,PRIMARY KEY(profile,slug));
             ''')
         self.dishes = sorted({d for w in product.cards.values() for d in w['pairings']})
 
@@ -60,6 +73,11 @@ class RecsysService:
             return {r['slug'] for r in db.execute(
                 "SELECT slug FROM recsys_events WHERE profile=? AND action IN ('dismiss','not_for_me') AND created>=?",
                 (profile, since))}
+
+    def swipes(self, profile):
+        with self.store.db() as db:
+            return {r['slug']: r['verdict'] for r in db.execute(
+                'SELECT slug,verdict FROM recsys_swipes WHERE profile=?', (profile,))}
 
     def answers(self, profile):
         with self.store.db() as db:
@@ -91,7 +109,13 @@ class RecsysService:
         colors, dishes = a.get('colors', []), a.get('dishes', [])
         sweets = a.get('sweetness', [])
         seeds, labels = [], {}
-        for tile in a.get('tiles', []) or [None]:
+        quiz = a.get('quiz') or {}
+        if quiz:  # six answers are one virtual wine; all six weigh a little less than one rating of 5
+            q = quiz_profile(quiz)
+            vec = self.rec.virtual_vector(colors, sweets, q['sparkling'], q['taste'], q['aromas'], dishes)
+            seeds.append(('onboarding:quiz', vec, 0.4 + 0.08 * len(quiz)))
+            labels['onboarding:quiz'] = quiz_label(quiz)
+        for tile in a.get('tiles', []) or ([] if quiz else [None]):
             spec = TILES.get(tile, {}) if tile else {}
             if not (spec or colors or sweets or dishes or a.get('sparkling')):
                 continue
@@ -395,26 +419,61 @@ class RecsysService:
         return {'list_id': list_id, 'items': self._cards(chosen, profile, extra), 'free': free, 'occasion': occasion,
                 'request_id': self.log_impressions(profile, [{'slug': x[1]} for x in chosen], 'list'), 'empty': None}
 
-    def passport(self, profile):
-        """Taste passport: averaged axes of what the user liked, top aromas, styles, grapes, regions."""
+    def kind_of(self, i):
+        """Passport tab of catalog wine i: red / white / rose / sparkling (or None: orange, unknown)."""
+        color, _, sparkling = self.rec.styles[i]
+        if sparkling:
+            return 'sparkling'
+        return next((k for k, (_, c) in KINDS.items() if c == color), None)
+
+    def passport(self, profile, kind=None):
+        """Taste passport: averaged axes of what the user liked, top aromas, styles, grapes, regions.
+        kind (red / white / rose / sparkling) narrows it to one tab, as on the profile screen."""
+        if kind is not None and kind not in KINDS:
+            raise HTTPException(422, 'kind: ' + ', '.join(KINDS))
         signals = self.p.taste_signals(profile)
         virtual, labels = self.onboarding_seeds(profile)
+        answers = self.effective(self.answers(profile))
+        quiz = answers.get('quiz') or {}
         pos, neg = self.rec.profile(signals)
+        tabs = collections.Counter(self.kind_of(i) for i in pos)
+        if kind:
+            pos = {i: w for i, w in pos.items() if self.kind_of(i) == kind}
+            neg = {i: w for i, w in neg.items() if self.kind_of(i) == kind}
+            q = quiz_profile(quiz)
+            wanted = KINDS[kind][1]
+            virtual = [v for v in virtual if v[0] == 'onboarding:quiz' and (
+                q['sparkling'] if kind == 'sparkling' else not q['colors'] or wanted in q['colors'])]
         total = sum(pos.values())
         evidence = total + 0.5 * sum(neg.values()) + sum(w for _, _, w in virtual)
         stage = 'new' if not evidence else 'learning' if evidence < 3 else 'confident'
         out = {'stage': stage, 'evidence': round(evidence, 2), 'liked_count': len(pos), 'disliked_count': len(neg),
-               'axes': [], 'aromas': [], 'styles': [], 'grapes': [], 'regions': [], 'summary': None,
-               'onboarding': bool(virtual)}
+               'axes': [], 'aromas': [], 'styles': [], 'grapes': [], 'regions': [], 'colors': [], 'summary': None,
+               'onboarding': bool(virtual), 'quiz': quiz, 'kind': kind,
+               'tabs': [{'id': k, 'label': label, 'count': tabs[k]} for k, (label, _) in KINDS.items()],
+               'swiped': len(self.swipes(profile))}
         weights = {self.rec.slugs[i]: w for i, w in pos.items()}
         sources = [(self.rec.taste.get(s, {}), w) for s, w in weights.items()]
+        colors = collections.Counter()
+        for i, w in pos.items():
+            if self.rec.styles[i][0]:
+                colors[self.rec.styles[i][0]] += w
         for label, _, w in virtual:
-            tile = TILES.get(label.split(':', 1)[1], {})
-            if tile:
+            key = label.split(':', 1)[1]
+            if key == 'quiz':
+                q = quiz_profile(quiz)
+                sources.append(({**q['taste'], 'aromas': q['aromas']}, w))
+                for c in q['colors']:
+                    colors[c] += w / len(q['colors'])
+            elif TILES.get(key):
+                tile = TILES[key]
                 sources.append(({**tile.get('taste', {}), 'aromas': list(tile.get('aromas', ()))}, w))
+        out['colors'] = [c for c, _ in colors.most_common()]
         if not sources:
             return out
         for axis in AXES:
+            if axis == 'tannin' and kind in ('white', 'rose', 'sparkling'):
+                continue  # almost no tannin there: an average would only describe the reds
             vals = [(p[axis], w) for p, w in sources if isinstance(p.get(axis), (int, float))]
             if vals:
                 v = sum(x * w for x, w in vals) / sum(w for _, w in vals)
@@ -448,7 +507,11 @@ class RecsysService:
         sweet = axes.get('sweetness', 1)
         words = ['полнотелые' if body >= 3.8 else 'лёгкие' if body <= 2.3 else 'средние по телу']
         words.append('сладкие' if sweet >= 4 else 'полусладкие' if sweet >= 3 else 'сухие')
-        style = p['styles'][0]['name'].split()[0].lower() if p['styles'] else ''
+        if p.get('kind'):
+            style = 'игристое' if p['kind'] == 'sparkling' else KINDS[p['kind']][1]
+        else:
+            style = (p['styles'][0]['name'].split()[0].lower() if p['styles'] else
+                     p['colors'][0] if len(p.get('colors') or []) == 1 else '')
         if style:
             words.append(style.replace('ое', 'ые') if style.endswith('ое') else style)
         line = 'Вы любите ' + ' '.join(words) + ' вина'
@@ -456,19 +519,160 @@ class RecsysService:
             line += ' с нотами: ' + ', '.join(a['name'] for a in p['aromas'][:2])
         return line
 
+    # ---- taste quiz --------------------------------------------------------------------
+    def quiz_options(self, profile):
+        questions = [{'id': q['id'], 'title': q['title'], 'options': [
+            {k: o[k] for k in ('id', 'label', 'icon', 'insight')} for o in q['options']]} for q in QUIZ]
+        return {'questions': questions, 'answers': (self.answers(profile) or {}).get('quiz') or {}}
+
+    def save_quiz(self, profile, body):
+        """Save quiz answers ({question: option}; skipped questions are left out). Colour, sweetness and
+        sparkling are derived here, so the feed filters and seeds work as for the old onboarding."""
+        given = body.get('answers') if isinstance(body, dict) else None
+        if not isinstance(given, dict) or any((q, o) not in QUIZ_OPTIONS for q, o in given.items()):
+            raise HTTPException(422, 'answers: {вопрос: вариант} из списка анкеты')
+        prof = quiz_profile(given)
+        answers = {k: v for k, v in (self.answers(profile) or {}).items() if k in ('dishes', 'tiles')}
+        answers.update(quiz=given, colors=prof['colors'], sweetness=prof['sweetness'])
+        with self.store.db() as db:
+            db.execute('INSERT INTO recsys_onboarding VALUES(?,?,?) ON CONFLICT(profile) DO UPDATE SET '
+                       'answers=excluded.answers,updated=excluded.updated',
+                       (profile, json.dumps(answers, ensure_ascii=False), time.time()))
+        return {'ok': True, 'answers': given, 'passport': self.passport(profile),
+                'recommendations': self.endpoint(profile, 'for_you', '', 8)}
+
+    # ---- taste of one wine ---------------------------------------------------------------
+    def _me(self, profile):
+        """The user's taste in the shape wine_taste compares against (None for a newcomer)."""
+        p = self.passport(profile)
+        if p['stage'] == 'new' or not p['axes']:
+            return None
+        return {'axes': {a['axis']: a['value'] for a in p['axes']}, 'aromas': [a['id'] for a in p['aromas']],
+                'colors': p['colors']}
+
+    def wine_taste(self, slug, profile=None, me=False):
+        """Taste sheet of a wine: scales (Vivino-style), aroma groups, occasions, and how well it
+        matches the user's passport. `me` may be passed in when sheets are built for a whole deck."""
+        i = self.rec.index[slug]
+        prof = self.rec.taste.get(slug, {})
+        color, _, sparkling = self.rec.styles[i]
+        red = color == 'красное' and not sparkling
+        scales = [{'axis': a, 'name': AXIS_NAMES[a], 'low': low, 'high': high, 'value': prof[a]}
+                  for a, low, high in SCALES if isinstance(prof.get(a), (int, float)) and (a != 'tannin' or red)]
+        notes = []
+        if sparkling:
+            notes.append('Игристое')
+        if (prof.get('oak') or 0) >= 3.5:
+            notes.append('Выдержка в дубе')
+        out = {'scales': scales, 'aromas': [{'id': a, 'name': AROMAS[a]} for a in prof.get('aromas', []) if a in AROMAS],
+               'occasions': [OCCASIONS[o] for o in prof.get('occasions', []) if o in OCCASIONS], 'notes': notes,
+               'source': ('По описанию винодельни' if prof.get('source') == 'model' else
+                          'По описанию, стилю и сорту винограда'), 'match': None}
+        if me is False:
+            me = self._me(profile) if profile else None
+        if not me:
+            return out
+        diffs = {s['axis']: s['value'] - me['axes'][s['axis']] for s in scales if s['axis'] in me['axes']}
+        if not diffs:
+            return out
+        axis_fit = sum(1 - min(abs(d), 4) / 4 for d in diffs.values()) / len(diffs)
+        wine_aromas = [a['id'] for a in out['aromas']]
+        aroma_fit = (len(set(wine_aromas) & set(me['aromas'][:4])) / min(len(wine_aromas), 2)
+                     if wine_aromas and me['aromas'] else 0.5)
+        color_fit = 1.0 if not me['colors'] or color in me['colors'][:2] else 0.4
+        raw = 0.6 * axis_fit + 0.25 * min(aroma_fit, 1.0) + 0.15 * color_fit
+        # Stretch: a near-identical structure reads 95+, a wine of the opposite style falls below 50.
+        percent = max(10, min(99, round(100 * (raw - 0.45) / 0.5)))
+        your = {a: me['axes'][a] for a in diffs}
+        far = sorted((d for d in diffs.items() if abs(d[1]) >= 1.25), key=lambda d: -abs(d[1]))
+        near = [AXIS_GENITIVE[a] for a, d in diffs.items() if abs(d) <= 0.6]
+        if far:
+            words = [AXIS_WORDS[a][0 if d > 0 else 1] for a, d in far[:2]]
+            note = (' и '.join(words)).capitalize() + ', чем вы обычно любите'
+        elif near:
+            note = 'Совпадает с вашим вкусом по ' + (', '.join(near[:-1]) + ' и ' + near[-1] if len(near) > 1 else near[0])
+        else:
+            note = 'Близко к вашему вкусу'
+        common = [AROMAS[a] for a in wine_aromas if a in me['aromas'][:4]]
+        if common and not far:
+            note += '; ваши ноты: ' + ', '.join(common[:2])
+        out['match'] = {'percent': percent, 'note': note, 'yours': your}
+        return out
+
+    # ---- swipe deck («тиндер по винам») --------------------------------------------------
+    def deck(self, profile, limit=10):
+        """Next wines to swipe: the feed's taste-ranked, diversified picks without already swiped ones,
+        each with its taste sheet. Swipes sharpen the passport faster than browsing does."""
+        if type(limit) is not int or not 1 <= limit <= 24:
+            raise HTTPException(422, 'limit от 1 до 24')
+        swiped = self.swipes(profile)
+        items = [w for w in self.p.recommendations(profile, '', limit, exclude=set(swiped)) if w['slug'] not in swiped]
+        me = self._me(profile)
+        items = [{**w, 'taste': self.wine_taste(w['slug'], me=me)} for w in items]
+        return {'items': items, 'request_id': self.log_impressions(profile, items, 'swipe'),
+                'swiped': len(swiped), 'liked': sum(v == 'like' for v in swiped.values()),
+                'empty': None if items else 'Вы пролистали все подходящие вина — загляните позже'}
+
+    def swipe(self, profile, body):
+        """like — «звучит вкусно»: weak liking, and the wine goes to «Лайки» to try later;
+        nope — «не моё»: weak dislike, hidden from the feed; skip — just next; undo — as if never swiped."""
+        if not isinstance(body, dict):
+            raise HTTPException(422, 'Ожидается объект')
+        slug, verdict = body.get('slug'), body.get('verdict')
+        self.p.require_slug(slug)
+        if verdict not in VERDICTS + ('undo',):
+            raise HTTPException(422, 'verdict: like, nope, skip или undo')
+        with self.store.db() as db:
+            row = db.execute('SELECT favorited FROM recsys_swipes WHERE profile=? AND slug=?', (profile, slug)).fetchone()
+            if row and row['favorited']:  # a repeated or undone swipe takes back the like it added
+                db.execute('UPDATE wine_preferences SET favorite=0,updated=? WHERE profile=? AND slug=?',
+                           (time.time(), profile, slug))
+            db.execute('DELETE FROM recsys_swipes WHERE profile=? AND slug=?', (profile, slug))
+            if verdict != 'undo':
+                favorited = 0
+                if verdict == 'like':
+                    pref = db.execute('SELECT favorite FROM wine_preferences WHERE profile=? AND slug=?',
+                                      (profile, slug)).fetchone()
+                    if not (pref and pref['favorite']):
+                        db.execute('INSERT OR IGNORE INTO wine_preferences VALUES(?,?,0,0,?)', (profile, slug, time.time()))
+                        db.execute('UPDATE wine_preferences SET favorite=1,updated=? WHERE profile=? AND slug=?',
+                                   (time.time(), profile, slug))
+                        favorited = 1
+                db.execute('INSERT INTO recsys_swipes VALUES(?,?,?,?,?)', (profile, slug, verdict, favorited, time.time()))
+        return {'ok': True, 'passport': self.passport(profile)}
+
     def merge_guest(self, db, source, target):
         """Called inside Collection.merge_guest: keep a guest's onboarding and feedback after sign-in."""
         db.execute('UPDATE recsys_events SET profile=? WHERE profile=?', (target, source))
         if not db.execute('SELECT 1 FROM recsys_onboarding WHERE profile=?', (target,)).fetchone():
             db.execute('UPDATE recsys_onboarding SET profile=? WHERE profile=?', (target, source))
         db.execute('DELETE FROM recsys_onboarding WHERE profile=?', (source,))
+        db.execute('INSERT OR IGNORE INTO recsys_swipes SELECT ?,slug,verdict,favorited,created FROM recsys_swipes '
+                   'WHERE profile=?', (target, source))
+        db.execute('DELETE FROM recsys_swipes WHERE profile=?', (source,))
 
     def routes(self, app):
         from fastapi import Request
 
         @app.get('/api/product/taste')
-        def taste(request: Request):
-            return self.passport(request.state.profile)
+        def taste(request: Request, kind: str = ''):
+            return self.passport(request.state.profile, kind or None)
+
+        @app.get('/api/product/taste/quiz')
+        def quiz_options(request: Request):
+            return self.quiz_options(request.state.profile)
+
+        @app.post('/api/product/taste/quiz')
+        def quiz(body: dict, request: Request):
+            return self.save_quiz(request.state.profile, body)
+
+        @app.get('/api/product/taste/swipe')
+        def deck(request: Request, limit: int = 10):
+            return self.deck(request.state.profile, limit)
+
+        @app.post('/api/product/taste/swipe')
+        def swipe(body: dict, request: Request):
+            return self.swipe(request.state.profile, body)
 
         @app.get('/api/product/taste/onboarding')
         def onboarding_options(request: Request):

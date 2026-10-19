@@ -28,6 +28,19 @@ class GuestAccessTest(unittest.TestCase):
         with patch.object(self.app.state.product,'assistant',return_value={'text':'Ответ','items':[]}):
             for _ in range(2):self.assertEqual(self.c.post('/api/product/assistant',json={'message':'К сыру'}).status_code,200)
 
+    def test_guest_can_take_the_taste_quiz_and_swipe(self):
+        quiz=self.c.get('/api/product/taste/quiz')
+        self.assertEqual(quiz.status_code,200,quiz.text);self.assertEqual(len(quiz.json()['questions']),6)
+        saved=self.c.post('/api/product/taste/quiz',json={'answers':{'wine':'red','sugar':'none'}})
+        self.assertEqual(saved.status_code,200,saved.text);self.assertEqual(saved.json()['passport']['stage'],'learning')
+        deck=self.c.get('/api/product/taste/swipe?limit=3')
+        self.assertEqual(deck.status_code,200,deck.text);slug=deck.json()['items'][0]['slug']
+        self.assertEqual(self.c.post('/api/product/taste/swipe',json={'slug':slug,'verdict':'like'}).status_code,200)
+        self.assertEqual(self.c.get('/api/product/taste?kind=red').status_code,200)
+        self.assertIn('taste',self.c.get('/api/product/wines/'+slug).json())
+        self.assertEqual(self.c.post('/api/product/taste/swipe',json={'slug':slug,'verdict':'like'},
+                                     headers={'Origin':'https://evil.example'}).status_code,403)
+
     def test_guest_scan_stays_available_after_registering(self):
         scan=self.c.post('/api/predict',files={'image':('a.jpg',self.data)},headers={'X-Device-ID':'guest-phone'}).json()
         self.assertEqual(self.c.get('/api/product/history').status_code,401)

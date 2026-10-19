@@ -72,3 +72,20 @@ class SommelierCollectionsTest(ShelvesTest):
         self.assertEqual(result.status_code,200,result.text)
         self.assertEqual(len(result.json()['collections']),1)
 
+
+    def test_collections_for_you_outside_the_chat(self):
+        public=self.white_shelf(self.c,'Белые для гостей');self.publish(public)
+        private=self.white_shelf(self.c,'Секретная полка')
+        self.c.post('/api/product/preferences/cabernet',json={'rating':5})
+        self.assertEqual(self.c.get('/api/product/shelves/for-you').json()['items'],[])  # own shelves are not «для вас»
+        with TestClient(self.app) as other:
+            newcomer=other.get('/api/product/shelves/for-you').json()
+            self.assertEqual(newcomer['items'],[]);self.assertIn('анкету',newcomer['empty'])
+            other.post('/api/product/preferences/cabernet',json={'rating':5})
+            found=other.get('/api/product/shelves/for-you?limit=3').json()
+            self.assertEqual([x['id'] for x in found['items']],[public])
+            self.assertIn('Каберне',found['items'][0]['reason']);self.assertFalse(found['items'][0]['owner'])
+            self.assertNotIn(private,str(found))
+            other.post('/api/product/shelves/'+public+'/copy',json={})  # saved already: nothing new to suggest
+            self.assertEqual(other.get('/api/product/shelves/for-you').json()['items'],[])
+            self.assertEqual(other.get('/api/product/shelves/for-you?limit=99').status_code,422)

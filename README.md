@@ -134,6 +134,8 @@ RUNPOD_URL=https://<POD_ID>-8080.proxy.runpod.net bash start.sh
 | `POST` | `/api/product/preferences/{slug}` | избранное и оценка |
 | `GET` | `/api/product/ranking?mode=scans\|rating` | топ вин |
 | `GET` | `/api/product/recommendations` | рекомендации по вкусу |
+| `GET` | `/api/product/collection/lists/{id}/suggestions` | чем дополнить свою коллекцию |
+| `GET` | `/api/product/shelves/for-you` | публичные коллекции под вкус пользователя |
 | `GET`/`POST` | `/api/product/taste/quiz` | анкета вкуса: 6 вопросов → вкусовой профиль |
 | `GET`/`POST` | `/api/product/taste/swipe` | винный свайп: колода и «хочу / не моё» |
 | `GET` | `/api/product/taste?kind=` | вкусовой профиль (обзор или по стилю) |

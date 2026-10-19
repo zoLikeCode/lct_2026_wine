@@ -202,16 +202,44 @@ class Shelves:
 
     def recommendations(self, profile, query, limit=3):
         """Recommend actual accessible shelves; never infer access from chat text."""
+        own_only=bool(re.search(r'\b(?:моих|моей|мои|мою|моя|своих|своей)\s+(?:коллекц|подборк|полк)\w*',normalized(query)))
+        result=[{'id':detail['id'],'name':detail['name'],'owner':detail['owner'],
+                 'visibility':detail['visibility'],'wine_count':len(detail['wines']),'matched_count':len(matched),
+                 'wines':detail['wines'][:4],'reason':reason}
+                for detail,matched,reason in self.ranked(profile,query,limit,'own' if own_only else 'any')]
+        return {'recommendation_type':'collection','collections':result,'items':[],
+            'text':('Вот коллекции под ваш запрос. В каждой отметил подходящие вина.' if result else
+                    'Подходящих коллекций пока нет. Попробуйте другое блюдо или сохраните свою подборку в разделе «Коллекция».'),
+            'mode':'catalog','warning':None}
+
+    def for_you(self, profile, limit=4):
+        """«Коллекции для вас» outside the chat: public shelves of other people the user has not saved
+        yet, ranked by taste exactly as the chat ranks them. Nothing personal is known about a
+        newcomer, so they get an invitation instead of a random pick."""
+        if type(limit) is not int or not 1<=limit<=12:raise HTTPException(422,'limit от 1 до 12')
+        if not self.product.recs.has_taste(profile):
+            return {'items':[],'needs_taste':True,
+                    'empty':'Оцените пару вин или пройдите анкету вкуса — и здесь появятся коллекции под ваш вкус'}
+        items=[{**detail,'reason':reason} for detail,_,reason in self.ranked(profile,'',limit,'others')]
+        return {'items':items,'needs_taste':False,'empty':None if items else 'Пока нет публичных коллекций под ваш вкус'}
+
+    def ranked(self, profile, query, limit, scope='any'):
+        """Shelves ranked by how well their wines fit the query and the user's taste (the scores of
+        the wine feed): [(detail, matched slugs best first, reason)]. scope: 'any' — own and public,
+        'own' — own only, 'others' — public shelves of other people not saved by the user yet."""
         q=normalized(query)
-        own_only=bool(re.search(r'\b(?:моих|моей|мои|мою|моя|своих|своей)\s+(?:коллекц|подборк|полк)\w*',q))
         ranked_wines={slug:(score,reason) for score,slug,reason in self.product.recommendation_candidates(profile,query)}
         # Access is constrained in SQL before either names or members are inspected.
+        if scope=='others':
+            where,args="l.profile!=? AND m.visibility='public' AND NOT EXISTS(SELECT 1 FROM collection_saves s WHERE s.profile=? AND s.source_id=l.id)",(profile,profile)
+        else:
+            where,args="l.profile=? OR (?=0 AND m.visibility='public')",(profile,int(scope=='own'))
         with self.store.db() as db:
-            rows=db.execute('''SELECT l.id,l.name,l.profile,m.visibility,c.slug,c.slot
+            rows=db.execute(f'''SELECT l.id,l.name,l.profile,m.visibility,c.slug,c.slot
                 FROM collection_lists l LEFT JOIN collection_list_meta m ON m.list_id=l.id
                 JOIN collection_members c ON c.list_id=l.id
-                WHERE l.profile=? OR (?=0 AND m.visibility='public')
-                ORDER BY l.id,c.slot,c.created''',(profile,int(own_only))).fetchall()
+                WHERE {where}
+                ORDER BY l.id,c.slot,c.created''',args).fetchall()
         grouped={}
         for row in rows:
             if row['slug'] not in self.product.cards:continue
@@ -243,15 +271,10 @@ class Shelves:
             if not matched:continue
             best=matched[0];wine=self.product.cards[best]
             seen_contents.add(fingerprint)
-            result.append({'id':detail['id'],'name':detail['name'],'owner':detail['owner'],
-                'visibility':detail['visibility'],'wine_count':len(current),'matched_count':len(matched),
-                'wines':detail['wines'][:4],
-                'reason':'«'+wine['name']+'»: '+ranked_wines[best][1]})
+            why=ranked_wines[best][1]
+            result.append((detail,matched,'«'+wine['name']+'» — '+why[:1].lower()+why[1:]))
             if len(result)>=limit:break
-        return {'recommendation_type':'collection','collections':result,'items':[],
-            'text':('Вот коллекции под ваш запрос. В каждой отметил подходящие вина.' if result else
-                    'Подходящих коллекций пока нет. Попробуйте другое блюдо или сохраните свою подборку в разделе «Коллекция».'),
-            'mode':'catalog','warning':None}
+        return result
 
     def settings(self, profile, ident, body, authenticated):
         visibility = body.get('visibility', 'private')
@@ -441,6 +464,8 @@ class Shelves:
             return self.feed(request.state.profile,q,offset,author)
         @app.get('/api/product/shelves/ranking')
         def ranking(request:Request,slug:str|None=None): return self.ranking(request.state.profile,slug)
+        @app.get('/api/product/shelves/for-you')
+        def for_you(request:Request,limit:int=4): return self.for_you(request.state.profile,limit)
         @app.get('/api/product/shelves/{ident}/discussion')
         def discussion(ident:str,request:Request,before:int|None=None):
             return self.discussion(request.state.profile,ident,before)

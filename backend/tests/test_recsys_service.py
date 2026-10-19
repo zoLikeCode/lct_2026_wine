@@ -76,6 +76,21 @@ class RecsysServiceTest(unittest.TestCase):
         self.assertEqual(res['free'],5);self.assertNotIn('merlo',[w['slug'] for w in res['items']])
         with self.assertRaises(Exception):self.r.list_suggestions('p2',lid)
 
+    def test_list_suggestions_follow_what_is_on_the_shelf(self):
+        sys.path.insert(0,str(Path(__file__).resolve().parent))
+        from test_recsys import CARDS
+        from recsys import Recommender
+        self.p.cards={s:{**w,'slug':s,'image':'','portal_url':''} for s,w in CARDS.items()}
+        self.p.search={s:w['name'].lower() for s,w in self.p.cards.items()}
+        self.p.recsys=self.r.rec=Recommender(self.p.cards)
+        lid=self.p.collection.save_list('p1',{'name':'Пятница','goal':'','size':0})['id']
+        for slug in ('sweet-1','sap-3'):self.p.collection.list_action('p1',lid,{'action':'add','slug':slug})
+        items=self.r.list_suggestions('p1',lid,6)['items']
+        slugs=[w['slug'] for w in items]
+        self.assertIn('sweet-2',slugs[:2])  # a newcomer: the shelf itself decides, not the catalog order
+        self.assertNotIn('sap-3-2021',slugs)  # another vintage of a wine already on the shelf
+        self.assertIn('из этой коллекции',items[0]['reason'])
+
     def test_guest_onboarding_survives_merge(self):
         self.r.save_onboarding('guest',{'tiles':['bubbles']})
         self.r.feedback('guest',{'slug':'merlo','action':'dismiss'})

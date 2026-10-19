@@ -128,6 +128,11 @@ class RecsysService:
             labels[label] = spec.get('label') or ', '.join(colors + sweets) or 'ваши ответы'
         return seeds, labels
 
+    def has_taste(self, profile):
+        """Whether anything personal is known yet: own ratings, bottles, swipes or onboarding answers."""
+        pos, neg = self.rec.profile(self.p.taste_signals(profile))
+        return bool(pos or neg or self.onboarding_seeds(profile)[0])
+
     @classmethod
     def fits_answers(cls, answers, style):
         answers = cls.effective(answers)
@@ -356,8 +361,8 @@ class RecsysService:
         return self._cards(chosen, profile, extra), None
 
     def list_suggestions(self, profile, list_id, limit=None):
-        """Fill a selection («подборка») for its occasion: taste + occasion fit + range of styles;
-        bottles the user already owns come first when they fit."""
+        """Fill a selection («подборка») for its occasion: taste + occasion fit + closeness to the
+        wines already in it + range of styles; bottles the user already owns come first when they fit."""
         with self.store.db() as db:
             row = db.execute('SELECT * FROM collection_lists WHERE id=? AND profile=?', (list_id, profile)).fetchone()
             if not row:
@@ -378,9 +383,20 @@ class RecsysService:
         pos = self.rec.profile(signals)[0]
         levels = {sweetness_level(self.rec.styles[i]) for i, w in pos.items() if w >= 0.5}
         guard = sum(pos.values()) >= 2 and rule.get('occasion') != 'dessert'
+        # What is already on the shelf says what the shelf is about, whatever its name: the closest
+        # member to every wine (cosine), and no other vintage of a wine that is already there.
+        inside = [self.rec.index[s] for s in members if s in self.rec.index][:24]
+        cohesion, near = [0.0] * len(self.rec.slugs), [None] * len(self.rec.slugs)
+        for m in inside:
+            for j, v in enumerate(self.rec.sims_to(m)):
+                if v > cohesion[j]:
+                    cohesion[j], near[j] = v, m
+        groups = {self.rec.dupe[m] for m in inside}
         scored = []
         for slug, i in self.rec.index.items():
             if slug in members or slug in hidden or (signals.get(slug, {}).get('rating') or 3) <= 2:
+                continue
+            if self.rec.dupe[i] in groups:
                 continue
             w, prof = self.p.cards[slug], self.rec.taste.get(slug, {})
             fit, why = 0.0, []
@@ -404,14 +420,17 @@ class RecsysService:
                 fit -= 0.8  # the occasion does not turn a dry-wine drinker into a sweet one
             owned = signals.get(slug, {}).get('quantity', 0)
             taste = conf * personal[i] + (1 - conf) * prior[i] - 0.6 * penalty[i]
-            score = 10 * taste + 4 * fit + (2 if owned else 0)
+            score = 10 * taste + 6 * cohesion[i] + 4 * fit + (2 if owned else 0)
             rating = signals.get(slug, {}).get('rating')
             src = source[i]
+            liked = self.rec.sim(i, src) if isinstance(src, int) and src != i else 0.0
             if rating and rating >= 4:
                 why.insert(0, f'ваша оценка {rating}')
-            elif isinstance(src, int) and src != i and self.rec.sim(i, src) >= 0.4:
+            elif cohesion[i] >= 0.45 and cohesion[i] >= liked:
+                why.append('похоже на «' + self.p.cards[self.rec.slugs[near[i]]]['name'] + '» из этой коллекции')
+            elif liked >= 0.4:
                 why.append('похоже на «' + self.p.cards[self.rec.slugs[src]]['name'] + '»')
-            reason = ('Есть у вас · ' if owned else '') + ('; '.join(why[:2]) if why else 'для разнообразия подборки')
+            reason = ('Есть у вас · ' if owned else '') + ('; '.join(why[:2]) if why else 'для разнообразия коллекции')
             scored.append((score, slug, reason[0].upper() + reason[1:]))
         chosen = self.rec.diversify(scored, limit, per_winery=2, style_repeat=0.15)
         extra = {s: {'owned': True, 'quantity': v['quantity']} for s, v in signals.items() if v.get('quantity')}

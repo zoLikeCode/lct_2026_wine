@@ -141,3 +141,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .wine-collection-link:hover .wine-collection-copy strong{color:var(--wine)}
 @media(max-width:700px){#result-view{padding-bottom:calc(100px + env(safe-area-inset-bottom))}}
 @media(max-width:700px){.wine-collections{margin-top:40px;padding-top:24px}.wine-collections h2{font-size:30px;margin-bottom:12px}.wine-collection-list{grid-template-columns:1fr}.wine-collection-link{grid-template-columns:86px minmax(0,1fr) 18px;gap:16px;min-height:124px;padding:16px 0}.wine-collection-bottles{height:92px}.wine-collection-bottles img{width:27px;height:92px}.wine-collection-copy strong{font-size:23px}}
+/* «Подходят вашему вкусу»: personal picks above the community feed, from /shelves/for-you. */
+.community-for-you-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;margin:0 0 20px}
+.community-for-you-head h3,.community-all-title{font:400 28px/1.25 var(--serif)}
+.community-for-you-head p{font-size:12px;line-height:1.6;color:var(--muted)}
+.community-all-title{margin:0 0 24px;padding-top:28px;border-top:1px solid var(--line)}
+.shelf-cover>.shelf-cover-reason{color:var(--wine)}
+.community-for-you-invite{display:flex;align-items:center;justify-content:space-between;gap:8px 20px;flex-wrap:wrap;margin:0 0 28px;padding:16px 20px;border:1px solid var(--line);border-radius:20px;background:#fffdfa99}
+.community-for-you-invite p{font-size:13px;line-height:1.6;color:var(--muted);max-width:560px}
+@media(max-width:700px){.community-for-you-head h3,.community-all-title{font-size:24px}.community-all-title{padding-top:24px}.community-for-you-invite{padding:14px 16px;margin-bottom:24px}}

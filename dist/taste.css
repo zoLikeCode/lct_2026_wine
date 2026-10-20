@@ -196,7 +196,8 @@
  .quiz-insight{margin:0 16px 16px}
  .quiz-bottom{padding:12px 20px max(20px,env(safe-area-inset-bottom))}
  .taste-heading{flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:20px}
- .taste-tabs{margin:0 -20px;padding:4px 20px 20px}
+ #taste-view{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+ .taste-tabs{margin:0;padding:4px 0 20px}
  .taste-tabs button{min-height:42px;padding:8px 18px;font-size:14px}
  .taste-invite{padding:28px 16px;border-radius:28px}
  .taste-invite-head h2{font-size:22px}

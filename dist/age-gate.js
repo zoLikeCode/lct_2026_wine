@@ -9,4 +9,5 @@
   dialog.close();document.body.classList.toggle('modal-open',!!document.querySelector('dialog[open]'));
  });
  if(!confirmed){dialog.showModal();document.body.classList.add('modal-open');}
+ 
 })();

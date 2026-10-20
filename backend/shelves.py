@@ -53,12 +53,14 @@ class Shelves:
         path = Path(__file__).parent / 'content/collection_challenge.json'
         self.challenge_config = json.loads(path.read_text()) if path.exists() else {}
         self.seed_editorial()
-        self.demo_enabled = os.environ.get('WINE_DEMO_COMMUNITY') == '1'
+        # Approved example content ships with every release, including production.
+        # An explicit 0 hides it without deleting discussions or users' copies.
+        self.demo_enabled = os.environ.get('WINE_DEMO_COMMUNITY', '1') == '1'
         if self.demo_enabled:
             self.seed_demo()
 
     def seed_demo(self):
-        """Explicit local examples, isolated from accounts, scans and earned rewards."""
+        """Disclosed examples, isolated from accounts, scans and earned rewards."""
         if not self.demo_enabled:
             return
         path = Path(__file__).parent / 'content/demo_community.json'
@@ -99,6 +101,25 @@ class Shelves:
                     db.execute('INSERT OR IGNORE INTO collection_messages(id,list_id,profile,body,reply_to,created,updated) VALUES(?,?,?,?,?,?,?)',
                                (mid,ident,author,message['body'],reply,now,now))
                     ids.append(mid)
+
+    def seed_status(self):
+        """Only public seed-content counts; no account or private collection data."""
+        with self.store.db() as db:
+            editorial = db.execute("""SELECT count(*) FROM collection_lists l
+                JOIN collection_list_meta m ON m.list_id=l.id
+                WHERE l.profile=? AND m.visibility='public'""", (EDITORIAL_PROFILE,)).fetchone()[0]
+            examples = messages = 0
+            if self.demo_enabled:
+                examples = db.execute("""SELECT count(*) FROM collection_lists l
+                    JOIN collection_list_meta m ON m.list_id=l.id
+                    WHERE l.profile LIKE 'system:demo:%' AND m.visibility='public'""").fetchone()[0]
+                messages = db.execute("""SELECT count(*) FROM collection_messages c
+                    JOIN collection_lists l ON l.id=c.list_id
+                    JOIN collection_list_meta m ON m.list_id=l.id
+                    WHERE l.profile LIKE 'system:demo:%' AND m.visibility='public'
+                    AND c.profile LIKE 'system:demo:%' AND c.deleted=0""").fetchone()[0]
+        return dict(examples_enabled=self.demo_enabled, editorial_collections=editorial,
+                    example_collections=examples, example_messages=messages)
 
     def author_info(self, db, profile):
         from achievements import ACHIEVEMENTS, award_collection_badges

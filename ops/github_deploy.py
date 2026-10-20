@@ -9,6 +9,16 @@ import urllib.request
 BASE = 'https://wine.77-105-169-21.sslip.io/__deploy'
 
 
+def report_community():
+    """Report actual deployed content, independently of local development data."""
+    try:
+        with urllib.request.urlopen(BASE.removesuffix('/__deploy') + '/api/status', timeout=20) as r:
+            counts = json.load(r)['community']
+        print('::notice title=Published community::' + json.dumps(counts), flush=True)
+    except (OSError, ValueError, KeyError) as error:
+        print('::warning title=Community status unavailable::' + type(error).__name__, flush=True)
+
+
 def request(path, body=None):
     token_url = os.environ['ACTIONS_ID_TOKEN_REQUEST_URL'] + '&audience=' + urllib.parse.quote(BASE, safe='')
     req = urllib.request.Request(token_url, headers={'Authorization': 'Bearer ' + os.environ['ACTIONS_ID_TOKEN_REQUEST_TOKEN']})
@@ -34,6 +44,7 @@ def main():
         if status['status'] == 'success':
             if status['sha'] != sha:
                 raise RuntimeError('Server deployed a different commit')
+            report_community()
             return
         if status['status'] == 'superseded':
             print('A newer main commit is already queued; skipping this stale release.')

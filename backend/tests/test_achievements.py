@@ -1,4 +1,5 @@
 import json
+import os
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 from test_shelves import ShelvesTest
@@ -109,6 +110,42 @@ class AchievementsTest(ShelvesTest):
         self.assertEqual(self.c.get('/api/product/shelves/demo-fixture').status_code,404)
         self.assertEqual(self.c.get('/api/product/shelves/authors/demo-fixture').status_code,404)
         self.assertEqual(self.c.get('/api/product/shelves/'+copied).status_code,200)
+
+    def test_community_ships_without_local_environment_and_preserves_user_data(self):
+        from shelves import Shelves
+        collection = self.app.state.product.collection
+        personal = self.create('Личная коллекция')
+        config = {'collections': [], 'profiles': [
+            {'id':'fixture','name':'Анна','bio':'Пример профиля','achievements':[],
+             'collections':[{'id':'demo-fixture','name':'Два вина','description':'Пример',
+                             'slugs':['merlo','cabernet']}]}],
+            'discussions':[{'collection':'demo-fixture','messages':[
+                {'author':'fixture','body':'Пример обсуждения'}]}]}
+        with patch.dict(os.environ), patch('shelves.Path.read_text', return_value=json.dumps(config)):
+            os.environ.pop('WINE_DEMO_COMMUNITY', None)
+            collection.shelves = Shelves(collection)
+            self.assertTrue(collection.shelves.demo_enabled)
+            message = self.c.post('/api/product/shelves/demo-fixture/comment',
+                                  json={'body':'Настоящий комментарий пользователя'})
+            self.assertEqual(message.status_code, 200, message.text)
+            collection.shelves = Shelves(collection)
+            counts = self.c.get('/api/status').json()['community']
+            self.assertEqual(counts, dict(examples_enabled=True, editorial_collections=0,
+                                          example_collections=1, example_messages=1))
+            self.assertEqual(len(self.c.get('/api/product/shelves/demo-fixture').json()['comments']), 2)
+            self.assertEqual(self.c.get('/api/product/shelves/'+personal).json()['name'], 'Личная коллекция')
+            os.environ['WINE_DEMO_COMMUNITY'] = '0'
+            collection.shelves = Shelves(collection)
+            counts = self.c.get('/api/status').json()['community']
+            self.assertFalse(counts['examples_enabled'])
+            self.assertEqual((counts['example_collections'], counts['example_messages']), (0, 0))
+            from fastapi import HTTPException
+            with self.assertRaises(HTTPException) as unavailable:
+                collection.shelves.detail(self.owner(), 'demo-fixture')
+            self.assertEqual(unavailable.exception.status_code, 404)
+            os.environ['WINE_DEMO_COMMUNITY'] = '1'
+            collection.shelves = Shelves(collection)
+            self.assertEqual(len(self.c.get('/api/product/shelves/demo-fixture').json()['comments']), 2)
 
     def test_public_author_exposes_only_public_collections_and_no_private_notes(self):
         public=self.create('Для всех'); private=self.create('Личное')

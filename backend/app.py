@@ -319,7 +319,7 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
     def status():
         result=readiness()
         if not result['ready']:raise HTTPException(503,'Модель недоступна. Повторите через минуту.')
-        return result
+        return {**result,'community':product.collection.shelves.seed_status()}
 
     @app.post('/api/predict')
     async def predict(request:Request,image:UploadFile=File(...)):

@@ -90,7 +90,7 @@ def health(timeout=180):
     while time.monotonic() < until:
         try:
             data = json.loads(fetch('http://127.0.0.1:8100/api/status', 65536))
-            if data.get('ready') is True and data.get('backend') == 'local' and data.get('catalog_count', 0) > 0:
+            if data.get('ready') is True and data.get('backend') in {'local', 'runpod'} and data.get('catalog_count', 0) > 0:
                 fetch('http://127.0.0.1:8100/', 2 * 1024 * 1024)
                 return data
         except Exception:

@@ -122,3 +122,5 @@ body[data-screen=result] .app-shell{padding-inline:24px}
 }
 @media(prefers-reduced-motion:reduce){.portal-glass,.portal-glass img{transition:none}}
 @media(min-width:1200px){body[data-screen=result]{background-image:url('/assets/portal-card/layout-bg.webp');background-size:100% auto;background-position:center top;background-repeat:no-repeat}}
+
+.wine-similar{max-width:880px;margin:56px auto}.wine-similar h2{font:400 30px/1.3 var(--serif);margin-bottom:24px}.wine-similar-list{display:grid;gap:0}.wine-similar-item{display:grid;grid-template-columns:58px minmax(0,1fr) 20px;align-items:center;gap:24px;padding:20px 0;text-align:left;border-bottom:1px solid var(--line)}.wine-similar-item img{width:58px;height:100px;object-fit:contain}.wine-similar-item strong{display:block;font:400 23px/1.3 var(--serif);margin:6px 0}.wine-similar-item small{color:var(--muted);font-size:12px;line-height:1.5}.wine-similar-item svg{width:20px;height:20px;fill:none;stroke:var(--wine)}@media(max-width:600px){.wine-similar{margin:36px 0}.wine-similar h2{font-size:27px}.wine-similar-item{gap:16px}.wine-similar-item strong{font-size:20px}}

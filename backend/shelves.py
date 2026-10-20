@@ -85,6 +85,20 @@ class Shelves:
                         db.execute('DELETE FROM collection_members WHERE list_id=?', (item['id'],))
                         for slot, slug in enumerate(item['slugs']):
                             db.execute('INSERT INTO collection_members VALUES(?,?,?,?,?)', (item['id'], profile, slug, slot, now))
+            for thread in content.get('discussions', []):
+                ident=thread['collection']
+                if not db.execute("SELECT 1 FROM collection_lists WHERE id=? AND profile LIKE 'system:demo:%'",(ident,)).fetchone():
+                    continue
+                ids=[]
+                for n,message in enumerate(thread['messages']):
+                    author='system:demo:'+message['author']
+                    if not db.execute('SELECT 1 FROM collection_demo_authors WHERE profile=?',(author,)).fetchone():continue
+                    mid=uuid.uuid5(uuid.NAMESPACE_URL,'wine-example-discussion-v1:'+ident+':'+str(n)).hex
+                    reply=ids[message['reply_to']] if 'reply_to' in message and message['reply_to']<len(ids) else None
+                    now=time.time()
+                    db.execute('INSERT OR IGNORE INTO collection_messages(id,list_id,profile,body,reply_to,created,updated) VALUES(?,?,?,?,?,?,?)',
+                               (mid,ident,author,message['body'],reply,now,now))
+                    ids.append(mid)
 
     def author_info(self, db, profile):
         from achievements import ACHIEVEMENTS, award_collection_badges
@@ -366,15 +380,18 @@ class Shelves:
         return {'ok': True, 'id':message_id}
 
     def discussion_rows(self, db, profile, ident, before=None):
-        rows=db.execute('''SELECT m.*,a.display_name,p.body AS reply_body,p.deleted AS reply_deleted,
-            pa.display_name AS reply_author FROM collection_messages m
+        rows=db.execute('''SELECT m.*,COALESCE(a.display_name,d.name) AS display_name,p.body AS reply_body,p.deleted AS reply_deleted,
+            COALESCE(pa.display_name,pd.name) AS reply_author FROM collection_messages m
             LEFT JOIN wine_accounts a ON a.profile=m.profile
+            LEFT JOIN collection_demo_authors d ON d.profile=m.profile
             LEFT JOIN collection_messages p ON p.id=m.reply_to AND p.list_id=m.list_id
             LEFT JOIN wine_accounts pa ON pa.profile=p.profile
+            LEFT JOIN collection_demo_authors pd ON pd.profile=p.profile
             WHERE m.list_id=? AND (? IS NULL OR m.seq<?) ORDER BY m.seq DESC LIMIT 51''',(ident,before,before)).fetchall()
         more=len(rows)>50; rows=rows[:50]
         items=[dict(id=r['id'],seq=r['seq'],author=r['display_name'] or 'Участник',body=r['body'],
                     created=r['created'],updated=r['updated'],mine=r['profile']==profile,deleted=bool(r['deleted']),
+                    example=r['profile'].startswith('system:demo:'),
                     reply_to=r['reply_to'],reply_author=r['reply_author'] or 'Участник',
                     reply_body=('Сообщение удалено' if r['reply_deleted'] else r['reply_body']) if r['reply_to'] else None)
                for r in reversed(rows)]

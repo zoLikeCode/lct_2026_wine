@@ -17,6 +17,7 @@ HIDE_DAYS = 30
 COLORS = {'красное', 'белое', 'розовое', 'оранжевое'}
 SWEETS = {'сухое', 'полусухое', 'полусладкое', 'сладкое'}
 VERDICTS = ('like', 'nope', 'skip')
+QUIZ_VERSION = 1
 # Passport tabs: which wines each one covers (colour of a still wine, or any sparkling).
 KINDS = {'red': ('Красное', 'красное'), 'white': ('Белое', 'белое'), 'rose': ('Розовое', 'розовое'),
          'sparkling': ('Игристое', None)}
@@ -56,6 +57,7 @@ class RecsysService:
                 action TEXT,position INTEGER,request_id TEXT,created REAL);
             CREATE INDEX IF NOT EXISTS recsys_events_profile ON recsys_events(profile,action,created);
             CREATE TABLE IF NOT EXISTS recsys_onboarding(profile TEXT PRIMARY KEY,answers TEXT,updated REAL);
+            CREATE TABLE IF NOT EXISTS recsys_taste_guide(profile TEXT PRIMARY KEY,seen REAL);
             CREATE TABLE IF NOT EXISTS recsys_swipes(profile TEXT,slug TEXT,verdict TEXT,favorited INTEGER DEFAULT 0,
                 created REAL,PRIMARY KEY(profile,slug));
             ''')
@@ -86,6 +88,15 @@ class RecsysService:
             return json.loads(r['answers']) if r else None
         except ValueError:
             return None
+
+    def guide_seen(self, profile):
+        with self.store.db() as db:
+            return db.execute('SELECT 1 FROM recsys_taste_guide WHERE profile=?', (profile,)).fetchone() is not None
+
+    def acknowledge_guide(self, profile):
+        with self.store.db() as db:
+            db.execute('INSERT OR IGNORE INTO recsys_taste_guide VALUES(?,?)', (profile, time.time()))
+        return {'ok': True, 'guide_seen': True}
 
     @staticmethod
     def effective(a):
@@ -504,7 +515,8 @@ class RecsysService:
         stage = 'new' if not evidence else 'learning' if evidence < 3 else 'confident'
         out = {'stage': stage, 'evidence': round(evidence, 2), 'liked_count': len(pos), 'disliked_count': len(neg),
                'axes': [], 'aromas': [], 'styles': [], 'grapes': [], 'regions': [], 'colors': [], 'summary': None,
-               'onboarding': bool(virtual), 'quiz': quiz, 'kind': kind,
+               'onboarding': bool(virtual), 'quiz': quiz, 'quiz_complete': self.quiz_submitted(answers), 'kind': kind,
+               'guide_seen': self.guide_seen(profile),
                'tabs': [{'id': k, 'label': label, 'count': tabs[k]} for k, (label, _) in KINDS.items()],
                'swiped': len(self.swipes(profile))}
         weights = {self.rec.slugs[i]: w for i, w in pos.items()}
@@ -575,20 +587,38 @@ class RecsysService:
         return line
 
     # ---- taste quiz --------------------------------------------------------------------
+    @staticmethod
+    def quiz_complete(answers):
+        return isinstance(answers, dict) and all(
+            isinstance(answers.get(q['id']), str) and (q['id'], answers[q['id']]) in QUIZ_OPTIONS
+            for q in QUIZ)
+
+    def quiz_submitted(self, answers):
+        # Stored/legacy answers prefill the form; only its final submission completes onboarding.
+        return bool(answers and answers.get('quiz_version') == QUIZ_VERSION
+                    and answers.get('quiz_completed_at') and self.quiz_complete(answers.get('quiz')))
+
+    def require_quiz(self, profile):
+        if not self.quiz_submitted(self.answers(profile)):
+            raise HTTPException(409, 'Сначала ответьте на шесть вопросов анкеты вкуса')
+
     def quiz_options(self, profile):
         questions = [{'id': q['id'], 'title': q['title'], 'options': [
             {k: o[k] for k in ('id', 'label', 'icon', 'insight')} for o in q['options']]} for q in QUIZ]
         return {'questions': questions, 'answers': (self.answers(profile) or {}).get('quiz') or {}}
 
     def save_quiz(self, profile, body):
-        """Save quiz answers ({question: option}; skipped questions are left out). Colour, sweetness and
+        """Save all six quiz answers atomically. Colour, sweetness and
         sparkling are derived here, so the feed filters and seeds work as for the old onboarding."""
         given = body.get('answers') if isinstance(body, dict) else None
-        if not isinstance(given, dict) or any((q, o) not in QUIZ_OPTIONS for q, o in given.items()):
+        if not isinstance(given, dict) or any(not isinstance(o, str) or (q, o) not in QUIZ_OPTIONS for q, o in given.items()):
             raise HTTPException(422, 'answers: {вопрос: вариант} из списка анкеты')
+        if not self.quiz_complete(given):
+            raise HTTPException(422, 'Ответьте на все шесть вопросов анкеты')
         prof = quiz_profile(given)
         answers = {k: v for k, v in (self.answers(profile) or {}).items() if k in ('dishes', 'tiles')}
-        answers.update(quiz=given, colors=prof['colors'], sweetness=prof['sweetness'])
+        answers.update(quiz=given, colors=prof['colors'], sweetness=prof['sweetness'],
+                       quiz_version=QUIZ_VERSION, quiz_completed_at=time.time())
         with self.store.db() as db:
             db.execute('INSERT INTO recsys_onboarding VALUES(?,?,?) ON CONFLICT(profile) DO UPDATE SET '
                        'answers=excluded.answers,updated=excluded.updated',
@@ -660,8 +690,11 @@ class RecsysService:
         each with its taste sheet. Swipes sharpen the passport faster than browsing does."""
         if type(limit) is not int or not 1 <= limit <= 24:
             raise HTTPException(422, 'limit от 1 до 24')
+        self.require_quiz(profile)
         swiped = self.swipes(profile)
-        items = [w for w in self.p.recommendations(profile, '', limit, exclude=set(swiped)) if w['slug'] not in swiped]
+        rated = {slug for slug, pref in self.p.preferences(profile).items() if pref.get('rating')}
+        excluded = set(swiped) | rated
+        items = [w for w in self.p.recommendations(profile, '', limit, exclude=excluded) if w['slug'] not in excluded]
         me = self._me(profile)
         items = [{**w, 'taste': self.wine_taste(w['slug'], me=me)} for w in items]
         return {'items': items, 'request_id': self.log_impressions(profile, items, 'swipe'),
@@ -677,6 +710,8 @@ class RecsysService:
         self.p.require_slug(slug)
         if verdict not in VERDICTS + ('undo',):
             raise HTTPException(422, 'verdict: like, nope, skip или undo')
+        if verdict != 'undo':
+            self.require_quiz(profile)
         with self.store.db() as db:
             row = db.execute('SELECT favorited FROM recsys_swipes WHERE profile=? AND slug=?', (profile, slug)).fetchone()
             if row and row['favorited']:  # a repeated or undone swipe takes back the like it added
@@ -705,6 +740,8 @@ class RecsysService:
         db.execute('INSERT OR IGNORE INTO recsys_swipes SELECT ?,slug,verdict,favorited,created FROM recsys_swipes '
                    'WHERE profile=?', (target, source))
         db.execute('DELETE FROM recsys_swipes WHERE profile=?', (source,))
+        db.execute('INSERT OR IGNORE INTO recsys_taste_guide SELECT ?,seen FROM recsys_taste_guide WHERE profile=?', (target, source))
+        db.execute('DELETE FROM recsys_taste_guide WHERE profile=?', (source,))
 
     def routes(self, app):
         from fastapi import Request
@@ -712,6 +749,10 @@ class RecsysService:
         @app.get('/api/product/taste')
         def taste(request: Request, kind: str = ''):
             return self.passport(request.state.profile, kind or None)
+
+        @app.post('/api/product/taste/guide')
+        def acknowledge_guide(request: Request):
+            return self.acknowledge_guide(request.state.profile)
 
         @app.get('/api/product/taste/quiz')
         def quiz_options(request: Request):

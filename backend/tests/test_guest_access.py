@@ -28,11 +28,16 @@ class GuestAccessTest(unittest.TestCase):
         with patch.object(self.app.state.product,'assistant',return_value={'text':'Ответ','items':[]}):
             for _ in range(2):self.assertEqual(self.c.post('/api/product/assistant',json={'message':'К сыру'}).status_code,200)
 
-    def test_guest_can_take_the_taste_quiz_and_swipe(self):
+    def test_account_can_take_the_taste_quiz_and_swipe(self):
+        self.register()
         quiz=self.c.get('/api/product/taste/quiz')
         self.assertEqual(quiz.status_code,200,quiz.text);self.assertEqual(len(quiz.json()['questions']),6)
-        saved=self.c.post('/api/product/taste/quiz',json={'answers':{'wine':'red','sugar':'none'}})
+        self.assertEqual(self.c.get('/api/product/taste/swipe').status_code,409)
+        self.assertEqual(self.c.post('/api/product/taste/quiz',json={'answers':{'wine':'red'}}).status_code,422)
+        answers={q['id']:q['options'][0]['id'] for q in quiz.json()['questions']}
+        saved=self.c.post('/api/product/taste/quiz',json={'answers':answers})
         self.assertEqual(saved.status_code,200,saved.text);self.assertEqual(saved.json()['passport']['stage'],'learning')
+        self.assertTrue(saved.json()['passport']['quiz_complete'])
         deck=self.c.get('/api/product/taste/swipe?limit=3')
         self.assertEqual(deck.status_code,200,deck.text);slug=deck.json()['items'][0]['slug']
         self.assertEqual(self.c.post('/api/product/taste/swipe',json={'slug':slug,'verdict':'like'}).status_code,200)
@@ -40,6 +45,26 @@ class GuestAccessTest(unittest.TestCase):
         self.assertIn('taste',self.c.get('/api/product/wines/'+slug).json())
         self.assertEqual(self.c.post('/api/product/taste/swipe',json={'slug':slug,'verdict':'like'},
                                      headers={'Origin':'https://evil.example'}).status_code,403)
+
+    def test_guest_personal_routes_are_blocked_before_any_write(self):
+        for path in ('collection','shelves','shelves/ranking','taste','taste/quiz','taste/swipe','recommendations','ranking','history'):
+            r=self.c.get('/api/product/'+path)
+            self.assertEqual(r.status_code,401,(path,r.text))
+            self.assertEqual(r.json()['detail']['code'],'account_required')
+        for path,body in [('preferences/merlo',{'rating':5,'favorite':True}),('collection/lists',{'name':'Forbidden'}),
+                          ('taste/quiz',{'answers':{}}),('taste/guide',{}),('taste/swipe',{'slug':'merlo','verdict':'like'}),
+                          ('shelves/example/copy',{}),('recommendations/feedback',{'slug':'merlo','action':'like'})]:
+            self.assertEqual(self.c.post('/api/product/'+path,json=body).status_code,401,path)
+        for intent in ('taste_discussion','collection_fill'):
+            self.assertEqual(self.c.post('/api/product/assistant',json={'message':'Мой вкус','intent':intent}).status_code,401)
+        # Rejected personal actions must not consume the one general question.
+        self.assertEqual(self.c.post('/api/product/assistant',json={'message':'Красное к ужину'}).status_code,200)
+        bootstrap=self.c.get('/api/product/bootstrap').json()
+        self.assertEqual(bootstrap['preferences'],{});self.assertEqual(bootstrap['collection'],[])
+        wine=self.c.get('/api/product/wines/merlo').json()
+        self.assertFalse(wine['preferences_available']);self.assertIsNone(wine['taste']['match'])
+        scan=self.c.post('/api/predict',files={'image':('a.jpg',self.data)}).json()
+        self.assertFalse(scan['wine']['preferences_available']);self.assertIsNone(scan['wine']['taste']['match'])
 
     def test_guest_scan_stays_available_after_registering(self):
         scan=self.c.post('/api/predict',files={'image':('a.jpg',self.data)},headers={'X-Device-ID':'guest-phone'}).json()

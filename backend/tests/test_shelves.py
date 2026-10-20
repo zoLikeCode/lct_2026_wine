@@ -21,6 +21,7 @@ class ShelvesTest(test_server.ServerTest):
         self.c.post('/api/product/preferences/merlo',json={'rating':5,'favorite':True})
         self.c.post('/api/product/collection/wines/merlo',json={'note':'Секретная заметка','tried':True,'version':0})
         with TestClient(self.app) as other:
+            other.post('/api/product/account/register',json={'username':'reader','password':'Local-test-password-456'})
             self.assertEqual(other.get('/api/product/shelves/'+ident).status_code,404)
             self.assertEqual(other.get('/api/product/shelves').json()['total'],0)
             public=self.publish(ident);token=public['share_token']
@@ -36,11 +37,12 @@ class ShelvesTest(test_server.ServerTest):
     def test_copy_is_private_independent_idempotent_and_keeps_ratings(self):
         ident=self.create();self.publish(ident)
         with TestClient(self.app) as other:
+            other.post('/api/product/account/register',json={'username':'reader','password':'Local-test-password-456'})
             copied=other.post('/api/product/shelves/'+ident+'/copy',json={});self.assertEqual(copied.status_code,200,copied.text)
             new=copied.json()['id'];self.assertNotEqual(ident,new)
             self.assertEqual(other.post('/api/product/shelves/'+ident+'/copy',json={}).json()['id'],new)
             detail=other.get('/api/product/shelves/'+new).json();self.assertTrue(detail['owner']);self.assertEqual(detail['visibility'],'private')
-            self.assertEqual(other.post('/api/product/shelves/'+new+'/settings',json={'name':'copy','visibility':'public'}).status_code,401)
+            self.assertEqual(other.post('/api/product/shelves/'+new+'/settings',json={'name':'copy','visibility':'private'}).status_code,200)
             other.post('/api/product/preferences/merlo',json={'rating':4})
             other.post('/api/product/collection/lists/'+new,json={'action':'remove','slug':'merlo'})
             self.assertEqual(len(self.c.get('/api/product/shelves/'+ident).json()['wines']),1)
@@ -102,11 +104,11 @@ class ShelvesTest(test_server.ServerTest):
         url='/api/product/shelves/'+ident+'/copy'
         self.c.post(url,json={})
         with TestClient(self.app) as other:
-            new=other.post(url,json={}).json()['id']
+            self.assertEqual(other.post(url,json={}).status_code,401)
             self.assertEqual(self.c.get('/api/product/shelves/'+ident).json()['copies'],0)
             r=other.post('/api/product/account/register',json={'username':'saver-account','password':'Local-test-password-456','display_name':'Читатель'})
             self.assertEqual(r.status_code,200,r.text)
-            other.post(url,json={});other.post(url,json={})
+            new=other.post(url,json={}).json()['id'];other.post(url,json={})
             self.assertEqual(self.c.get('/api/product/shelves/'+ident).json()['copies'],1)
             other.post('/api/product/collection/lists/'+new,json={'action':'delete'})
             other.post(url,json={})
@@ -211,7 +213,7 @@ class ShelvesTest(test_server.ServerTest):
         self.assertTrue(all(any(w['slug']=='merlo' for w in x['wines']) for x in rows))
         self.assertTrue(all('comments' not in x and 'share_token' not in x for x in rows))
         with TestClient(self.app) as guest:
-            self.assertEqual([x['id'] for x in guest.get('/api/product/shelves/ranking?slug=merlo').json()['items']],[x['id'] for x in rows])
+            self.assertEqual(guest.get('/api/product/shelves/ranking?slug=merlo').status_code,401)
         self.app.state.product.cards['new-wine']={**self.app.state.product.cards['merlo'],'slug':'new-wine'}
         self.assertEqual(self.c.get('/api/product/shelves/ranking?slug=new-wine').json()['items'],[])
         self.assertEqual(self.c.get('/api/product/shelves/ranking?slug=missing').status_code,404)

@@ -41,3 +41,5 @@
 @media(max-width:600px){#age-dialog{width:100%;max-width:100%;margin:auto 0 0;min-height:min(380px,70dvh);padding:48px 28px calc(52px + env(safe-area-inset-bottom));border-radius:26px 26px 0 0}#age-dialog h2{font-size:36px;margin-bottom:28px}#age-dialog p{font-size:14px;margin-bottom:30px}#age-confirm{min-height:52px}}
 
 #age-dialog:focus,#age-title:focus{outline:none}
+
+.auth-layout{display:block;max-width:460px;margin:20px auto 48px}.auth-panel{background:#faf9f5;padding:32px}.auth-panel h2{font-size:30px}@media(max-width:700px){.auth-layout{margin:6px auto 24px}.auth-panel{padding:24px 20px}}

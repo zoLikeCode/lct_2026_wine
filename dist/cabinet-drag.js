@@ -29,11 +29,11 @@ window.WineShelfDrag={attach(scene,{commit}){
   else if(active.y>bottom)speed=Math.min(12,(active.y-bottom)/edge*12);
   if(speed){window.scrollBy(0,speed);hoverAt(active.x,active.y);}raf=requestAnimationFrame(edgeScroll);
  }
- function begin(item,x,y,keyboard=false){
+ function begin(item,x,y,keyboard=false,id=null){
   if(saving||active||disposed)return;stopPending();
   const image=item.querySelector('.cellar-bottle-stage img');if(!image)return;const r=image.getBoundingClientRect();
   const ghost=document.createElement('div');ghost.className='cellar-drag-ghost';ghost.setAttribute('aria-hidden','true');const copy=image.cloneNode();copy.removeAttribute('alt');copy.style.height='100%';ghost.append(copy);Object.assign(ghost.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});document.body.append(ghost);
-  active={item,ghost,order:originalOrder(),startX:x,startY:y,x,y,keyboard};item.classList.add('is-dragged');scene.classList.add('is-dragging');document.body.classList.add('cellar-dragging');item.querySelector('.cellar-grip')?.setAttribute('aria-pressed','true');
+  active={item,ghost,order:originalOrder(),startX:x,startY:y,x,y,keyboard,id};item.classList.add('is-dragged');scene.classList.add('is-dragging');document.body.classList.add('cellar-dragging');item.querySelector('.cellar-grip')?.setAttribute('aria-pressed','true');
   say(keyboard?'Стрелки · Enter · Esc':'Отпустите на новом месте');suppressUntil=performance.now()+600;paint();if(!keyboard)raf=requestAnimationFrame(edgeScroll);
  }
  async function finish(cancel=false){
@@ -46,12 +46,27 @@ window.WineShelfDrag={attach(scene,{commit}){
   finally{saving=false;scene.classList.remove('is-saving');scene.removeAttribute('aria-busy');}
  }
  function target(event){const el=event.target.closest('.cellar-bottle,.cellar-grip');return el&&track.contains(el)?el.closest('.cellar-slot'):null;}
- const pointerDown=ev=>{if(ev.pointerType==='touch'||ev.button!==0||saving||active)return;const item=target(ev);if(!item)return;pending={item,x:ev.clientX,y:ev.clientY,id:ev.pointerId};ev.preventDefault();};
- const pointerMove=ev=>{if(ev.pointerType==='touch')return;if(active&&!active.keyboard){ev.preventDefault();active.x=ev.clientX;active.y=ev.clientY;paint();hoverAt(ev.clientX,ev.clientY);return;}if(pending&&Math.hypot(ev.clientX-pending.x,ev.clientY-pending.y)>6){const p=pending;begin(p.item,p.x,p.y);active.x=ev.clientX;active.y=ev.clientY;paint();hoverAt(ev.clientX,ev.clientY);}};
- const pointerUp=ev=>{if(ev.pointerType!=='touch')finish();};
+ const pointerDown=ev=>{if(ev.pointerType==='touch'||ev.button!==0||saving||active||pending||ev.isPrimary===false)return;const item=target(ev);if(!item)return;pending={item,x:ev.clientX,y:ev.clientY,id:ev.pointerId};ev.preventDefault();};
+ const pointerMove=ev=>{if(ev.pointerType==='touch'||(active&&active.id!==ev.pointerId)||(pending&&pending.id!==ev.pointerId))return;if(active&&!active.keyboard){ev.preventDefault();active.x=ev.clientX;active.y=ev.clientY;paint();hoverAt(ev.clientX,ev.clientY);return;}if(pending&&Math.hypot(ev.clientX-pending.x,ev.clientY-pending.y)>6){const p=pending;begin(p.item,p.x,p.y,false,p.id);if(!active)return;active.x=ev.clientX;active.y=ev.clientY;paint();hoverAt(ev.clientX,ev.clientY);}};
+ const pointerUp=ev=>{if(ev.pointerType!=='touch'&&(!active||active.id===ev.pointerId)&&(!pending||pending.id===ev.pointerId))finish();};
  const pointerCancel=ev=>{if(ev.pointerType!=='touch')finish(true);};
- const touchStart=ev=>{if(saving||active)return;if(ev.touches.length!==1){stopPending();return;}const item=target(ev);if(!item)return;const t=ev.touches[0];pending={item,x:t.clientX,y:t.clientY,id:t.identifier};if(ev.target.closest('.cellar-grip')){ev.preventDefault();begin(item,t.clientX,t.clientY);}else hold=setTimeout(()=>{if(pending)begin(pending.item,pending.x,pending.y);},300);};
- const touchMove=ev=>{if(active&&!active.keyboard){if(ev.touches.length!==1){finish(true);return;}ev.preventDefault();const t=ev.touches[0];active.x=t.clientX;active.y=t.clientY;paint();hoverAt(t.clientX,t.clientY);}else if(pending){const t=[...ev.touches].find(t=>t.identifier===pending.id);if(!t||Math.hypot(t.clientX-pending.x,t.clientY-pending.y)>8)stopPending();}};
+ const touchStart=ev=>{if(ev.touches.length!==1){finish(true);return;}if(saving||active)return;const item=target(ev);if(!item)return;const t=ev.touches[0];pending={item,x:t.clientX,y:t.clientY,id:t.identifier};if(ev.target.closest('.cellar-grip')){ev.preventDefault();begin(item,t.clientX,t.clientY,false,t.identifier);}else hold=setTimeout(()=>{if(pending)begin(pending.item,pending.x,pending.y,false,pending.id);},300);};
+ const touchMove=ev=>{
+  if(pending&&!active){
+   const t=[...ev.touches].find(t=>t.identifier===pending.id);
+   if(!t){stopPending();return;}
+   const dx=Math.abs(t.clientX-pending.x),dy=Math.abs(t.clientY-pending.y);
+   // Horizontal movement lifts immediately; vertical movement scrolls the page.
+   // Holding first still allows moving between rows in any direction.
+   if(dx>10&&dx>dy*1.2){const p=pending;begin(p.item,p.x,p.y,false,p.id);}
+   else if(dy>10){stopPending();suppressUntil=performance.now()+500;return;}
+  }
+  if(active&&!active.keyboard){
+   const t=[...ev.touches].find(t=>t.identifier===active.id);
+   if(ev.touches.length!==1||!t){finish(true);return;}
+   ev.preventDefault();active.x=t.clientX;active.y=t.clientY;paint();hoverAt(t.clientX,t.clientY);
+  }
+ };
  const touchEnd=()=>finish();const touchCancel=()=>finish(true);
  const click=ev=>{if(performance.now()<suppressUntil||saving){ev.preventDefault();ev.stopImmediatePropagation();}};
  const preventNative=ev=>{if(target(ev))ev.preventDefault();};

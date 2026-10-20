@@ -114,9 +114,13 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
         if request.method=='POST' and path.startswith('/api/product/') and int(request.headers.get('content-length','0'))>product_body_limit:return JSONResponse({'detail':'Запрос слишком большой'},status_code=413)
         if path.startswith('/admin/api/') and path!='/admin/api/login' and not admin(request):
             return JSONResponse({'detail':'Войдите в админку'},status_code=401)
-        public_product=bool((request.method=='GET' and re.fullmatch(r'/api/product/(bootstrap|account|collection|collection/lists/[^/]+/suggestions|taste|taste/onboarding|taste/quiz|taste/swipe|shelves(?:/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)?)?|search|ranking|recommendations|history|wines/[^/]+(?:/image)?|scans/[^/]+/image)',path)) or (request.method=='POST' and re.fullmatch(r'/api/product/(taste/onboarding|taste/quiz|taste/swipe|recommendations/feedback|shelves/[a-zA-Z0-9_-]+/(?:settings|copy|comment|reorder)|assistant|preferences/[^/]+|account/(register|login|recover|logout|revoke|name|password)|collection/(wines/[^/]+|stock/[^/]+|lists(?:/[^/]+)?))',path)))
+        public_product=bool((request.method=='GET' and re.fullmatch(r'/api/product/(bootstrap|account|collection|collection/lists/[^/]+/suggestions|taste|taste/onboarding|taste/quiz|taste/swipe|shelves(?:/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)?)?|search|ranking|recommendations|history|wines/[^/]+(?:/image)?|scans/[^/]+/image)',path)) or (request.method=='POST' and re.fullmatch(r'/api/product/(taste/onboarding|taste/quiz|taste/guide|taste/swipe|recommendations/feedback|shelves/[a-zA-Z0-9_-]+/(?:settings|copy|comment|reorder)|assistant|preferences/[^/]+|account/(register|login|recover|logout|revoke|name|password)|collection/(wines/[^/]+|stock/[^/]+|lists(?:/[^/]+)?))',path)))
         if path.startswith('/api/') and (request.method,path) not in public_scanner_routes and not public_product and not admin(request):
             return JSONResponse({'detail':'Войдите в админку'},status_code=401)
+        account_only = bool(re.match(r'^/api/product/(?:collection|shelves|taste|recommendations|ranking|history)(?:/|$)',path)
+                            or (request.method=='POST' and path.startswith('/api/product/preferences/')))
+        if account_only and not product.collection.session(request):
+            return JSONResponse({'detail':{'code':'account_required','message':'Войдите в аккаунт, чтобы продолжить'}},status_code=401)
         if request.method=='POST' and (path.startswith('/api/product/collection/') or path.startswith('/api/product/shelves/') or path.startswith('/api/product/preferences/')) and request.cookies.get('wine_account') and not product.collection.session(request):
             return JSONResponse({'detail':'Сессия завершена. Войдите снова'},status_code=401)
         new_profile=None
@@ -129,7 +133,7 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
            'Permissions-Policy':'camera=(self), microphone=(self), geolocation=()',
            'X-Frame-Options':'DENY'})
         if '/api/' in path:response.headers['Cache-Control']='no-store'
-        elif path.startswith('/admin/static/') or path in {'/app.js','/app.css','/manifest.webmanifest','/chat.css','/taste.js','/taste.css'}:response.headers['Cache-Control']='no-cache'
+        elif path.startswith('/admin/static/') or path in {'/app.js','/app.css','/manifest.webmanifest','/chat.css','/taste.js','/taste-gesture.js','/taste.css','/interaction.css'}:response.headers['Cache-Control']='no-cache'
         return response
 
     product.collection.routes(app,cookie_secure)
@@ -305,7 +309,7 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
                     im=preview_image(store.path(ref['path']),(320,500));out=io.BytesIO();im.save(out,'JPEG',quality=80)
                     picture='data:image/jpeg;base64,'+base64.b64encode(out.getvalue()).decode()
                 except OSError:pass
-            return {**product.card(slug,profile),'image':picture or product.cards[slug]['image'],'preferences_available':True}
+            return {**product.wine_detail(slug,profile),'image':picture or product.cards[slug]['image']}
         except Exception:
             if ml_card is None:raise
             logging.getLogger(__name__).exception('Product card enrichment failed for %s',slug)
@@ -339,9 +343,10 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
                 raw=result['ml_response'];raw_cards=raw['alternatives'] if result['no_wine'] else [raw['card'],*raw['alternatives']]
                 ml_cards={item['slug']:item for item in raw_cards}
             else:ml_cards={}
+            personal_profile=request.state.profile if product.collection.session(request) else None
             response={'id':ident,'no_wine':bool(result.get('no_wine',False)),
-                      'wine':None if result.get('no_wine') else card(result['slug'],request.state.profile,ml_cards.get(result['slug'])),
-                      'alternatives':[card(r['slug'],request.state.profile,ml_cards.get(r['slug'])) for r in result['top5'][0 if result.get('no_wine') else 1:]],
+                      'wine':None if result.get('no_wine') else card(result['slug'],personal_profile,ml_cards.get(result['slug'])),
+                      'alternatives':[card(r['slug'],personal_profile,ml_cards.get(r['slug'])) for r in result['top5'][0 if result.get('no_wine') else 1:]],
                       'model_version':result['model_version'],'latency_ms':result['latency_ms'],
                       'confidence':result.get('confidence'),'match_is_verified':False}
             return response
@@ -360,6 +365,9 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
 
     @app.get('/api/product/bootstrap')
     def product_bootstrap(request:Request):
+        if not product.collection.session(request):
+            return {'preferences':{},'collection':[],'recommendations':[],'recommendations_request_id':None,
+                    'assistant_mode':'ai' if product.ai_enabled else 'catalog','catalog_count':len(product.cards),'account':{'authenticated':False}}
         profile=request.state.profile;prefs=product.preferences(profile)
         feed=product.recs.endpoint(profile,'for_you','',4)
         return {'preferences':prefs,'collection':product.cards_for([s for s,p in prefs.items() if p['favorite'] or p['rating']],profile),
@@ -371,7 +379,8 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
         return {'items':product.search_catalog(q[:160],request.state.profile,list_id=list_id or None)}
 
     @app.get('/api/product/wines/{slug}')
-    def product_wine(slug:str,request:Request):return product.wine_detail(slug,request.state.profile)
+    def product_wine(slug:str,request:Request):
+        return product.wine_detail(slug,request.state.profile if product.collection.session(request) else None)
 
     @app.get('/api/product/wines/{slug}/image')
     def product_image(slug:str):
@@ -423,6 +432,8 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
     async def product_assistant(body:dict,request:Request):
         context=body.get('context',[])
         if not isinstance(context,list):raise HTTPException(422,'Некорректный контекст')
+        if body.get('intent') in ('taste_discussion','collection_fill') and not product.collection.session(request):
+            raise HTTPException(401,{'code':'account_required','message':'Войдите в аккаунт для персонального подбора'})
         token=product.collection.claim_guest_assistant(request)
         success=False
         try:
@@ -443,7 +454,7 @@ def create_app(dataset=DATASET,engine=None,test=False,ml_client=None):
 
     def mobile_page():
         folder=MOBILE_ROOT;html=(folder/'index.html').read_text()
-        for name in ('app.js', 'chat.css', 'app.css', 'taste.js', 'taste.css'):
+        for name in ('app.js', 'chat.css', 'app.css', 'taste.js', 'taste-gesture.js', 'taste.css', 'interaction.css'):
             version=hashlib.sha256((folder/name).read_bytes()).hexdigest()[:12]
             html=html.replace(f'/{name}"',f'/{name}?v={version}"')
         return HTMLResponse(html,headers={'Cache-Control':'no-cache'})

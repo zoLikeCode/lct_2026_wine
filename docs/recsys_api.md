@@ -122,15 +122,20 @@ POST-запросы — JSON, тело до 8 КБ, тот же Origin.
 
 `GET /api/product/taste/quiz` возвращает `{"questions": [{"id", "title", "options": [{"id", "label", "icon", "insight"}]}], "answers": {…}}`.
 
-`POST /api/product/taste/quiz` принимает `{"answers": {"wine": "red", "coffee": "black", "sugar": "none"}}`. Пропущенный
-вопрос просто не передаётся. Ответ: `{"ok": true, "answers", "passport", "recommendations"}`. Цвет и сладость из анкеты
+`POST /api/product/taste/quiz` принимает все шесть ответов, например
+`{"answers":{"wine":"red","coffee":"black","chocolate":"dark","juice":"apple","sugar":"none","aroma":"berries"}}`.
+Неполная или некорректная анкета возвращает 422 и не меняет сохранённый профиль.
+Ответ: `{"ok": true, "answers", "passport", "recommendations"}`; в `passport` добавлен `quiz_complete`. Он становится `true` только после финального POST всех шести ответов (версия анкеты и время завершения сохраняются отдельно). Старые ответы подставляются в форму, но не пропускают её автоматически.
+Цвет и сладость из анкеты
 фильтруют ленту, пока своих оценок мало; причина в карточке — «Под ваш вкус: красное, насыщенное, сухое, красные ягоды».
 Шесть ответов весят чуть меньше одной оценки 5, так что реальные оценки быстро берут верх.
 
 ## 3б. Винный свайп — `/api/product/taste/swipe`
 
-`GET /api/product/taste/swipe?limit=10` — следующие вина колоды: те же подборки, что «Для вас», без уже пролистанных;
+`GET /api/product/taste/swipe?limit=10` — следующие вина колоды: те же подборки, что «Для вас», без уже пролистанных и оценённых;
 у каждого вина есть `taste` (см. ниже). Ответ: `{"items", "request_id", "swiped", "liked", "empty"}`.
+До завершения анкеты получение колоды и новый свайп возвращают 409. Старые неполные анкеты
+сохраняются, но для свайпа их нужно завершить. Отмена ранее сделанного свайпа доступна.
 
 `POST /api/product/taste/swipe` принимает `{"slug": "…", "verdict": "like" | "nope" | "skip" | "undo"}`:
 
@@ -293,3 +298,36 @@ POST-запросы — JSON, тело до 8 КБ, тот же Origin.
 ## Если что-то не так
 
 `WINE_RECSYS=legacy` в окружении сервера возвращает прежнюю ленту без нового кода — на случай проблем на демо.
+
+
+### Taste introduction and discussion
+
+`GET /api/product/taste` also returns `guide_seen`. The first visit explains **Обзор**
+and **Обсудить с сомелье** before the required quiz (or before swiping for a returning
+profile). `POST /api/product/taste/guide` acknowledges the explanation idempotently
+for the current profile. This does not complete the quiz. The acknowledgement is
+preserved when merging a guest profile into an account.
+
+`POST /api/product/assistant` accepts `intent: "taste_discussion"`. The backend reads
+the current profile's quiz, ratings, likes and taste summary; it does not accept a
+client-supplied passport or profile ID. `context` keeps follow-up questions in the
+conversation. No scan or list ID is allowed with this intent. AI recommendations
+must reference the supplied catalog candidates; an unavailable AI returns a
+clearly labelled profile summary. This intent requires an authenticated account;
+the one-question guest trial applies only to the general assistant.
+
+
+### Доступ и карточка после скана (20.10.2026)
+
+Без аккаунта доступны сканирование, чтение карточки вина и один вопрос сомелье. API
+коллекции, сообщества, вкуса, достижений (в составе коллекции), рекомендаций и рейтингов
+требуют сессию аккаунта. Запись лайков и оценок также возвращает 401 `account_required`
+для гостя. Старые гостевые данные сохраняются и могут переноситься при входе.
+
+В гостевой карточке `preferences_available=false`, `taste.match=null`. `similar` — до
+трёх разных вин по известным вкусовым осям и стилю каталога, без персональных оценок.
+Они не являются альтернативами распознавания и не меняют ML-результат.
+
+Локальные примерные обсуждения включаются через существующий `WINE_DEMO_COMMUNITY=1`.
+Сообщения имеют `example=true`, явно обозначены в обсуждении и не создают аккаунтов,
+оценок, сканов или настоящих достижений. Повторный запуск не дублирует сообщения.

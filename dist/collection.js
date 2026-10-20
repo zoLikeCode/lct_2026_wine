@@ -90,7 +90,7 @@ window.collectionUI=(()=>{
  async function openShared(token){tab='community';const job=++detailJob;selectedList='shared';detail=null;render();try{const value=await request('shelves/shared/'+encodeURIComponent(token));if(job!==detailJob)return;selectedList=value.id;detail=value;render();}catch(error){selectedList=null;render();notice(error.message);}}
  function renderShelf(root){
   const list=detail,own=list.owner;
-  root.innerHTML=`<div class="shelf-topline"><button class="text-button shelf-back" id="shelf-back">← ${wineOrigin?'К вину':rankingOrigin?'Лучшие коллекции':tab==='community'?'Сообщество':'Мои коллекции'}</button>${!own&&list.author_link?`<button class="shelf-author" id="shelf-author">${e(list.author)}${list.author_status?`<span>${e(list.author_status)}</span>`:''}<span aria-hidden="true">↗</span></button>`:`<span class="shelf-privacy">${own?(list.visibility==='public'?'Публичная':'Только для вас'):e(list.author)}</span>`}</div><header class="shelf-detail-heading"><div><h2>${e(list.name)}</h2>${list.description?`<p>${e(list.description)}</p>`:''}</div><div class="shelf-detail-actions">${own?'<button class="shelf-sommelier" id="shelf-ask">'+icons('spark')+'Подобрать с сомелье</button><button class="cellar-primary" id="shelf-add">+ Добавить вино</button><button class="shelf-icon-button" id="shelf-settings" aria-label="Настройки коллекции" title="Настройки коллекции">•••</button>':`<button class="cellar-primary" id="shelf-copy">${list.copied_id?'Открыть мою копию':'Сохранить себе'}</button>`}${list.visibility==='public'?'<button class="shelf-icon-button" id="shelf-share" aria-label="Поделиться коллекцией" title="Поделиться коллекцией">↗</button>':''}</div></header><div class="cellar-scene ${own&&list.wines.length>1?'reorderable':''}"><div class="cellar-room"><div class="cellar-planks" aria-hidden="true"></div><div class="cellar-track" id="wine-cabinet" role="group" aria-label="Вина на полках"></div></div><span class="cellar-save-status sr-only" role="status" aria-live="polite"></span></div>${own?'<section class="shelf-suggest" id="shelf-suggest" aria-labelledby="shelf-suggest-title" hidden></section>':''}<div id="shelf-discussion"></div>`;
+  root.innerHTML=`<div class="shelf-topline"><button class="text-button shelf-back" id="shelf-back">← ${wineOrigin?'К вину':rankingOrigin?'Лучшие коллекции':tab==='community'?'Сообщество':'Мои коллекции'}</button>${!own&&list.author_link?`<button class="shelf-author" id="shelf-author">${e(list.author)}${list.author_status?`<span>${e(list.author_status)}</span>`:''}<span aria-hidden="true">↗</span></button>`:`<span class="shelf-privacy">${own?(list.visibility==='public'?'Публичная':'Только для вас'):e(list.author)}</span>`}</div><header class="shelf-detail-heading"><div><h2>${e(list.name)}</h2>${list.description?`<p>${e(list.description)}</p>`:''}</div><div class="shelf-detail-actions">${own?'<button class="shelf-sommelier" id="shelf-ask">'+icons('spark')+'Подобрать с сомелье</button><button class="cellar-primary" id="shelf-add">+ Добавить вино</button><button class="shelf-icon-button" id="shelf-settings" aria-label="Настройки коллекции" title="Настройки коллекции">•••</button>':`<button class="cellar-primary" id="shelf-copy">${list.copied_id?'Открыть мою копию':'Сохранить себе'}</button>`}${list.visibility==='public'?'<button class="shelf-icon-button" id="shelf-share" aria-label="Поделиться коллекцией" title="Поделиться коллекцией">↗</button>':''}</div></header><div class="cellar-scene ${own&&list.wines.length>1?'reorderable':''}"><div class="cellar-room"><div class="cellar-planks" aria-hidden="true"></div><div class="cellar-track" id="wine-cabinet" role="group" aria-label="Вина на полках"></div></div><span class="cellar-save-status sr-only" role="status" aria-live="polite"></span></div>${own?'<section class="shelf-suggest" id="shelf-suggest" aria-labelledby="shelf-suggest-title"></section>':''}<div id="shelf-discussion"></div>`;
   if($c('shelf-author'))$c('shelf-author').onclick=()=>openAuthor(list.author_link);
   $c('shelf-back').onclick=()=>{selectedList=null;detail=null;if(wineOrigin){const origin=wineOrigin;wineOrigin=null;renderResult(origin.entry,origin.wine);return;}if(rankingOrigin){rankingOrigin=false;showView('ranking');return;}render();if(tab==='community')loadCommunity();};
   if(own){$c('shelf-add').onclick=()=>openCatalog({id:list.id});$c('shelf-ask').onclick=()=>{cabinetCleanup();askAboutCollection(list);};$c('shelf-settings').onclick=()=>settings(list);}
@@ -114,15 +114,37 @@ window.collectionUI=(()=>{
   if(own)loadSuggestions(list);
  }
  function recsysFeedback(w,action,answer){return request('recommendations/feedback',{slug:w.slug,action,request_id:answer.request_id,mode:'list'});}
+ function suggestionsHeading(list,answer={}){
+  return `<div class="shelf-suggest-head"><h3 id="shelf-suggest-title">Чем дополнить</h3><p>${answer.occasion?'Под повод «'+e(answer.occasion)+'» и ваш вкус':list.wines.length?'По тому, что уже в коллекции, и вашему вкусу':'Подберём первые вина по вашему вкусу'}</p></div>`;
+ }
+ function suggestionStatus(root,list,message,action){
+  root.hidden=false;root.setAttribute('aria-busy',String(!action));
+  root.innerHTML=suggestionsHeading(list)+`<div class="shelf-suggest-status"><p role="status">${e(message)}</p>${action?'<button class="text-button" data-suggest-retry>Попробовать ещё раз ↻</button>':''}</div>`;
+  root.querySelector('[data-suggest-retry]')?.addEventListener('click',()=>loadSuggestions(list));
+ }
  async function loadSuggestions(list){
   const root=$c('shelf-suggest'),job=++suggestJob;if(!root)return;
   if(suggestCache?.id===list.id)renderSuggestions(root,list,suggestCache.answer);
-  try{const answer=await request('collection/lists/'+encodeURIComponent(list.id)+'/suggestions?limit=6');if(job!==suggestJob)return;suggestCache={id:list.id,answer};if(root.isConnected)renderSuggestions(root,list,answer);}catch{if(suggestCache?.id!==list.id)root.hidden=true;}
+  else suggestionStatus(root,list,'Подбираем вина к вашей коллекции…',false);
+  try{
+   const answer=await request('collection/lists/'+encodeURIComponent(list.id)+'/suggestions?limit=6');
+   if(job!==suggestJob||!root.isConnected||selectedList!==list.id)return;
+   suggestCache={id:list.id,answer};renderSuggestions(root,list,answer);
+  }catch{
+   if(job!==suggestJob||!root.isConnected||selectedList!==list.id)return;
+   suggestionStatus(root,list,'Не удалось загрузить рекомендации.',true);
+  }
  }
  function renderSuggestions(root,list,answer){
-  // A response requested before «Скрыть» may still carry the hidden wine.
-  const items=(answer.items||[]).filter(w=>!suggestHidden.has(w.slug));root.hidden=!items.length;if(!items.length){root.replaceChildren();return;}
-  root.innerHTML=`<div class="shelf-suggest-head"><h3 id="shelf-suggest-title">${list.wines.length?'Чем дополнить':'С чего начать'}</h3><p>${answer.occasion?'Под повод «'+e(answer.occasion)+'» и ваш вкус':list.wines.length?'По тому, что уже в коллекции, и вашему вкусу':'По вашему вкусу'}</p></div><div class="shelf-suggest-list"></div>`;
+  // A response requested before «Скрыть» or «Добавить» may still carry that wine.
+  const members=new Set(list.wines.map(w=>w.slug));
+  const items=(answer.items||[]).filter(w=>!suggestHidden.has(w.slug)&&!members.has(w.slug));
+  root.hidden=false;root.setAttribute('aria-busy','false');
+  root.innerHTML=suggestionsHeading(list,answer)+'<div class="shelf-suggest-list"></div>';
+  if(!items.length){
+   root.insertAdjacentHTML('beforeend',`<div class="shelf-suggest-status"><p role="status">${e(answer.empty||'Пока нет новых рекомендаций для этой коллекции.')}</p><button class="text-button" data-suggest-catalog>Выбрать из каталога ↗</button></div>`);
+   root.querySelector('[data-suggest-catalog]').onclick=()=>openCatalog({id:list.id});return;
+  }
   const grid=root.querySelector('.shelf-suggest-list');
   for(const w of items){
    const card=document.createElement('article');card.className='shelf-suggest-card';

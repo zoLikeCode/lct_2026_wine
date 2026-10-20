@@ -81,9 +81,13 @@ class AchievementsTest(ShelvesTest):
         config = {'profiles':[{'id':'fixture','name':'Анна','bio':'Пример профиля',
             'achievements':['first-label','five-labels'], 'collections':[
             {'id':'demo-fixture','name':'Два вина','description':'Пример', 'slugs':['merlo','cabernet']}]}]}
+        config['discussions']=[{'collection':'demo-fixture','messages':[{'author':'fixture','body':'Первое сообщение'}, {'author':'fixture','body':'Ответ','reply_to':0}]}]
         shelves.demo_enabled = True
         with patch('shelves.Path.read_text', return_value=json.dumps(config)):
             shelves.seed_demo(); shelves.seed_demo()
+        discussion=self.c.get('/api/product/shelves/demo-fixture').json()['comments']
+        self.assertEqual(len(discussion),2);self.assertTrue(all(c['example'] for c in discussion))
+        self.assertEqual(discussion[1]['reply_body'],'Первое сообщение');self.assertEqual(discussion[1]['reply_author'],'Анна')
         feed = self.c.get('/api/product/shelves?author=people').json()
         self.assertEqual(feed['total'], 1)
         item = feed['items'][0]
@@ -113,6 +117,7 @@ class AchievementsTest(ShelvesTest):
         self.scan('merlo')
         self.c.get('/api/product/collection')
         with TestClient(self.app) as other:
+            other.post('/api/product/account/register',json={'username':'profile-reader','password':'Local-test-password-456'})
             response=other.get('/api/product/shelves/authors/'+public)
             self.assertEqual(response.status_code,200)
             payload=response.json()

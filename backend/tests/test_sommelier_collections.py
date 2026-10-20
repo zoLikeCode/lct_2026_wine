@@ -80,6 +80,7 @@ class SommelierCollectionsTest(ShelvesTest):
         self.c.post('/api/product/preferences/cabernet',json={'rating':5})
         self.assertEqual(self.c.get('/api/product/shelves/for-you').json()['items'],[])  # own shelves are not «для вас»
         with TestClient(self.app) as other:
+            other.post('/api/product/account/register',json={'username':'newcomer','password':'Local-test-password-456'})
             newcomer=other.get('/api/product/shelves/for-you').json()
             self.assertEqual(newcomer['items'],[]);self.assertIn('анкету',newcomer['empty'])
             other.post('/api/product/preferences/cabernet',json={'rating':5})
@@ -110,7 +111,7 @@ class SommelierCollectionsTest(ShelvesTest):
         self.assertEqual(red['items'],[]);self.assertIn('Попробуйте изменить',red['text'])
         self.assertEqual(self.c.post('/api/product/assistant',json={'message':'Что добавить?','intent':'collection_fill'}).status_code,422)
         with TestClient(self.app) as other:  # someone else's collection cannot be attached
-            self.assertEqual(other.post('/api/product/assistant',json={'message':'Что добавить?','intent':'collection_fill','list_id':shelf}).status_code,404)
+            self.assertEqual(other.post('/api/product/assistant',json={'message':'Что добавить?','intent':'collection_fill','list_id':shelf}).status_code,401)
         # With the model: its own system prompt, the collection in the request, and only candidates come back.
         seen={}
         class FakeGiga:

@@ -1,0 +1,33 @@
+/* Rounded keyboard focus, and a single focus treatment for compound fields.
+   Textareas always match :focus-visible, even after a pointer click. */
+body :is(button,a,summary,input,select,textarea,[tabindex]):focus-visible,
+.cellar-dialog :focus-visible,.account-page :focus-visible,#collection-view :focus-visible,
+.cellar-bottle:focus-visible,#age-confirm:focus-visible,.chat-collection button:focus-visible,
+body[data-screen=scan] button:focus-visible,.wine-reel:focus-visible,
+#shelf-content button:focus-visible{
+  outline:none;
+  box-shadow:0 0 0 2px #fffefa,0 0 0 5px #8f3d4252;
+}
+body :is(input,textarea,select):focus-visible{
+  border-color:#ab7a7e;
+  box-shadow:0 0 0 3px #8f3d4212;
+}
+body :is(.composer,.search-box):focus-within{
+  border-color:#b58b8d;
+  box-shadow:0 4px 24px #773c4210,0 0 0 3px #8f3d4208;
+}
+body :is(.composer,.search-box) :is(input,textarea):focus-visible{
+  outline:none;
+  border-color:transparent;
+  box-shadow:none;
+}
+body [tabindex="-1"]:focus-visible{outline:none;box-shadow:none}
+.size-choices input:focus-visible+span{
+  outline:none;
+  box-shadow:0 0 0 2px #fffefa,0 0 0 5px #8f3d4252;
+}
+@media(forced-colors:active){
+  body :is(button,a,summary,input,select,textarea,[tabindex]):focus-visible{
+    outline:2px solid Highlight;outline-offset:3px;box-shadow:none;
+  }
+}

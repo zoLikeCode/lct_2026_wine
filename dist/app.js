@@ -24,9 +24,9 @@ const searchReel=new WineSearchReel($('wine-reel'));
 $('open-scan-result').onclick=()=>searchReel.complete();
 function notice(message,canRetry=false) {$('notice-text').textContent=message;if($('retry-scan'))$('retry-scan').hidden=!canRetry;$('notice').hidden=false;}
 function openDialog(id) {$(id).showModal();document.body.classList.add('modal-open');}
-function closeDialog(dialog) {dialog.close();document.body.classList.remove('modal-open');}
+function closeDialog(dialog) {dialog.close();document.body.classList.toggle('modal-open',!!document.querySelector('dialog[open]'));}
 document.querySelectorAll('[data-close-dialog]').forEach(b=>b.addEventListener('click',()=>closeDialog(b.closest('dialog'))));
-document.querySelectorAll('dialog').forEach(d=>d.addEventListener('close',()=>document.body.classList.remove('modal-open')));
+document.querySelectorAll('dialog').forEach(d=>d.addEventListener('close',()=>document.body.classList.toggle('modal-open',!!document.querySelector('dialog[open]'))));
 $('dismiss-notice').onclick=()=>{$('notice').hidden=true;};
 if($('retry-scan'))$('retry-scan').onclick=()=>{if(retryFile)processFile(retryFile);};
 
@@ -59,6 +59,7 @@ function stopCamera() {
 function turnOffCamera() {cameraWanted=false;stopCamera();}
 function cancelScan() {job++;controller?.abort();controller=null;setBusy(false);stopCamera();$('camera-button').focus({preventScroll:true});}
 const views=['scan','result','history','collection','taste','ranking','assistant','account'];
+let accountReady=false;
 let currentWine=null,previousView='scan',collectionFilter='favorite',rankingMode='scans',productData={preferences:{},collection:[],recommendations:[]},wineCache=new Map(),viewJob=0,assistantAttachment=null;
 function syncAccountControls(account){
  const authenticated=!!account?.authenticated;productData.account=account||{authenticated:false};
@@ -66,9 +67,17 @@ function syncAccountControls(account){
  document.querySelectorAll('[data-view="history"]').forEach(button=>button.hidden=!authenticated||(button.id==='history-camera-button'&&!!stream));
  $('catalog-history').hidden=!authenticated;
  if(authenticated)document.querySelectorAll('.chat-auth-actions').forEach(actions=>actions.parentElement.replaceChildren('Вы вошли. Можно продолжить разговор с сомелье.'));
- if(!authenticated&&currentView==='history')showView('account',false);
+ if(!authenticated&&['history','taste','collection','ranking'].includes(currentView))showView('account',false);
+}
+function requireAccount(){
+ if(productData.account?.authenticated)return true;
+ window.collectionUI?.signIn();return false;
 }
 function showView(name,push=true) {
+ if(['collection','taste','ranking','history'].includes(name)){
+  if(!accountReady){initPromise.then(()=>{if(accountReady)showView(name,push);});return;}
+  if(!productData.account?.authenticated)name='account';
+ }
  if(!views.includes(name))name='scan';if(name==='history'&&!productData.account?.authenticated)name='account';const changed=currentView!==name;
  if(changed)$('notice').hidden=true;
  if(name==='assistant'&&currentView==='result')attachScan(currentResult);
@@ -217,7 +226,7 @@ function miniWine(w,{showOpenLabel=true}={}){
 }
 function getPreference(slug){return productData.preferences[slug]||{rating:0,favorite:false};}
 const preferencePending=new Set();
-async function changePreference(slug,values,button){if(preferencePending.has(slug))return;preferencePending.add(slug);if(button)button.disabled=true;if(currentWine?.slug===slug)document.querySelectorAll("#wine-personal button,#save-wine").forEach(b=>b.disabled=true);try{await initPromise;const w=await api('preferences/'+encodeURIComponent(slug),values);remember(w);productData.preferences[slug]={rating:w.rating,favorite:w.favorite};if(values.rating!==undefined)window.tasteUI?.invalidate();productData.collection=productData.collection.filter(x=>x.slug!==slug);if(w.rating||w.favorite)productData.collection.unshift(w);store.set('wine-product',productData);if(currentWine?.slug===slug){currentWine=w;updatePersonal(w);}renderDiscovery();if(window.collectionUI)await window.collectionUI.refresh();if(currentView==='collection')renderCollection();updatePreferenceCopy();refreshRecommendations();notice(values.rating===0?'Оценка снята':values.rating?'Ваша оценка сохранена':w.favorite?'Лайк сохранён':'Лайк убран');}catch(e){notice(e.message);}finally{preferencePending.delete(slug);if(button)button.disabled=false;if(currentWine?.slug===slug)document.querySelectorAll("#wine-personal button,#save-wine").forEach(b=>b.disabled=false);}}
+async function changePreference(slug,values,button){if(!requireAccount())return;if(preferencePending.has(slug))return;preferencePending.add(slug);if(button)button.disabled=true;if(currentWine?.slug===slug)document.querySelectorAll("#wine-personal button,#save-wine").forEach(b=>b.disabled=true);try{await initPromise;const w=await api('preferences/'+encodeURIComponent(slug),values);remember(w);productData.preferences[slug]={rating:w.rating,favorite:w.favorite};if(values.rating!==undefined)window.tasteUI?.invalidate();productData.collection=productData.collection.filter(x=>x.slug!==slug);if(w.rating||w.favorite)productData.collection.unshift(w);store.set('wine-product',productData);if(currentWine?.slug===slug){currentWine=w;updatePersonal(w);}renderDiscovery();if(window.collectionUI)await window.collectionUI.refresh();if(currentView==='collection')renderCollection();updatePreferenceCopy();refreshRecommendations();notice(values.rating===0?'Оценка снята':values.rating?'Ваша оценка сохранена':w.favorite?'Лайк сохранён':'Лайк убран');}catch(e){notice(e.message);}finally{preferencePending.delete(slug);if(button)button.disabled=false;if(currentWine?.slug===slug)document.querySelectorAll("#wine-personal button,#save-wine").forEach(b=>b.disabled=false);}}
 let portalCardData={};
 async function loadPortalCardData(){try{const r=await fetch('/assets/portal-card-data.json?v=24',{signal:AbortSignal.timeout(6000)});if(r.ok)portalCardData=await r.json();}catch{}}
 const portalGlyph=name=>{
@@ -236,11 +245,15 @@ function portalCardMarkup(w,entry){
  const metric=(label,value,kind)=>value?`<div class="portal-metric"><span class="portal-metric-icon">${portalGlyph(kind)}</span><div><p>${label}</p><strong>${esc(value)}</strong></div></div>`:'';
  const metrics=metric('Температура<br>подачи',w.temperature?.replace(/\s*°C/,'°C'),'temperature')+metric('Крепость<br>вина',w.alcohol?String(w.alcohol)+'%':'','percent')+(dishes.length?`<div class="portal-dishes ${dishes.length>2?'portal-dishes-many':''}"><div class="portal-dishes-heading"><span class="portal-metric-icon">${portalGlyph('dishes')}</span><p>Сочетание<br>с&nbsp;блюдами</p></div><ul>${dishes.map(x=>`<li>${x.image?`<img src="${esc(x.image)}" alt="" width="72" height="72" loading="lazy">`:`<span class="portal-dish-fallback">${icons('food')}</span>`}<span>${esc(x.name)}</span></li>`).join('')}</ul></div>`:'');
  const manufacturer=d.manufacturerUrl?`<a href="${esc(d.manufacturerUrl)}" target="_blank" rel="noopener noreferrer">${esc(w.winery)}</a>`:`<span>${esc(w.winery)}</span>`;
- return `<article class="portal-wine" aria-labelledby="result-title"><div class="portal-hero"><div class="portal-info"><div class="portal-title"><h1 id="result-title">${esc(w.name)}</h1><div class="portal-manufacturer">${manufacturer}</div><button class="portal-rating-badge" id="wine-rating-link" aria-label="Перейти к оценке вина"><img src="/assets/portal-card/public-rating.svg" width="24" height="24" alt=""><span id="wine-rating-summary"></span>${icons('chevron')}</button></div><dl class="portal-facts portal-facts-desktop">${facts}</dl></div><div class="portal-landscape">${d.vineyardImage?`<img class="portal-grapes-background" src="${esc(d.vineyardImage)}" alt="Виноград: ${esc(w.grapes)}" loading="eager">`:''}<div class="portal-metrics">${metrics}</div></div><div class="portal-bottle">${img({...w,image:d.bottleImage||w.image},'portal-bottle-image')}</div></div><section id="wine-personal" class="portal-personal" aria-label="Ваша оценка вина"></section><div class="portal-mobile-details"><div class="portal-mobile-overview"><dl class="portal-facts">${facts}</dl>${d.vineyardImage?`<img class="portal-mobile-landscape" src="${esc(d.vineyardImage)}" alt="Виноград: ${esc(w.grapes)}" loading="lazy">`:''}</div><div class="portal-metrics">${metrics}</div></div><div class="portal-description"><p>${esc(w.description||'Описание пока не добавлено в каталог.')}</p><div class="portal-card-actions"><button id="save-wine" class="portal-save" aria-pressed="false">${icons('heart')}<span>Нравится</span></button>${w.portal_url?`<a href="${esc(w.portal_url)}" target="_blank" rel="noopener noreferrer">Карточка на «Своё Вино» ↗</a>`:''}</div>${entry?.server_id?`<button id="ask-about-scan" class="portal-assistant">${icons('spark')}Подобрать блюдо с помощником ${icons('arrow')}</button>`:''}${entry?.thumb?`<details class="portal-scan-photo"><summary>Ваш снимок</summary><img src="${esc(entry.thumb)}" alt="Ваш снимок этикетки"></details>`:''}</div>${window.tasteUI?.sheet(w)||''}</article>`;
+ return `<article class="portal-wine" aria-labelledby="result-title"><div class="portal-hero"><div class="portal-info"><div class="portal-title"><h1 id="result-title">${esc(w.name)}</h1><div class="portal-manufacturer">${manufacturer}</div><button class="portal-rating-badge" id="wine-rating-link" aria-label="Перейти к оценке вина"><img src="/assets/portal-card/public-rating.svg" width="24" height="24" alt=""><span id="wine-rating-summary"></span>${icons('chevron')}</button></div><dl class="portal-facts portal-facts-desktop">${facts}</dl></div><div class="portal-landscape">${d.vineyardImage?`<img class="portal-grapes-background" src="${esc(d.vineyardImage)}" alt="Виноград: ${esc(w.grapes)}" loading="eager">`:''}<div class="portal-metrics">${metrics}</div></div><div class="portal-bottle">${img({...w,image:d.bottleImage||w.image},'portal-bottle-image')}</div></div><section id="wine-personal" class="portal-personal" aria-label="Ваша оценка вина"></section><div class="portal-mobile-details"><div class="portal-mobile-overview"><dl class="portal-facts">${facts}</dl>${d.vineyardImage?`<img class="portal-mobile-landscape" src="${esc(d.vineyardImage)}" alt="Виноград: ${esc(w.grapes)}" loading="lazy">`:''}</div><div class="portal-metrics">${metrics}</div></div><div class="portal-description"><p>${esc(w.description||'Описание пока не добавлено в каталог.')}</p><div class="portal-card-actions"><button id="save-wine" class="portal-save" aria-pressed="false">${icons('heart')}<span>Нравится</span></button>${w.portal_url?`<a href="${esc(w.portal_url)}" target="_blank" rel="noopener noreferrer">Карточка на «Своё Вино» ↗</a>`:''}</div>${entry?.server_id?`<button id="ask-about-scan" class="portal-assistant">${icons('spark')}Подобрать блюдо с помощником ${icons('arrow')}</button>`:''}${entry?.thumb?`<details class="portal-scan-photo"><summary>Ваш снимок</summary><img src="${esc(entry.thumb)}" alt="Ваш снимок этикетки"></details>`:''}</div>${window.tasteUI?.sheet(w)||''}${similarWineMarkup(w)}</article>`;
+}
+function similarWineMarkup(w){
+ if(!w.similar?.length)return '';
+ return `<section class="wine-similar" aria-labelledby="wine-similar-title"><h2 id="wine-similar-title">Это вино похоже на</h2><div class="wine-similar-list">${w.similar.map(x=>`<button class="wine-similar-item" data-similar-slug="${esc(x.slug)}">${img(x)}<span><small>${esc(x.winery)}</small><strong>${esc(x.name)}</strong><small>${esc(x.reason)}</small></span>${icons('chevron')}</button>`).join('')}</div></section>`;
 }
 function updatePersonal(w){
  const el=$('wine-personal');if(!el)return;
- const available=w.preferences_available!==false;el.hidden=!available;
+ const available=!!productData.account?.authenticated&&w.preferences_available!==false;el.hidden=!available;
  const p=getPreference(w.slug);
  const active=document.activeElement;const focused=active?.closest('#wine-personal')?active.dataset.rating||active.id:null;
  if(available){
@@ -280,7 +293,7 @@ function renderResult(entry,wine=entry?.wine,push=true){
  $('wine-card').innerHTML=portalCardMarkup(w,entry);
  const recognizedScan=!!entry&&!entry.no_wine&&entry.wine?.slug===w.slug;
  const gradient=portalCardData[w.slug]?.gradient;if(gradient&&/^linear-gradient\([#0-9a-zA-Z.,%()\s-]+\)$/.test(gradient))$('wine-card').querySelectorAll('.portal-color').forEach(el=>el.style.background=gradient);
- updatePersonal(w);handleBrokenImages($('wine-card'));window.tasteUI?.bindSheet($('wine-card'));
+ updatePersonal(w);$('wine-card').querySelectorAll('[data-similar-slug]').forEach(b=>b.onclick=()=>openWine(w.similar.find(x=>x.slug===b.dataset.similarSlug)));handleBrokenImages($('wine-card'));window.tasteUI?.bindSheet($('wine-card'));
  $('wine-card').querySelectorAll('.portal-grapes-background,.portal-mobile-landscape,.portal-detail-visual img,.portal-dishes img').forEach(im=>im.addEventListener('error',()=>{im.hidden=true;},{once:true}));
  if($('ask-about-scan'))$('ask-about-scan').onclick=()=>{showView('assistant');const name=String(wine?.name||'').trim();$('assistant-input').value=recognizedScan?(name?'Что приготовить к «'+name+'»?':'Что приготовить к этому вину?'):'Помоги определить вино на фото';$('assistant-input').focus();};
  renderAlternatives(entry,w);showView('result',push);loadWineCollections(w);$('result-title').setAttribute('tabindex','-1');$('result-title').focus({preventScroll:true});
@@ -289,7 +302,7 @@ let wineCollectionsJob=0;
 const wineCollectionRequests=new Map();
 async function loadWineCollections(w){
  const job=++wineCollectionsJob,root=$('wine-collections');
- if(!w.slug||w.preferences_available===false)return;
+ if(!productData.account?.authenticated||!w.slug||w.preferences_available===false)return;
  try{
   let pending=wineCollectionRequests.get(w.slug);
   if(!pending){pending=api('shelves/ranking?slug='+encodeURIComponent(w.slug));wineCollectionRequests.set(w.slug,pending);pending.finally(()=>{if(wineCollectionRequests.get(w.slug)===pending)wineCollectionRequests.delete(w.slug);}).catch(()=>{});}
@@ -308,7 +321,7 @@ async function loadWineCollections(w){
   root.innerHTML='<p class="muted">Не удалось загрузить коллекции. <button class="text-button">Повторить</button></p>';root.hidden=false;root.querySelector('button').onclick=()=>loadWineCollections(w);
  }
 }
-async function openWine(w,entry=null){const own=++viewJob;await initPromise;if(own!==viewJob)return;renderResult(entry,w);if(w.preferences_available===false)return;try{const fresh=await api('wines/'+encodeURIComponent(w.slug));if(own===viewJob&&currentView==='result'&&currentWine.slug===w.slug)renderResult(entry,fresh,false);}catch{if(!w.description)notice('Не удалось обновить карточку. Сохранённые данные доступны.');}}
+async function openWine(w,entry=null){const own=++viewJob;await initPromise;if(own!==viewJob)return;renderResult(entry,w);try{const fresh=await api('wines/'+encodeURIComponent(w.slug));if(own===viewJob&&currentView==='result'&&currentWine.slug===w.slug)renderResult(entry,fresh,false);}catch{if(!w.description)notice('Не удалось обновить карточку. Сохранённые данные доступны.');}}
 function wineRow(w,meta,action){remember(w);const b=document.createElement('button');b.className='wine-row';b.innerHTML=`${img(w)}<span class="row-copy"><small>${esc(w.winery)}</small><b>${esc(w.name||w.slug||'Вино из каталога')}</b><small>${esc(meta)}</small></span>${icons('chevron')}`;b.onclick=action;handleBrokenImages(b);return b;}
 function historyNoWineRow(entry,date){const b=document.createElement('button');b.className='wine-row';b.innerHTML=`<img src="${esc(entry.thumb||'/assets/no-bottle.svg')}" alt="Ваш снимок"><span class="row-copy"><small>Сканирование</small><b>${entry.no_wine?'Не удалось распознать вино':'Карточка недоступна'}</b><small>${esc(date)}</small></span>${icons('chevron')}`;b.onclick=()=>renderResult(entry);handleBrokenImages(b);return b;}
 function renderHistory(){const list=$('history-list');list.replaceChildren();$('clear-history').hidden=!entries.length;if(!entries.length){list.innerHTML=empty('history','Первое открытие ещё впереди','Снимите этикетку — найденная карточка появится здесь.',true);bindEmpty(list);return;}for(const entry of entries){const date=new Date(entry.created_at).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});list.append(entry.wine?.slug?wineRow(entry.wine,date,()=>openWine(entry.wine,entry)):historyNoWineRow(entry,date));}}
@@ -384,9 +397,14 @@ function collectionRecommendationCard(shelf){
 function renderAssistantAttachment(){
  const box=$('assistant-attachment');box.hidden=!assistantAttachment;
  const shelf=assistantAttachment?.intent==='collection_fill';
+ const taste=assistantAttachment?.intent==='taste_discussion';
  $('assistant-input').placeholder=shelf?'Что добавить в коллекцию?':assistantAttachment?.intent==='dish_pairing'?'Какое блюдо приготовить?':assistantAttachment?'Спросите о снимке…':lastDish?'Вопрос о блюде или рецепте…':'Спросите о вине или блюде…';
  const welcome=$('chat-messages').querySelector('.assistant-welcome');
  if(welcome){welcome.querySelector('h2').textContent=shelf?'Подберём вина в коллекцию':assistantAttachment?.intent==='dish_pairing'?'Что приготовить к этому вину?':assistantAttachment?'Поможем разобраться со снимком':'Чем помочь?';welcome.querySelector('p').textContent=shelf?'Коллекция «'+assistantAttachment.name+'» прикреплена: сомелье видит её вина и повод. Спросите, чем её дополнить, или отправьте готовый запрос.':assistantAttachment?.intent==='dish_pairing'?'Фото вина уже прикреплено. Спросите о блюде или отправьте готовый запрос.':assistantAttachment?'Фото уже прикреплено. Спросите, что на нём.':'Подберём вино, блюдо или коллекцию под ваш вкус.';welcome.querySelector('.prompt-list').hidden=!!assistantAttachment;}
+ if(taste){
+  $('assistant-input').placeholder='Что хотите узнать о своём вкусе?';
+  if(welcome){welcome.querySelector('h2').textContent='Обсудим ваш вкус';welcome.querySelector('p').textContent='Почему вам нравятся эти вина, чем они похожи и что попробовать дальше.';}
+ }
  if(!assistantAttachment)return;
  $('attachment-image').src=assistantAttachment.preview;
  $('attachment-image').alt=shelf?'Бутылка из коллекции':'Прикреплённый снимок этикетки';
@@ -394,6 +412,14 @@ function renderAssistantAttachment(){
  box.querySelector('strong').textContent=shelf?'Коллекция':'Фото этикетки';
  box.querySelector('.attachment-disclosure').textContent=shelf?'Состав коллекции будет отправлен помощнику':'Фото будет отправлено помощнику';
  $('remove-attachment').setAttribute('aria-label',shelf?'Убрать прикреплённую коллекцию':'Убрать прикреплённое фото');
+ box.classList.toggle('is-taste',taste);
+ if(taste){
+  $('attachment-image').alt='';
+  box.querySelector('strong').textContent='Мой вкус';
+  $('attachment-label').textContent='Анкета, оценки и свайпы';
+  box.querySelector('.attachment-disclosure').textContent='Сомелье учитывает ваши текущие предпочтения';
+  $('remove-attachment').setAttribute('aria-label','Убрать профиль вкуса');
+ }
 }
 function attachScan(entry){
  if(!entry?.server_id)return;
@@ -412,18 +438,26 @@ function askAboutCollection(list){
  showView('assistant');renderAssistantAttachment();
  $('assistant-input').value='Что добавить в эту коллекцию?';$('assistant-input').focus();
 }
+function askAboutTaste(){
+ if(chatBusy){notice('Дождитесь ответа сомелье, затем откройте обсуждение вкуса.');return;}
+ if(assistantAttachment?.intent!=='taste_discussion')resetAssistantConversation();
+ assistantAttachment={intent:'taste_discussion',name:'Мой вкус',preview:'/assets/achievements/atlas.webp'};
+ showView('assistant');renderAssistantAttachment();
+ $('assistant-input').value='Расскажи о моём вкусе';
+ $('assistant-input').focus({preventScroll:true});
+}
 function removeAssistantAttachment(){assistantAttachment=null;renderAssistantAttachment();}
 $('remove-attachment').onclick=removeAssistantAttachment;
 async function askAssistant(message){
- const attachment=assistantAttachment,forCollection=attachment?.intent==='collection_fill';
- message=message.trim()||(forCollection?'Что добавить в эту коллекцию?':attachment?.intent==='dish_pairing'?'Что приготовить к этому вину?':attachment?'Помоги определить вино на фото.':'');
+ const attachment=assistantAttachment,forCollection=attachment?.intent==='collection_fill',forTaste=attachment?.intent==='taste_discussion';
+ message=message.trim()||(forTaste?'Расскажи о моём вкусе.':forCollection?'Что добавить в эту коллекцию?':attachment?.intent==='dish_pairing'?'Что приготовить к этому вину?':attachment?'Помоги определить вино на фото.':'');
  if(chatBusy||!message)return;
- const collectionSwitch=!forCollection&&asksForCollectionRecommendation(message);
- const wineSwitch=!forCollection&&!collectionSwitch&&asksForWineRecommendation(message);
- const recipeFollowup=!forCollection&&!collectionSwitch&&!wineSwitch&&!!lastDish&&isRecipeFollowup(message)&&(!attachment||attachment.scanId===lastDish.scanId);
- const dishPairing=!forCollection&&!!attachment&&!collectionSwitch&&!wineSwitch&&!recipeFollowup&&asksForDishWithWine(message);
- const usedAttachment=!forCollection&&!!attachment&&!collectionSwitch&&(dishPairing||asksAboutScan(message)||wineSwitch);
- const intent=forCollection?'collection_fill':collectionSwitch?'collection_recommendation':recipeFollowup?'dish_recipe':dishPairing?'dish_pairing':null;
+ const collectionSwitch=!forTaste&&!forCollection&&asksForCollectionRecommendation(message);
+ const wineSwitch=!forTaste&&!forCollection&&!collectionSwitch&&asksForWineRecommendation(message);
+ const recipeFollowup=!forTaste&&!forCollection&&!collectionSwitch&&!wineSwitch&&!!lastDish&&isRecipeFollowup(message)&&(!attachment||attachment.scanId===lastDish.scanId);
+ const dishPairing=!forTaste&&!forCollection&&!!attachment&&!collectionSwitch&&!wineSwitch&&!recipeFollowup&&asksForDishWithWine(message);
+ const usedAttachment=!forTaste&&!forCollection&&!!attachment&&!collectionSwitch&&(dishPairing||asksAboutScan(message)||wineSwitch);
+ const intent=forTaste?'taste_discussion':forCollection?'collection_fill':collectionSwitch?'collection_recommendation':recipeFollowup?'dish_recipe':dishPairing?'dish_pairing':null;
  const scanId=recipeFollowup?lastDish.scanId:usedAttachment?attachment.scanId:null;
  const previousContext=wineSwitch?[]:chatContext.slice(-6).map(turn=>({...turn}));
  const request={message,context:previousContext,...(scanId?{scan_id:scanId}:{}),...(intent?{intent}:{}),...(forCollection?{list_id:attachment.listId}:{}),...(recipeFollowup?{dish_name:lastDish.name}:{})};
@@ -475,14 +509,14 @@ async function askAssistant(message){
   }
   for(const w of (['dish','dish_recipe','conversation'].includes(data.recommendation_type)?[]:(data.items||[]))){const result=document.createElement('div');result.className='chat-result';result.append(wineRow(w,w.category,()=>openWine(w)));const reason=document.createElement('p');reason.className='reason';reason.textContent=w.reason;result.append(reason);if(data.list_id)result.append(addToListButton(data.list_id,w));turn.append(result);}
   if(usedAttachment&&assistantAttachment===attachment)removeAssistantAttachment();else renderAssistantAttachment();
- }catch(e){const answer=turn.querySelector('.chat-answer');answer.textContent=e.message;if(e.code==='assistant_sign_in'){const actions=document.createElement('div');actions.className='chat-auth-actions';for(const [mode,label] of [['login','Войти'],['register','Создать аккаунт']]){const button=document.createElement('button');button.type='button';button.className=mode==='login'?'cellar-primary':'text-button';button.textContent=label;button.onclick=()=>window.collectionUI?.signIn(mode);actions.append(button);}answer.append(actions);}else answer.append(' Запрос сохранён в поле ввода — можно отправить ещё раз.');$('assistant-input').value=message;}
+ }catch(e){const answer=turn.querySelector('.chat-answer');answer.textContent=e.message;if(['assistant_sign_in','account_required'].includes(e.code)){const actions=document.createElement('div');actions.className='chat-auth-actions';for(const [mode,label] of [['login','Войти'],['register','Создать аккаунт']]){const button=document.createElement('button');button.type='button';button.className=mode==='login'?'cellar-primary':'text-button';button.textContent=label;button.onclick=()=>window.collectionUI?.signIn(mode);actions.append(button);}answer.append(actions);}else answer.append(' Запрос сохранён в поле ввода — можно отправить ещё раз.');$('assistant-input').value=message;}
  finally{chatBusy=false;$('send-button').disabled=false;$('voice-button').disabled=false;root.scrollTop=Math.max(0,root.scrollTop+turn.getBoundingClientRect().top-root.getBoundingClientRect().top);}
 }
 $('assistant-form').onsubmit=e=>{e.preventDefault();askAssistant($('assistant-input').value.trim());};$('assistant-input').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();askAssistant($('assistant-input').value.trim());}};$('chat-messages').addEventListener('click',event=>{const button=event.target.closest('[data-prompt]');if(button)askAssistant(button.dataset.prompt);});
 let speech=null;
 $('voice-button').onclick=()=>{const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Speech){notice('В этом браузере голосовой ввод недоступен. Используйте микрофон клавиатуры телефона или введите запрос.');$('assistant-input').focus();return;}if(speech){speech.stop();return;}speech=new Speech();speech.lang='ru-RU';speech.interimResults=true;speech.continuous=false;const before=$('assistant-input').value;speech.onstart=()=>{$('voice-button').classList.add('recording');$('voice-button').setAttribute('aria-label','Остановить запись');$('voice-status').textContent='Слушаю… Нажмите, чтобы остановить';};speech.onresult=e=>{$('assistant-input').value=(before+' '+Array.from(e.results).map(r=>r[0].transcript).join(' ')).trim().slice(0,1600);};speech.onerror=e=>{notice(e.error==='not-allowed'?'Разрешите микрофон в настройках браузера или напишите запрос.':'Не удалось распознать речь. Попробуйте ещё раз или напишите запрос.');};speech.onend=()=>{speech=null;$('voice-button').classList.remove('recording');$('voice-button').setAttribute('aria-label','Продиктовать запрос');$('voice-status').textContent='Проверьте текст и нажмите отправить';};try{speech.start();}catch{speech=null;notice('Голосовой ввод не запустился. Можно написать запрос.');}};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)speech?.stop();});
-async function initializeProduct(){const cached=store.get('wine-product',null);if(cached){productData=cached;renderDiscovery();updatePreferenceCopy();}try{const data=await api('bootstrap');productData=data;syncAccountControls(data.account);store.set('wine-product',data);data.collection.forEach(remember);renderDiscovery();updatePreferenceCopy();if($('assistant-mode'))$('assistant-mode').textContent=data.assistant_mode==='ai'?'ИИ-помощник · рекомендации по каталогу':'Подбор по каталогу';}catch{if(!cached&&$('discovery-list')){$('discovery-list').innerHTML=empty('info','Каталог пока недоступен','Проверьте интернет и обновите страницу.',false);}}}
+async function initializeProduct(){const cached=null;accountReady=false;try{const data=await api('bootstrap');productData=data;accountReady=true;syncAccountControls(data.account);store.set('wine-product',data);data.collection.forEach(remember);renderDiscovery();updatePreferenceCopy();if($('assistant-mode'))$('assistant-mode').textContent=data.assistant_mode==='ai'?'ИИ-помощник · рекомендации по каталогу':'Подбор по каталогу';}catch{accountReady=true;productData.account={authenticated:false};if(!cached&&$('discovery-list')){$('discovery-list').innerHTML=empty('info','Каталог пока недоступен','Проверьте интернет и обновите страницу.',false);}}}
 const initPromise=Promise.all([initializeProduct(),loadPortalCardData()]);
 // Opening the scanner leaves the camera off until the visitor taps its control.
 cameraToggleState('idle');

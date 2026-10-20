@@ -20,6 +20,7 @@ class ProductTest(unittest.TestCase):
         with TestClient(self.app) as other:
             data=other.get('/api/product/bootstrap').json();self.assertEqual(data['collection'],[])
             wine=other.get('/api/product/wines/merlo').json();self.assertEqual(wine['rating'],0);self.assertFalse(wine['favorite']);self.assertEqual(wine['average_rating'],3)
+            other.post('/api/product/account/register',json={'username':'other-reader','password':'Local-test-password-456'})
             other.post('/api/product/preferences/merlo',json={'rating':5})
             self.assertEqual(other.get('/api/product/wines/merlo').json()['average_rating'],4)
         self.assertEqual(self.c.get('/api/product/bootstrap').json()['preferences']['merlo'],{'favorite':True,'rating':3})

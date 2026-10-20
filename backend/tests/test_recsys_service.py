@@ -1,4 +1,4 @@
-import sys,tempfile,time,unittest,uuid
+import sys,tempfile,time,unittest,uuid,json
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT));sys.path.insert(0,str(ROOT.parent/'wine_curation/tests'))
@@ -139,10 +139,42 @@ class RecsysServiceTest(unittest.TestCase):
         self.assertTrue(all(w['reason'] for w in res['recommendations']['items']))
         self.assertEqual(self.r.answers('p1')['colors'],['красное'])
         self.assertEqual(self.r.quiz_options('p1')['answers'],self.RED_LOVER)
-        # a skipped question is simply absent; a retake replaces the old answers
-        self.r.save_quiz('p1',{'answers':{'wine':'white','juice':'grapefruit'}})
+        self.assertTrue(passport['quiz_complete'])
+        # An incomplete retake must leave the previously saved quiz intact.
+        for bad in ({}, {'wine':'white'}, {'wine':[]}):
+            with self.assertRaises(Exception): self.r.save_quiz('p1', {'answers':bad})
+        self.assertEqual(self.r.quiz_options('p1')['answers'], self.RED_LOVER)
+        white = {**self.RED_LOVER, 'wine':'white', 'juice':'grapefruit'}
+        self.r.save_quiz('p1', {'answers':white})
+        self.assertEqual(self.r.quiz_options('p1')['answers'],white)
         self.assertEqual(self.r.answers('p1')['colors'],['белое','розовое'])
-        self.assertNotIn('tannin',{a['axis'] for a in self.r.passport('p1')['axes']})
+
+    def test_quiz_is_required_for_swipe_and_is_scoped_to_profile(self):
+        self.assertFalse(self.r.passport('p1')['quiz_complete'])
+        for action in (lambda:self.r.deck('p1'), lambda:self.r.swipe('p1',{'slug':'merlo','verdict':'like'})):
+            with self.assertRaises(Exception) as ctx:action()
+            self.assertEqual(ctx.exception.status_code,409)
+        self.r.save_quiz('p1',{'answers':self.RED_LOVER})
+        self.assertTrue(self.r.deck('p1')['items'])
+        self.assertFalse(self.r.passport('another')['quiz_complete'])
+        with self.assertRaises(Exception):self.r.deck('another')
+        self.p.update('p1','merlo',{'rating':4})
+        self.assertNotIn('merlo',[w['slug'] for w in self.r.deck('p1',24)['items']])
+
+    def test_legacy_answers_prefill_but_do_not_skip_quiz(self):
+        with self.store.db() as db:
+            db.execute('INSERT INTO recsys_onboarding VALUES(?,?,?)',
+                       ('legacy', json.dumps({'quiz':self.RED_LOVER}), time.time()))
+        self.assertEqual(self.r.quiz_options('legacy')['answers'], self.RED_LOVER)
+        self.assertFalse(self.r.passport('legacy')['quiz_complete'])
+        with self.assertRaises(Exception) as ctx:self.r.deck('legacy')
+        self.assertEqual(ctx.exception.status_code,409)
+        self.r.save_quiz('legacy', {'answers':self.RED_LOVER})
+        self.assertTrue(self.r.passport('legacy')['quiz_complete'])
+        # Survives a service reload; it is not tied to a tab or browser storage.
+        fresh=Product(self.store).recs
+        self.assertTrue(fresh.passport('legacy')['quiz_complete'])
+        self.assertTrue(fresh.deck('legacy')['items'])
 
     def test_passport_tabs_narrow_to_one_kind(self):
         self.r.save_quiz('p1',{'answers':self.RED_LOVER})
@@ -168,6 +200,7 @@ class RecsysServiceTest(unittest.TestCase):
         self.assertNotIn('tannin',[s['axis'] for s in self.r.wine_taste('cabernet')['scales']])
 
     def test_swipes_train_taste_fill_likes_and_undo_cleanly(self):
+        self.r.save_quiz('p1',{'answers':self.RED_LOVER})
         deck=self.r.deck('p1',5)
         self.assertTrue(deck['items']);self.assertIn('taste',deck['items'][0]);self.assertEqual(deck['swiped'],0)
         first=deck['items'][0]['slug']
@@ -191,10 +224,10 @@ class RecsysServiceTest(unittest.TestCase):
         with self.assertRaises(Exception):self.r.deck('p1',0)
 
     def test_guest_quiz_and_swipes_survive_merge(self):
-        self.r.save_quiz('guest',{'answers':{'wine':'red'}})
+        self.r.save_quiz('guest',{'answers':self.RED_LOVER})
         self.r.swipe('guest',{'slug':'merlo','verdict':'nope'})
         with self.store.db() as db:self.r.merge_guest(db,'guest','account')
-        self.assertEqual(self.r.answers('account')['quiz'],{'wine':'red'})
+        self.assertEqual(self.r.answers('account')['quiz'],self.RED_LOVER)
         self.assertEqual(self.r.swipes('account'),{'merlo':'nope'});self.assertEqual(self.r.swipes('guest'),{})
 
 if __name__=='__main__':unittest.main()

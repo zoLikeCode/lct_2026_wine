@@ -1,0 +1,4 @@
+Method: built-in image_gen
+Asset: engravings.png
+
+Use case: stylized-concept. Asset type: a single reusable 3-column by 2-row illustration sprite for a Russian wine app taste questionnaire. True transparent background, no text, no borders. Each subject centered in its own equal square cell with generous padding. Top row: a wine goblet with dark red grapes and leaf; an espresso cup with saucer and coffee beans; dark chocolate with a cacao pod. Bottom row: a halved lemon with an apple and leaf; an ornate spoon with sugar cubes and a tea leaf; berries, a blossom and star anise. Detailed antique copperplate crosshatching and hand-colored botanical engraving, muted burgundy, sepia, brown and sage gray. Elegant natural materials, finely drawn contours. Avoid emoji, flat vector icons, 3D rendering, labels, watermarks and opaque background.

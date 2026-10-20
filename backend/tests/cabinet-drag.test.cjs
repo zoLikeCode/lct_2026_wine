@@ -1,0 +1,23 @@
+const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
+function setup(fail=false){
+ const listeners=new Map(),timers=new Map(),saved=[],classes=()=>({add(){},remove(){}});let next=0;
+ const on=(scope)=>({addEventListener:(type,fn)=>listeners.set(scope+type,fn),removeEventListener:(type)=>listeners.delete(scope+type)});
+ const track={...on('track'),querySelectorAll:()=>slots,contains:()=>true,append(item){slots.splice(slots.indexOf(item),1);slots.push(item);},insertBefore(item,anchor){slots.splice(slots.indexOf(item),1);const i=slots.indexOf(anchor);slots.splice(i<0?slots.length:i,0,item);}};
+ const slots=['a','b','c'].map(slug=>{const item={dataset:{slug},classList:classes(),querySelector:q=>q.includes('img')?image:null,getBoundingClientRect:()=>({left:slots.indexOf(item)*100,top:200,width:100,height:150}),get nextSibling(){return slots[slots.indexOf(item)+1]||null;},animate(){}};const image={getBoundingClientRect:item.getBoundingClientRect,cloneNode:()=>({removeAttribute(){},style:{}})};return item;});
+ const status={},scene={classList:classes(),querySelector:q=>q==='.cellar-track'?track:status,setAttribute(){},removeAttribute(){}};
+ const context={window:{...on('window'),innerHeight:800,scrollBy(){}},document:{...on('doc'),body:{classList:classes(),append(){}},createElement:()=>({style:{},setAttribute(){},append(){},remove(){}})},matchMedia:()=>({matches:true}),performance:{now:()=>1000},requestAnimationFrame:()=>0,cancelAnimationFrame(){},setTimeout:fn=>{timers.set(++next,fn);return next;},clearTimeout:id=>timers.delete(id),notice(){}};
+ vm.runInNewContext(fs.readFileSync('dist/cabinet-drag.js','utf8'),context);
+ const detach=context.window.WineShelfDrag.attach(scene,{commit:async order=>{saved.push([...order]);if(fail)throw Error('offline');}});
+ const item=slots[0],target={closest:q=>q==='.cellar-grip'?null:q==='.cellar-slot'?item:target};
+ function emit(scope,type,extra={}){const event={target,clientX:50,clientY:250,pointerId:1,pointerType:'mouse',button:0,isPrimary:true,preventDefault(){this.prevented=true;},stopImmediatePropagation(){this.stopped=true;},...extra};listeners.get(scope+type)?.(event);return event;}
+ const touch=(x,y=250,id=1)=>({identifier:id,clientX:x,clientY:y});
+ return {emit,touch,saved,slots,status,hold:()=>[...timers.values()].forEach(f=>f()),detach,order:()=>slots.map(s=>s.dataset.slug)};
+}
+const tick=()=>new Promise(resolve=>setImmediate(resolve));
+test('mouse drag saves once and suppresses the click which would open the card',async()=>{const h=setup();h.emit('track','pointerdown');h.emit('doc','pointermove',{clientX:250});h.emit('doc','pointerup');await tick();assert.deepEqual(h.order(),['b','c','a']);assert.deepEqual(h.saved,[['b','c','a']]);assert.ok(h.emit('track','click').stopped);});
+test('horizontal touch drag works without waiting for a long press',async()=>{const h=setup();h.emit('track','touchstart',{touches:[h.touch(50)]});const e=h.emit('track','touchmove',{touches:[h.touch(250)]});assert.ok(e.prevented);h.emit('track','touchend');await tick();assert.deepEqual(h.saved,[['b','c','a']]);});
+test('vertical touch movement scrolls without rearranging or opening a wine',()=>{const h=setup();h.emit('track','touchstart',{touches:[h.touch(50)]});assert.ok(!h.emit('track','touchmove',{touches:[h.touch(55,310)]}).prevented);h.emit('track','touchend');assert.deepEqual(h.saved,[]);assert.ok(h.emit('track','click').stopped);});
+test('long press lifts the wine and a second finger cancels it',()=>{const h=setup();h.emit('track','touchstart',{touches:[h.touch(50)]});h.hold();h.emit('track','touchmove',{touches:[h.touch(250)]});h.emit('track','touchstart',{touches:[h.touch(250),h.touch(100,200,2)]});assert.deepEqual(h.order(),['a','b','c']);assert.deepEqual(h.saved,[]);});
+test('ordinary tap remains a card click',()=>{const h=setup();h.emit('track','touchstart',{touches:[h.touch(50)]});h.emit('track','touchend');assert.ok(!h.emit('track','click').stopped);assert.deepEqual(h.saved,[]);});
+test('failed save restores server order',async()=>{const h=setup(true);h.emit('track','pointerdown');h.emit('doc','pointermove',{clientX:250});h.emit('doc','pointerup');await tick();assert.deepEqual(h.order(),['a','b','c']);assert.match(h.status.textContent,/Не сохранено/);});
+test('another pointer cannot finish or redirect the drag',async()=>{const h=setup();h.emit('track','pointerdown');h.emit('doc','pointermove',{clientX:250,pointerId:2});h.emit('doc','pointerup',{pointerId:2});assert.deepEqual(h.saved,[]);h.emit('doc','pointermove',{clientX:250});h.emit('doc','pointerup');await tick();assert.deepEqual(h.saved,[['b','c','a']]);});

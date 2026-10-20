@@ -1,0 +1,214 @@
+/* Taste profile: quiz, «Мой вкус», swipe deck and the wine card's taste sheet. Warm paper, wine accents. */
+.bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr))}
+.bottom-nav button{white-space:nowrap}
+
+/* Scales: Лёгкое ——▬—— Насыщенное; a ring marks the user's own taste. */
+.taste-scales{display:flex;flex-direction:column;gap:18px}
+.taste-scale{display:grid;grid-template-columns:104px minmax(0,1fr) 104px;align-items:center;gap:14px;font-size:13px;line-height:1.3}
+.taste-scale .taste-end:last-child{text-align:right}
+.taste-end{color:#5f5953}
+.taste-track{position:relative;height:10px;border-radius:6px;background:#eee6d5}
+.taste-dot{position:absolute;top:0;bottom:0;width:22%;left:clamp(0%,calc(var(--v) - 11%),78%);border-radius:6px;background:var(--wine)}
+.taste-you{position:absolute;z-index:2;top:50%;left:var(--v);width:16px;height:16px;border:2px solid #2c2a28;border-radius:50%;background:#fffefa;transform:translate(-50%,-50%);box-shadow:0 1px 4px #2c2a2826}
+.taste-legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.taste-legend .taste-you{position:relative;top:auto;left:auto;transform:none;flex:none;width:14px;height:14px}
+.taste-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.taste-chips li{padding:6px 14px;border-radius:20px;background:#f8ecc9;color:var(--wine);font-size:13px;line-height:1.4}
+.taste-spark{display:inline-grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#fff;color:var(--wine);box-shadow:0 6px 20px #be9f4b24}
+.taste-spark svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6}
+
+/* Fullscreen dialogs (quiz, swipe): a sheet on desktop, the whole screen on a phone. */
+.taste-fullscreen{width:100%;max-width:560px;height:min(calc(100dvh - 32px),880px);max-height:none;padding:0;border:1px solid #fff;border-radius:32px;overflow:hidden;background:radial-gradient(110% 55% at 0 0,#fbf1cf 0,#fbf1cf00 60%),radial-gradient(80% 45% at 70% 22%,#fbe4e2 0,#fbe4e200 65%),#fffefa}
+.taste-fullscreen[open]{display:flex;flex-direction:column}
+.taste-fullscreen::backdrop{background:#2c201b59;backdrop-filter:blur(6px)}
+.quiz-top{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;gap:12px;padding:24px 24px 16px}
+.quiz-round{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#fffefa;box-shadow:0 6px 18px #6d4d2a1f}
+.quiz-round svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.quiz-round:disabled{opacity:.35;cursor:default}
+.quiz-step{text-align:center;font-size:15px;font-weight:600;color:#3b3632;font-variant-numeric:tabular-nums}
+.quiz-progress{height:6px;margin:0 24px;border-radius:4px;background:#ece6db;overflow:hidden}
+.quiz-progress span{display:block;height:100%;border-radius:4px;background:var(--wine);transition:width .3s}
+.quiz-body{flex:1;min-height:0;overflow:auto;padding:36px 24px 16px}
+.quiz-body>h2{margin:0 0 28px;text-align:center;font:500 28px/1.3 var(--serif)}
+.quiz-options{border:1px solid #e6dfd2;border-radius:24px;background:#fffefa;overflow:hidden;box-shadow:0 10px 30px #7c654308}
+.quiz-option+.quiz-option{border-top:1px solid #ece6db}
+.quiz-option>button{display:grid;grid-template-columns:56px minmax(0,1fr) 28px;align-items:center;gap:16px;width:100%;min-height:80px;padding:12px 20px;text-align:left;font-size:17px;line-height:1.35}
+.quiz-option>button:hover{background:#fdf9ef}
+.quiz-icon{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:#f3ede3;color:#2c2a28}
+.quiz-icon svg{width:40px;height:40px}
+.quiz-icon[data-icon=glass-red],.quiz-icon[data-icon=aroma-berries]{background:#f8e3e1}
+.quiz-icon[data-icon=glass-white],.quiz-icon[data-icon=aroma-flowers],.quiz-icon[data-icon=aroma-bubbles]{background:#f9efcc}
+.quiz-icon[data-icon=glass-both]{background:linear-gradient(90deg,#f8e3e1 50%,#f9efcc 50%)}
+.quiz-icon[data-icon^=choc],.quiz-icon[data-icon=aroma-spice]{background:#f6e6d9}
+.quiz-icon[data-icon^=juice]{background:#fdeee1}
+.quiz-radio{width:28px;height:28px;border:2px solid #c9c1b5;border-radius:50%;background:#fff}
+.quiz-option.is-chosen .quiz-radio{border-color:var(--wine);box-shadow:inset 0 0 0 5px #fff;background:var(--wine)}
+.quiz-option.is-chosen>button{font-weight:500}
+.quiz-insight{margin:0 20px 20px;padding:16px 18px;border:1px solid #efe7d6;border-radius:18px;background:#faf6ec;font-size:14px;line-height:1.6;color:#3b3632;animation:taste-rise .25s ease-out}
+.quiz-insight b{font-weight:600;color:#2c2a28}
+.quiz-bottom{display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 24px max(24px,env(safe-area-inset-bottom))}
+.quiz-next{width:100%;min-height:60px;border-radius:30px;background:var(--wine);color:#fffdf8;font-size:16px;font-weight:600}
+.quiz-next:hover:not(:disabled){background:var(--deep)}
+.quiz-next:disabled{background:#eee9e0;color:#a9a196;cursor:default;opacity:1}
+.quiz-skip{min-height:44px;font-size:15px;font-weight:500;text-decoration:underline;text-underline-offset:4px;color:#3b3632}
+.quiz-done{text-align:center}
+.quiz-done>h2{margin:12px 0 28px;font:500 26px/1.35 var(--serif);text-align:center}
+.quiz-done>h2:focus{outline:none}
+.quiz-done .eyebrow{margin-top:16px}
+.quiz-done .taste-scales{padding:24px;border-radius:24px;background:#fffefacc;border:1px solid #efe7d6;text-align:left}
+.quiz-subtitle{margin:32px 0 4px;font:500 20px/1.3 var(--serif);text-align:left}
+.quiz-wines{text-align:left}
+.quiz-wines .wine-row img{width:44px;height:68px;object-fit:contain;mix-blend-mode:multiply}
+.quiz-lead{margin:24px auto 0;max-width:420px;font-size:14px;line-height:1.6;color:var(--muted)}
+@keyframes taste-rise{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+/* «Мой вкус» screen. */
+.taste-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;margin-bottom:28px}
+.taste-heading h1{margin:4px 0 0}
+.taste-heading .lead{max-width:420px;font-size:14px;line-height:1.6;color:var(--muted)}
+.taste-tabs{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 24px;margin:0 -2px;scrollbar-width:none}
+.taste-tabs::-webkit-scrollbar{display:none}
+.taste-tabs button{flex:none;min-height:46px;padding:10px 22px;border:1px solid #e3dccd;border-radius:24px;background:#fffefa;font-size:15px;font-weight:500;color:#3b3632}
+.taste-tabs button span{margin-left:4px;font-size:12px;color:#9b8171}
+.taste-tabs button.active{border-color:var(--wine);background:var(--wine);color:#fffdf8}
+.taste-tabs button.active span{color:#f8ecc9}
+.taste-invite{max-width:640px;margin:8px auto 0;padding:36px;border:1px solid #f0e9da;border-radius:32px;background:radial-gradient(90% 60% at 10% 0,#fbf1cf 0,#fbf1cf00 70%),radial-gradient(70% 50% at 70% 100%,#fbe4e2 0,#fbe4e200 70%),#fffefa;box-shadow:0 18px 50px #7c65430d}
+.taste-invite-head{display:flex;align-items:center;justify-content:center;gap:16px;text-align:left}
+.taste-invite-head h2{margin:0;font:500 28px/1.25 var(--serif)}
+.taste-invite-lead{max-width:500px;margin:16px auto 28px;text-align:center;font-size:14px;line-height:1.6;color:var(--muted)}
+.taste-invite-question{margin:0 0 16px;text-align:center;font-size:16px;font-weight:600}
+.taste-invite-swipe{display:flex;margin:20px auto 0}
+.taste-empty{max-width:560px;margin:24px auto;padding:40px 32px;border:1px solid var(--line);border-radius:28px;background:#fdf9ed;text-align:center}
+.taste-empty h2{margin:0 0 12px;font:500 24px/1.3 var(--serif)}
+.taste-empty p{margin:0 0 24px;color:var(--muted);font-size:14px;line-height:1.6}
+.taste-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:24px;align-items:start}
+.taste-hero{padding:40px;border-radius:32px;background:#fdf9ed}
+.taste-hero h2{margin:12px 0 8px;font:500 30px/1.3 var(--serif)}
+.taste-stage{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--wine)}
+.taste-stage-dot{width:8px;height:8px;border-radius:50%;background:#d9a93c}
+.taste-stage-dot[data-stage=confident]{background:#5f8a52}
+.taste-evidence{margin:0 0 28px;font-size:13px;color:var(--muted)}
+.taste-side{display:flex;flex-direction:column;gap:16px}
+.taste-card{padding:24px;border:1px solid var(--line);border-radius:24px;background:#fffefa}
+.taste-card h3{margin:0 0 14px;font:500 18px/1.3 var(--serif)}
+.taste-aromas{display:flex;flex-direction:column;gap:12px;margin:0;padding:0;list-style:none}
+.taste-aromas li{display:grid;grid-template-columns:minmax(0,1fr) 40%;align-items:center;gap:12px;font-size:14px}
+.taste-aromas i{height:8px;border-radius:5px;background:linear-gradient(90deg,var(--wine) var(--share),#eee6d5 var(--share))}
+.taste-facts{display:flex;flex-direction:column;gap:16px}
+.taste-facts h3{margin-bottom:4px;font:600 12px/1.5 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.taste-facts p{margin:0;font-size:15px}
+.taste-actions{padding:8px 12px}
+.taste-action{display:grid;grid-template-columns:44px minmax(0,1fr) 18px;align-items:center;gap:14px;width:100%;padding:14px 8px;text-align:left}
+.taste-action+.taste-action{border-top:1px solid var(--line)}
+.taste-action b{display:block;font-size:15px;font-weight:600}
+.taste-action small{display:block;margin-top:2px;font-size:13px;line-height:1.45;color:var(--muted)}
+.taste-action>svg{width:18px;height:18px;fill:none;stroke:var(--muted);stroke-width:1.8}
+.taste-action-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:#f8ecc9;color:var(--wine)}
+.taste-action-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.taste-picks{margin-top:56px}
+.taste-why{margin:8px 0 0;font-size:12px;line-height:1.45;color:var(--wine)}
+
+/* Taste sheet on the wine card. */
+.taste-sheet{max-width:880px;margin:64px auto 0;padding:40px;border-radius:32px;background:#fdf9ed}
+.taste-sheet.is-loading{min-height:240px;background:linear-gradient(100deg,#fdf9ed 30%,#f8f1df 50%,#fdf9ed 70%) 0 0/300% 100%;animation:taste-shimmer 1.4s linear infinite}
+.taste-sheet-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:28px}
+.taste-sheet-head h2{margin:0;font:500 26px/1.25 var(--serif)}
+.taste-sheet-head small{font-size:12px;color:var(--muted);text-align:right}
+.taste-sheet-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:40px}
+.taste-sheet-side{display:flex;flex-direction:column;gap:24px}
+.taste-sheet-side h3{margin:0 0 10px;font:600 12px/1.5 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.taste-occasions{margin:0;font-size:15px}
+.taste-occasions:first-letter{text-transform:uppercase}
+.taste-match{display:flex;gap:16px;align-items:center;padding:16px;border-radius:24px;background:#fffefa}
+.taste-match p{margin:0;font-size:14px;line-height:1.5}
+.taste-match .taste-match-title{font-weight:600;color:#2c2a28}
+.taste-match .text-button{min-height:36px;padding:4px 0 0}
+.taste-match-ring{position:relative;display:grid;place-items:center;flex:none;width:68px;height:68px;border-radius:50%;background:conic-gradient(var(--wine) calc(var(--p,0)*1%),#eee6d5 0)}
+.taste-match-ring:before{content:'';position:absolute;inset:6px;border-radius:50%;background:#fffefa}
+.taste-match-ring b{position:relative;font:600 17px/1 var(--sans);color:var(--wine);font-variant-numeric:tabular-nums}
+.taste-match-empty .taste-match-ring{background:#f8ecc9;color:var(--wine)}
+.taste-match-empty .taste-match-ring:before{display:none}
+.taste-match-empty .taste-match-ring svg{position:relative;width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.6}
+@keyframes taste-shimmer{to{background-position:-300% 0}}
+
+/* Swipe deck. */
+.swipe-title{display:flex;flex-direction:column;align-items:center;gap:2px}
+.swipe-title h2{margin:0;font:500 20px/1.25 var(--serif)}
+.swipe-title .quiz-step{font-size:12px;font-weight:500;color:var(--muted)}
+.swipe-stack{position:relative;flex:1;min-height:0;margin:8px 24px 0}
+.swipe-card{position:absolute;inset:0 0 24px;display:flex;flex-direction:column;overflow:hidden;border:1px solid #ece5d7;border-radius:28px;background:#fffefa;box-shadow:0 14px 40px #6d4d2a1f;transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .32s;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab}
+.swipe-card[data-depth="0"]{z-index:3}
+.swipe-card[data-depth="1"]{z-index:2;transform:translateY(12px) scale(.96)}
+.swipe-card[data-depth="2"]{z-index:1;transform:translateY(24px) scale(.92);opacity:.6}
+.swipe-card.is-dragging{transition:none;cursor:grabbing}
+.swipe-card.is-leaving{z-index:4;pointer-events:none}
+.swipe-visual{position:relative;flex:0 0 36%;min-height:0;overflow:hidden;background:linear-gradient(160deg,#fdf9ed,#f3ead6)}
+.swipe-visual img{position:absolute;inset:6% 15%;width:70%;height:88%;object-fit:contain;mix-blend-mode:multiply;pointer-events:none}
+.swipe-match{position:absolute;top:16px;left:16px;padding:6px 12px;border-radius:16px;background:#fffefae6;font-size:12px;color:#3b3632;box-shadow:0 2px 10px #6d4d2a14}
+.swipe-match b{color:var(--wine);font-size:14px}
+.swipe-body{flex:1;min-height:0;overflow:auto;padding:18px 22px 20px}
+.swipe-winery{font-size:12px;color:var(--muted)}
+.swipe-body h3{margin:2px 0 4px;font:500 22px/1.25 var(--serif)}
+.swipe-meta{margin:0 0 16px;font-size:13px;color:var(--muted)}
+.swipe-scales{gap:10px;margin-bottom:14px}
+.swipe-scales .taste-scale{grid-template-columns:76px minmax(0,1fr) 76px;gap:10px;font-size:11px}
+.swipe-scales .taste-track{height:8px}
+.swipe-scales .taste-you{width:13px;height:13px}
+.swipe-body .taste-chips li{padding:4px 12px;font-size:12px}
+.swipe-reason{margin:14px 0 0;font-size:12px;line-height:1.45;color:var(--wine)}
+.swipe-stamp{position:absolute;z-index:3;top:28px;padding:6px 14px;border:3px solid currentColor;border-radius:12px;font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:#fffefacc;pointer-events:none}
+.swipe-like{left:22px;color:#5f8a52;transform:rotate(-12deg);opacity:var(--like,0)}
+.swipe-nope{right:22px;color:var(--wine);transform:rotate(12deg);opacity:var(--nope,0)}
+.swipe-rate{position:absolute;z-index:4;inset:auto 0 0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 20px 16px;border-top:1px solid #efe7d6;background:#fffefa;box-shadow:0 -12px 30px #6d4d2a14;animation:taste-rise .2s ease-out}
+.swipe-rate[hidden]{display:none}
+.swipe-rate p{margin:0;font:500 20px/1.3 var(--serif)}
+.swipe-glasses{display:flex;gap:4px}
+.swipe-glasses button{display:grid;place-items:center;width:52px;height:52px;border-radius:50%}
+.swipe-glass{position:relative;width:40px;height:40px}
+.swipe-glass img{position:absolute;inset:0;width:40px;height:40px;transition:transform .15s}
+.swipe-glass .swipe-glass-fill{transform:scale(0)}
+.swipe-glasses button.is-lit .swipe-glass-fill{transform:scale(1)}
+.swipe-controls{display:flex;align-items:flex-start;justify-content:center;gap:24px;padding:12px 24px 4px}
+.swipe-button{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#3b3632}
+.swipe-button svg{box-sizing:content-box;width:26px;height:26px;padding:19px;border-radius:50%;background:#fffefa;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;box-shadow:0 8px 22px #6d4d2a24;transition:transform .15s}
+.swipe-button:hover:not(:disabled) svg{transform:scale(1.06)}
+.swipe-button-nope svg{color:var(--wine)}
+.swipe-button-tasted svg{width:20px;height:20px;padding:16px;margin-top:6px;color:#8a6a2e}
+.swipe-button-like svg{background:var(--wine);color:#fffdf8;fill:#fffdf8}
+.swipe-button:disabled{opacity:.35;cursor:default}
+.swipe-profile{margin:0;padding:10px 28px max(20px,env(safe-area-inset-bottom));min-height:56px;text-align:center;font-size:13px;line-height:1.5;color:var(--muted)}
+.swipe-profile b{color:var(--wine);font-weight:600}
+.swipe-end{position:absolute;inset:0 0 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px;border:1px dashed #e3dccd;border-radius:28px;text-align:center}
+.swipe-end.shelf-loading{border:0}
+.swipe-end h3{margin:4px 0 0;font:500 24px/1.3 var(--serif)}
+.swipe-end p{margin:0 0 8px;max-width:320px;font-size:14px;line-height:1.6;color:var(--muted)}
+
+@media(max-width:900px){.taste-layout{grid-template-columns:1fr}.taste-sheet-grid{grid-template-columns:1fr;gap:28px}}
+@media(max-width:760px){
+ .taste-fullscreen{width:100%;max-width:none;height:100dvh;max-height:100dvh;margin:0;border:0;border-radius:0}
+ .quiz-top{padding:max(16px,env(safe-area-inset-top)) 20px 12px}
+ .quiz-progress{margin:0 20px}
+ .quiz-body{padding:28px 20px 12px}
+ .quiz-body>h2{font-size:24px;margin-bottom:22px}
+ .quiz-option>button{grid-template-columns:48px minmax(0,1fr) 26px;gap:14px;min-height:72px;padding:12px 16px;font-size:16px}
+ .quiz-icon{width:48px;height:48px}.quiz-icon svg{width:34px;height:34px}
+ .quiz-radio{width:26px;height:26px}
+ .quiz-insight{margin:0 16px 16px}
+ .quiz-bottom{padding:12px 20px max(20px,env(safe-area-inset-bottom))}
+ .taste-heading{flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:20px}
+ .taste-tabs{margin:0 -20px;padding:4px 20px 20px}
+ .taste-tabs button{min-height:42px;padding:8px 18px;font-size:14px}
+ .taste-invite{padding:28px 16px;border-radius:28px}
+ .taste-invite-head h2{font-size:22px}
+ .taste-hero{padding:28px 20px;border-radius:28px}
+ .taste-hero h2{font-size:24px}
+ .taste-scale{grid-template-columns:72px minmax(0,1fr) 72px;gap:10px;font-size:12px}
+ .taste-sheet{margin-top:48px;padding:28px 20px;border-radius:28px}
+ .taste-sheet-head{flex-direction:column;gap:4px;margin-bottom:22px}
+ .taste-sheet-head h2{font-size:22px}
+ .taste-sheet-head small{text-align:left}
+ .swipe-stack{margin:4px 16px 0}
+ .swipe-controls{gap:20px;padding-top:8px}
+ .swipe-body h3{font-size:20px}
+}
+@media(max-height:700px) and (max-width:760px){.swipe-visual{flex-basis:28%}.swipe-scales{gap:8px}.swipe-profile{min-height:0;padding-top:6px}.swipe-button svg{padding:15px}}

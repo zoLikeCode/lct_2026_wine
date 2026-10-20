@@ -1,0 +1,25 @@
+const {chromium}=require('/Users/forthang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const fs=require('fs'),path=require('path'),assert=require('assert');
+const root=path.resolve(__dirname,'../../..');
+const credentials=JSON.parse(fs.readFileSync(path.join(root,'work/wine_server_private/credentials.json')));
+const input=JSON.parse(fs.readFileSync(path.join(root,'work/wine_server_private/benchmark_input.json')));
+const out=path.resolve(__dirname,'../reports/remote_browser');fs.mkdirSync(out,{recursive:true});
+const base='https://wine.77-105-169-21.sslip.io';
+(async()=>{
+ const browser=await chromium.launch({headless:true});
+ const ctx=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
+ const page=await ctx.newPage(),errors=[],checks=[];page.on('pageerror',e=>errors.push(e.message));
+ const shots=async name=>{for(const width of [1440,1024,390,360]){await page.setViewportSize({width,height:960});await page.screenshot({path:path.join(out,`${name}-${width}.png`),fullPage:true,animations:'disabled'});const d=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));assert(d.scroll<=d.width+1,name+' overflow '+width);checks.push({name,...d})}};
+ await page.goto(base+'/#key='+credentials.scan_key);await page.locator('#connection.ready').waitFor();assert.equal(await page.evaluate(()=>isSecureContext),true);
+ await page.evaluate(()=>navigator.serviceWorker.ready);await shots('scanner');
+ const manifest=await page.evaluate(async()=>await(await fetch('/manifest.webmanifest')).json());assert.equal(manifest.display,'standalone');assert(manifest.icons.some(i=>i.sizes==='512x512'));
+ await page.locator('#photo-file').setInputFiles(input.path);await page.locator('#result-view').waitFor({state:'visible',timeout:90000});await shots('result');
+ await page.locator('[data-view=history]').click();assert.equal(await page.locator('#history-list .wine-row').count(),1);
+ await page.reload();await page.locator('#connection.ready').waitFor();await ctx.setOffline(true);await page.reload();await page.locator('[data-view=history]').click();await page.locator('#history-list .wine-row').waitFor();await ctx.setOffline(false);
+ await page.goto(base+'/admin/');await page.locator('#password').fill(credentials.admin_password);await page.locator('#login-form button').click();await page.locator('#application').waitFor({state:'visible'});await page.waitForFunction(()=>!document.body.classList.contains('busy'));await page.locator('#history-grid .scan').first().waitFor();await shots('history');
+ await page.locator('#history-grid .scan button').first().click();await page.waitForFunction(()=>!document.body.classList.contains('busy'));await page.locator('#wine-search').fill('100 оттенков каберне');await page.locator('[data-slug="'+input.slug+'"]').waitFor();await page.locator('[data-slug="'+input.slug+'"]').click();await page.locator('#wine-preview img').evaluate(im=>im.decode());await shots('assignment');
+ await page.locator('[data-tab=review]').click();await page.waitForFunction(()=>!document.body.classList.contains('busy'));await page.locator('#review-grid img').first().waitFor();await shots('review');
+ await page.locator('[data-tab=bounds]').click();await page.waitForFunction(()=>!document.body.classList.contains('busy'));await page.locator('#bounds-slug').selectOption(input.slug);await page.locator('#load-bounds').click();await page.waitForFunction(()=>!document.body.classList.contains('busy'));await shots('bounds');
+ assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'result.json'),JSON.stringify({ok:true,errors,checks,https:true,pwa_manifest:true,offline_history:true,real_scan:true,admin_writes:false},null,2));
+ await browser.close();console.log('PASS: real HTTPS scan, PWA offline history, admin read-only, '+checks.length+' viewport checks');
+})().catch(e=>{console.error(e);process.exit(1)});

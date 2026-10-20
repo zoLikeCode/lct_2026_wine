@@ -1,0 +1,152 @@
+/* Named collections: a continuous, softly lit gallery for real catalog bottles. */
+#collection-view{max-width:1280px;padding-top:32px;padding-bottom:100px}
+#collection-view .cellar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:0 0 30px;padding:0 0 14px;border-bottom:1px solid var(--line)}
+#collection-view .cellar-tabs{display:flex;gap:30px;padding:0;border:0;width:auto;min-width:0}
+#collection-view .cellar-tabs button{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;min-height:48px;position:relative;padding:10px 0;font-size:13px;white-space:nowrap}
+#collection-view .cellar-tabs button.active:after{bottom:-15px}
+#collection-view .cellar-tabs span{font-size:10px;min-width:16px;color:#847971;text-align:center;margin:0;font-variant-numeric:tabular-nums}
+#collection-view .cellar-primary{font-size:12px;white-space:normal;min-height:46px;padding:12px 22px;border-radius:24px}
+.shelf-secondary,.shelf-icon-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border-radius:24px;border:1px solid #d7cec3;background:transparent;color:var(--ink);font:500 12px/1.5 var(--sans,Arial);cursor:pointer}
+.shelf-icon-button{width:46px;padding:0;font-size:19px;flex-shrink:0;letter-spacing:2px}
+.shelf-secondary:hover,.shelf-icon-button:hover{border-color:var(--wine);background:#fff9}.shelf-secondary:disabled{opacity:.3;cursor:default}
+.shelf-covers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:38px 28px;margin:0 0 40px}
+.shelf-cover{display:block;align-self:start;text-align:left;padding:0;min-width:0;border:0;background:transparent;cursor:pointer;color:var(--ink)}
+.shelf-cover-scene{position:relative;isolation:isolate;display:flex;justify-content:center;align-items:flex-end;gap:15px;height:292px;padding:38px 26px 34px;border-radius:8px;overflow:hidden;background:radial-gradient(ellipse at 50% -30%,#ad7b6670,transparent 74%),linear-gradient(110deg,#291b20,#49302f 50%,#281c21);border:1px solid #442e2e}
+.shelf-cover-scene:before{content:'';position:absolute;inset:12px;z-index:-1;border:1px solid #dfbc9223;pointer-events:none}
+.shelf-cover-scene:after{content:'';position:absolute;inset:auto 0 0;height:32px;background:linear-gradient(#302323,#21191d);z-index:-1}
+.shelf-cutout{position:relative;display:block;flex:1;max-width:65px;min-width:0;height:218px;transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+.shelf-cover-scene .shelf-cutout img{position:absolute;left:50%;display:block;width:auto;max-width:none;height:100%;object-fit:contain;transform:translateX(-50%);mix-blend-mode:normal;filter:drop-shadow(7px 8px 5px #10090b80);pointer-events:none}
+.shelf-cover:hover .shelf-cutout{transform:translateY(-6px)}
+.shelf-cover-ledge{position:absolute;bottom:27px;left:0;right:0;height:7px;background:linear-gradient(#c1a681,#786049 40%,#382b27);box-shadow:0 9px 12px #10090b90;border-top:1px solid #e7d4b48c}
+.shelf-cover-empty{align-self:center;font:400 22px var(--serif);color:#dbccba}
+.shelf-cover-meta{display:flex;justify-content:space-between;gap:12px;font-size:11px;line-height:1.5;color:#81766d;margin:19px 0 8px}
+.shelf-cover-meta>span{min-width:0;overflow-wrap:anywhere}
+.shelf-cover-title{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.shelf-cover-title h2{font:400 29px/1.28 var(--serif);overflow-wrap:anywhere;margin:0}
+.shelf-cover-title>span{font:400 26px var(--serif);color:var(--wine);flex-shrink:0;transition:transform .2s}.shelf-cover:hover .shelf-cover-title>span{transform:translate(3px,-3px)}
+.shelf-cover>p{font-size:12px;line-height:1.65;color:#7b7269;margin:10px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.shelf-kicker{display:block;font-size:10px;letter-spacing:.14em;line-height:1.6;color:var(--wine)}
+.shelf-first{min-height:390px;border-radius:8px;background:radial-gradient(ellipse at 50% 0,#92654c55,transparent 70%),#342327;position:relative;display:grid;place-items:center}
+.shelf-first:before{content:'';position:absolute;inset:16px;border:1px solid #c6ab8826;pointer-events:none}
+.shelf-first button{color:#eee2d4;display:grid;justify-items:center;gap:24px;padding:48px 24px;width:100%;background:transparent;border:0;cursor:pointer}
+.shelf-first button>span:first-child{display:grid;place-items:center;width:70px;height:70px;border:1px solid #c6ab8866;border-radius:50%;font:300 32px var(--serif)}
+.shelf-first h2{font:400 33px/1.3 var(--serif);margin:0;text-align:center}.shelf-first-action{font-size:12px;color:#d3be9e}
+.shelf-loading{font-size:14px;color:var(--muted);padding:32px 0;min-height:120px}
+.shelf-topline{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:4px}
+.shelf-back{min-height:44px;font-size:12px;color:var(--muted)}.shelf-privacy{font-size:11px;color:#857a70}
+.shelf-detail-heading{display:flex;align-items:center;justify-content:space-between;gap:32px;margin:0 0 24px}
+.shelf-detail-heading>div:first-child{min-width:0;max-width:780px}.shelf-detail-heading h2{font:400 42px/1.2 var(--serif);margin:0;overflow-wrap:anywhere}
+.shelf-detail-heading p{font-size:13px;line-height:1.7;color:var(--muted);max-width:660px;margin-top:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.shelf-detail-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.shelf-gallery{position:relative;isolation:isolate;border-radius:8px;overflow:hidden;background:radial-gradient(ellipse at 50% -40%,#d9aa7b55,transparent 75%),linear-gradient(110deg,#291c21,#533532 50%,#2b1d23);border:1px solid #3c2829;box-shadow:0 18px 32px -28px #352421}
+.shelf-gallery:before{content:'';position:absolute;inset:16px;border:1px solid #cfad8026;pointer-events:none;z-index:1}
+.shelf-gallery:after{content:'';position:absolute;top:349px;left:0;right:0;height:9px;background:linear-gradient(#cbb28c,#80684e 36%,#302522);border-top:1px solid #eedbbb80;box-shadow:0 10px 16px #180e1399;pointer-events:none;z-index:2}
+.wine-cabinet{position:relative;display:flex;align-items:stretch;gap:0;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-color:#b69c77 #322327;scrollbar-width:thin;padding:26px 32px 22px;min-height:456px}
+.bottle-place{position:relative;flex:0 0 205px;min-width:0;text-align:center;scroll-snap-align:center}.bottle-place:first-child{margin-left:auto}.bottle-place:last-child{margin-right:auto}
+.shelf-bottle{position:relative;display:block;width:100%;height:100%;padding:0 12px;background:transparent;border:0;color:#e6d9c9;text-align:center;cursor:pointer}
+.bottle-stage{height:324px;width:100%;position:relative;display:flex;align-items:flex-end;justify-content:center;padding:6px 0 0;isolation:isolate}
+.bottle-stage:before{content:'';position:absolute;inset:0 -20px;background:radial-gradient(ellipse at 50% 55%,#ffe4bb24,transparent 70%);opacity:0;transition:opacity .35s;z-index:-1}
+.bottle-stage img{display:block;width:auto;max-width:none;height:290px;object-fit:contain;position:relative;filter:drop-shadow(9px 7px 7px #140a0e9c);transition:transform .35s cubic-bezier(.2,.7,.2,1),filter .35s;transform-origin:bottom center;pointer-events:none;mix-blend-mode:normal}
+.shelf-bottle:hover .bottle-stage:before,.shelf-bottle.selected .bottle-stage:before{opacity:1}
+.shelf-bottle:hover img{transform:translateY(-4px)}.shelf-bottle.selected img{transform:scale(1.045)}
+.bottle-plaque{display:flex;align-items:flex-start;gap:11px;position:relative;margin:23px auto 0;max-width:200px;text-align:left}
+.bottle-number{font:400 13px/1.5 var(--serif);color:#b59d82;flex-shrink:0;padding-top:1px;font-variant-numeric:tabular-nums}
+.shelf-bottle strong{font:400 14px/1.5 var(--serif);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:42px;overflow-wrap:anywhere}
+.shelf-bottle.selected .bottle-number{color:#f1d6ad}.shelf-bottle.selected strong{color:#fff4e2}
+.shelf-bottle.selected .bottle-plaque:after{content:'';position:absolute;left:0;right:0;bottom:-8px;height:1px;background:linear-gradient(90deg,#cfb48e99,transparent)}
+.single-bottle .bottle-place{flex-basis:290px}.single-bottle .bottle-stage img{height:309px}.single-bottle .bottle-plaque{justify-content:center}.single-bottle .bottle-plaque strong{display:none}.single-bottle .bottle-number{font-size:14px;letter-spacing:.1em}
+.wine-cabinet.empty{justify-content:center;align-items:center}.shelf-empty-add{display:grid;justify-items:center;gap:22px;color:#eee1ce;border:0;background:transparent;font-size:14px;min-height:120px;padding:26px;cursor:pointer}.shelf-empty-add>span{font:300 44px/1 var(--serif);color:#d3b58d}.gallery-empty{color:#dfcdbb;font:400 23px var(--serif)}
+.shelf-selected{display:flex;align-items:center;justify-content:space-between;gap:32px;min-height:140px;padding:26px 0 22px}
+.shelf-selection-copy{min-width:0;max-width:820px}.shelf-selected small{font-size:11px;line-height:1.5;color:var(--muted)}
+.shelf-selected h3{font:400 29px/1.25 var(--serif);margin:8px 0 0;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:1.25em}
+.shelf-selected p{font-size:11px;line-height:1.5;color:#8d7d70;margin-top:9px}
+.selected-tools{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.bottle-options{position:relative}.bottle-options>summary{list-style:none;display:grid;place-items:center;width:44px;height:44px;cursor:pointer;font-size:18px;letter-spacing:2px;border:1px solid #d7cec3;border-radius:50%}.bottle-options>summary::-webkit-details-marker{display:none}
+.bottle-options>div{position:absolute;bottom:53px;right:0;z-index:9;background:#fffcf5;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 12px 28px #39251c18;width:212px}.bottle-options>div>span{font-size:11px;color:var(--muted)}.bottle-reorder{display:flex;gap:9px;margin:12px 0 6px}.bottle-reorder button{flex:1}.bottle-options .text-button{min-height:44px;font-size:12px;text-align:left}
+.shelf-notes{border-top:1px solid var(--line);margin-top:4px}.shelf-notes>summary{min-height:62px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--muted);cursor:pointer;list-style:none}.shelf-notes>summary::-webkit-details-marker{display:none}.shelf-notes>summary>span{font:300 25px var(--serif);transition:transform .2s}.shelf-notes[open]>summary>span{transform:rotate(45deg)}
+.shelf-discussion{display:grid;grid-template-columns:1fr 2fr;gap:50px;padding:10px 0 30px}.shelf-discussion>div>p{font-size:12px;line-height:1.7;color:var(--muted);max-width:280px}
+.collection-comment{border-bottom:1px solid var(--line);padding:6px 0 20px;margin-bottom:22px}.collection-comment>div{display:flex;justify-content:space-between;gap:16px;font-size:12px}.collection-comment strong{font-weight:500}.collection-comment time{font-size:10px;color:var(--muted);white-space:nowrap}.collection-comment p{font-size:13px;line-height:1.8;margin-top:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.comment-actions{display:flex;align-items:center;gap:20px;flex-wrap:wrap}.comment-actions .text-button{font-size:11px;min-height:44px}
+.shelf-visibility{border:1px solid var(--line);padding:14px 20px;border-radius:16px}.shelf-visibility legend{font-size:12px;padding:0 8px}.shelf-visibility small{display:block;font-size:11px;line-height:1.6;color:var(--muted);margin-top:5px}.shelf-settings-dialog .check-line{align-items:flex-start}.shelf-settings-dialog .check-line input{margin-top:4px}
+.share-description{font:400 26px/1.4 var(--serif);margin:20px 0}.share-link-label{display:block;font-size:12px;color:var(--muted)}.share-link{width:100%;margin:10px 0 16px;border:1px solid var(--line);background:#f7f4ee;border-radius:12px;padding:14px;font-size:13px;color:var(--ink)}
+.shelf-settings-dialog>.cellar-primary{width:100%;margin-top:22px}.shelf-settings-dialog .field-hint{font-size:12px;line-height:1.7;color:var(--muted)}.shelf-settings-dialog .dialog-head{position:sticky;top:0;background:#fffdf6;z-index:3}
+.challenge-panel{display:flex;align-items:center;gap:30px;border-bottom:1px solid #c7b79a;padding:15px 0 32px;margin:0 0 32px}
+.challenge-symbol{display:grid;place-items:center;flex-shrink:0;width:90px;height:112px;border:1px solid #b8a481;border-radius:44px 44px 8px 8px;font:400 54px var(--serif);color:#9a8057;background:#eee6d333}
+.challenge-copy{flex:1;min-width:0}.challenge-copy h2{font:400 29px/1.25 var(--serif);margin:8px 0 12px}.challenge-copy p,.challenge-copy>small{font-size:12px;line-height:1.75;color:var(--muted);display:block}.challenge-copy>small{margin-top:8px}
+.challenge-progress{display:flex;gap:18px;align-items:center;margin:18px 0 12px;font-size:12px}.challenge-progress progress{appearance:none;width:120px;height:4px;border:0;border-radius:4px;background:#dfd5c2}.challenge-progress progress::-webkit-progress-bar{background:#dfd5c2;border-radius:4px}.challenge-progress progress::-webkit-progress-value{background:var(--wine);border-radius:4px}
+.earned-badge{display:inline-flex;align-items:center;border:1px solid #c9b592;background:#f3ead4;color:#70582f;padding:7px 12px;border-radius:20px;font-size:11px;line-height:1.5;margin-top:8px}
+.shelf-empty-community{text-align:center;padding:30px 20px 50px}.shelf-empty-community h3{font:400 27px/1.3 var(--serif);margin-bottom:12px}.shelf-empty-community p{font-size:13px;color:var(--muted);line-height:1.7}
+.challenge-wines article{display:flex;gap:22px;padding:22px 0;border-bottom:1px solid var(--line)}.challenge-wines h3{font:400 21px/1.3 var(--serif);overflow-wrap:anywhere}.challenge-wines p,.challenge-wines small{display:block;font-size:11px;color:var(--muted);margin:9px 0;line-height:1.6}.challenge-wines strong{font-size:13px;display:inline-block;margin-right:14px}.challenge-wines a{font-size:11px;color:var(--wine);text-decoration:underline}.challenge-wines article>div{min-width:0}
+.challenge-bottle{position:relative;display:block;width:54px;flex-shrink:0;height:130px}.challenge-bottle img{position:absolute;height:130px;width:auto;max-width:none;left:50%;transform:translateX(-50%);pointer-events:none;mix-blend-mode:multiply}.challenge-wine-title{font:inherit;text-align:left;color:inherit;background:none;padding:0;border:0;cursor:pointer}.challenge-wine-title:hover{color:var(--wine)}
+#collection-wine-content .entry-lists{margin:20px 0}.entry-lists h3{font:400 21px var(--serif);margin-bottom:16px}.entry-lists .check-line{padding:13px 0;border-bottom:1px solid var(--line);min-height:52px}.entry-create{margin-top:14px;min-height:44px}.entry-note{border-top:1px solid var(--line);margin-top:22px}.entry-note>summary{cursor:pointer;font-size:12px;min-height:48px;display:flex;align-items:center;color:var(--muted)}.entry-note form{padding:0 0 16px}.entry-done{width:100%;margin-top:20px}
+#list-create-dialog .dialog-head h2{font-size:29px;margin:0}#list-create-dialog .cellar-form{margin-top:26px}
+#shelf-content button:focus-visible{outline:2px solid var(--wine);outline-offset:4px}#shelf-content .shelf-gallery button:focus-visible,#shelf-content .shelf-first button:focus-visible{outline-color:#f3d7aa;outline-offset:-4px}
+@media(max-width:1100px){
+ #collection-view .cellar-tabs{gap:20px}.shelf-detail-heading h2{font-size:36px}.shelf-detail-heading{gap:20px}.shelf-detail-actions .cellar-primary{padding-inline:17px!important}
+ .bottle-place{flex-basis:190px}.shelf-selected h3{font-size:26px}.shelf-covers{gap:30px 22px}.shelf-cover-title h2{font-size:26px}
+}
+@media(max-width:700px){
+ #collection-view{padding-top:20px;padding-bottom:110px}
+ #collection-view .cellar-toolbar{display:flex;flex-direction:column;align-items:stretch;gap:20px;border:0;margin-bottom:24px;padding:0}
+ #collection-view .cellar-tabs{order:0;display:flex;justify-content:space-between;gap:10px;width:100%;border-bottom:1px solid var(--line);padding-bottom:0}
+ #collection-view .cellar-tabs button{font-size:11px;line-height:1.4;min-height:46px;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:5px;padding:8px 0 12px;white-space:nowrap}
+ #collection-view .cellar-tabs span{font-size:9px;min-width:0}#collection-view .cellar-tabs button.active:after{bottom:-1px}
+ #collection-view .cellar-toolbar>.cellar-primary{order:1;align-self:flex-start;font-size:12px;min-height:44px;padding:11px 18px}
+ #collection-view.shelf-is-open .cellar-toolbar{margin-bottom:14px;gap:0}
+ .shelf-covers{grid-template-columns:1fr;gap:28px;margin:0 0 20px}.shelf-cover-scene{height:245px;padding:30px 20px 32px}.shelf-cutout{height:180px;max-width:48px}.shelf-cover-meta{font-size:10px;margin-top:15px}.shelf-cover-title h2{font-size:26px}
+ .shelf-first{min-height:330px}.shelf-first h2{font-size:28px}.shelf-first button{gap:22px}
+ .shelf-back{font-size:11px}.shelf-privacy{font-size:10px}.shelf-topline{margin-bottom:8px}
+ .shelf-detail-heading{display:block;margin-bottom:20px}.shelf-detail-heading h2{font-size:31px;line-height:1.2}.shelf-detail-heading p{font-size:12px;margin-top:10px}.shelf-detail-actions{margin-top:18px;gap:8px}.shelf-detail-actions .cellar-primary{font-size:12px!important;min-height:44px!important}.shelf-icon-button{width:44px;height:44px}
+ .shelf-gallery{margin-inline:-16px;border-radius:0;border-inline:0}.shelf-gallery:before{inset:12px}.shelf-gallery:after{top:288px;height:7px}
+ .wine-cabinet{padding:22px 24px 20px;min-height:390px;scroll-padding-inline:24px}.bottle-place{flex-basis:155px}.shelf-bottle{padding:0 10px}.bottle-stage{height:267px}.bottle-stage img{height:239px}.bottle-plaque{margin-top:21px;gap:8px}.bottle-number{font-size:11px}.shelf-bottle strong{font-size:12px;line-height:1.5;min-height:36px}
+ .single-bottle .bottle-stage img{height:252px}.single-bottle .bottle-place{flex-basis:230px}.single-bottle .bottle-number{font-size:12px}
+ .shelf-selected{display:block;min-height:0;padding:23px 0 20px}.shelf-selected small{font-size:10px}.shelf-selected h3{font-size:25px;margin-top:8px;line-height:1.25}.shelf-selected p{font-size:10px;margin-top:8px}.selected-tools{margin-top:18px;gap:8px}.selected-tools .cellar-primary{font-size:12px!important;min-height:44px!important;padding:11px 18px!important}.bottle-options>div{right:auto;left:0;max-width:calc(100vw - 40px);transform:translateX(-95px)}
+ .shelf-discussion{grid-template-columns:1fr;gap:22px;padding:5px 0 22px}.shelf-discussion>div>p{max-width:none;font-size:11px}.shelf-notes>summary{font-size:12px;min-height:56px}.collection-comment p{font-size:12px}
+ .shelf-visibility{padding:12px}.shelf-visibility .check-line{font-size:13px}.shelf-settings-dialog .field-hint{font-size:11px}.share-link{font-size:16px}
+ .challenge-panel{display:grid;grid-template-columns:46px 1fr;gap:16px;padding:2px 0 24px;margin:0 0 28px;align-items:start}.challenge-symbol{width:46px;height:70px;font-size:34px}.challenge-copy h2{font-size:24px}.challenge-copy .shelf-kicker{font-size:8px;letter-spacing:.09em}.challenge-copy p,.challenge-copy>small{font-size:11px;line-height:1.7}.challenge-progress{display:block;font-size:11px}.challenge-progress progress{display:block;margin-top:10px;width:100%}.challenge-panel>.shelf-secondary{grid-column:2;justify-self:start;font-size:11px;min-height:44px}.earned-badge{font-size:10px}.shelf-empty-community{padding:16px 0 40px}.shelf-empty-community h3{font-size:25px}.shelf-empty-community p{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){.shelf-cover .shelf-cutout,.shelf-cover-title>span,.bottle-stage img,.bottle-stage:before,.shelf-notes>summary>span{transition:none}.shelf-cover:hover .shelf-cutout,.shelf-cover:hover .shelf-cover-title>span,.shelf-bottle:hover img,.shelf-bottle.selected img{transform:none}}
+/* The back action replaces section navigation inside an opened shelf. */
+#collection-view.shelf-is-open .cellar-toolbar{display:none}
+.shelf-bottle{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;height:auto;min-height:100%}
+.bottle-stage{flex-shrink:0;height:300px}
+.bottle-stage img{height:274px}.single-bottle .bottle-stage img{height:288px}
+.shelf-gallery:after{top:325px}.wine-cabinet{min-height:414px}
+@media(max-width:700px){
+ #collection-view.shelf-is-open{padding-top:12px}
+ .shelf-detail-heading h2{font-size:29px}
+ .wine-cabinet{min-height:322px;padding-top:20px;padding-bottom:18px}
+ .bottle-stage{height:220px}.bottle-stage img{height:200px}.single-bottle .bottle-stage img{height:208px}
+ .shelf-gallery:after{top:240px}
+ .shelf-selected{padding-top:20px}.shelf-selected h3{font-size:24px}
+}
+.single-bottle{min-height:350px}.single-bottle .bottle-plaque{display:none}
+.shelf-selected h3{min-height:2.5em}.shelf-selected small{display:block;min-height:1.5em}.shelf-selected p{min-height:1.5em}
+@media(max-width:700px){.single-bottle{min-height:276px}.shelf-selected h3{min-height:2.5em}}
+body[data-screen=collection]{min-height:100svh}
+/* «Чем дополнить»: suggestions under the user's own shelf, from /collection/lists/{id}/suggestions. */
+.shelf-suggest{margin:8px 0 32px;padding-top:28px;border-top:1px solid var(--line)}
+.shelf-suggest-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;margin:0 0 20px}
+.shelf-suggest-head h3{font:400 28px/1.25 var(--serif)}
+.shelf-suggest-head p{font-size:12px;line-height:1.6;color:var(--muted)}
+.shelf-suggest-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.shelf-suggest-card{display:flex;flex-direction:column;gap:12px;min-width:0;padding:16px;border:1px solid var(--line);border-radius:20px;background:#fffdfa99}
+.shelf-suggest-open{display:grid;grid-template-columns:52px minmax(0,1fr);gap:14px;align-items:start;width:100%;padding:0;text-align:left}
+.shelf-suggest-open img{width:52px;height:108px;object-fit:contain;mix-blend-mode:multiply}
+.shelf-suggest-open strong{display:block;font:500 18px/1.3 var(--serif);overflow-wrap:break-word}
+.shelf-suggest-open small{display:block;margin-top:4px;font-size:11px;line-height:1.5;color:var(--muted)}
+.shelf-suggest-open em{display:block;margin-top:8px;font-size:12px;line-height:1.55;color:var(--wine);overflow-wrap:anywhere}
+.shelf-suggest-open:hover strong{text-decoration:underline;text-underline-offset:4px}
+.shelf-suggest-card .form-error{padding:0;font-size:12px}
+.shelf-suggest-actions{display:flex;align-items:center;gap:16px;margin-top:auto}
+#collection-view .shelf-suggest-actions .cellar-primary{min-height:44px;padding:10px 18px}
+.shelf-suggest-actions .text-button{font-size:12px;color:var(--muted)}
+@media(max-width:1100px){.shelf-suggest-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.shelf-suggest{margin-bottom:24px;padding-top:24px}.shelf-suggest-head h3{font-size:24px}
+ .shelf-suggest-list{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:84%;gap:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;padding-bottom:6px}
+ .shelf-suggest-card{scroll-snap-align:start}}
+/* «Подобрать с сомелье»: opens the assistant with this collection attached. */
+.shelf-sommelier{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:11px 18px;border:1px solid var(--wine);border-radius:24px;color:var(--wine);font-size:12px;font-weight:500;line-height:1.4;white-space:nowrap}
+.shelf-sommelier svg{width:16px;height:16px}
+.shelf-sommelier:hover{background:#843f440a}
+@media(max-width:700px){.shelf-detail-actions{flex-wrap:wrap}.shelf-sommelier{order:3;flex-basis:100%;min-height:44px;padding:10px 16px}}

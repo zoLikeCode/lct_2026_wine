@@ -1,0 +1,25 @@
+name: Deploy wine
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: wine-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  deploy:
+    name: Deploy main to production
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Authenticate with GitHub OIDC and deploy this commit
+        run: python3 ops/github_deploy.py

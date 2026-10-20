@@ -1,0 +1,250 @@
+{
+  "tokens": [
+    1024,
+    2560
+  ],
+  "latency": {
+    "1024": {
+      "tokens": 1024,
+      "gpu": "NVIDIA A100-SXM4-80GB",
+      "merged_lora": false,
+      "latency_ms_median": 321.0472762584686,
+      "latency_ms_p95": 327.1729812026024,
+      "latency_ms_max": 541.2942692637444,
+      "n_frames": 257,
+      "refs_encode_sec": 286.3,
+      "refs_per_sec": 7.3,
+      "peak_mem_gb": 18.7
+    },
+    "2560": {
+      "tokens": 2560,
+      "gpu": "NVIDIA A100-SXM4-80GB",
+      "merged_lora": false,
+      "latency_ms_median": 672.3780073225498,
+      "latency_ms_p95": 717.9839558899403,
+      "latency_ms_max": 902.1993353962898,
+      "n_frames": 257,
+      "refs_encode_sec": 325.6,
+      "refs_per_sec": 6.5,
+      "peak_mem_gb": 21.9
+    }
+  },
+  "full_index": {
+    "1024x1024": {
+      "n": 257,
+      "top1": 243,
+      "top5": 255,
+      "per_set": {
+        "команды": 190,
+        "организатора": 53
+      },
+      "paired_vs_base": null
+    },
+    "1024x2560": {
+      "n": 257,
+      "top1": 247,
+      "top5": 255,
+      "per_set": {
+        "команды": 193,
+        "организатора": 54
+      },
+      "paired_vs_base": {
+        "fixed": 5,
+        "broken": 1,
+        "threshold": 4.9,
+        "verdict": "шум",
+        "fixed_frames": [
+          {
+            "key": "chateau-de-talu-uroki-frantsuzskogo-merlo-krasnoe-suhoe-147/own_IMG_20260919_191947.jpg",
+            "true": "chateau-de-talu-uroki-frantsuzskogo-merlo-krasnoe-suhoe-147"
+          },
+          {
+            "key": "sober-bash-rkatsiteli-beloe-suhoe-14/own_5dde68dff1db_IMG_1892.jpg",
+            "true": "sober-bash-rkatsiteli-beloe-suhoe-14"
+          },
+          {
+            "key": "zhemchuzhnaya-9-aligote-czitron/own_cb7efbf980b2_84.73_07-09-2026_11-07-51.webp",
+            "true": "zhemchuzhnaya-9-aligote-czitron"
+          },
+          {
+            "key": "zolotoe-pole-kaffa-kaberne-fran-krasnoe-suhoe-14/own_IMG_20260921_193912.jpg",
+            "true": "zolotoe-pole-kaffa-kaberne-fran-krasnoe-suhoe-14"
+          },
+          {
+            "key": "84.73_07-09-2026_11-07-51.webp",
+            "true": "zhemchuzhnaya-9-aligote-czitron"
+          }
+        ],
+        "broken_frames": [
+          {
+            "key": "vinodelnya-krinitsa-risling-beloe-suhoe-13/own_287f22646caf_IMG_1866.jpg",
+            "true": "vinodelnya-krinitsa-risling-beloe-suhoe-13",
+            "now": "vinodelnya-krinitsa-vione-beloe-suhoe-133"
+          }
+        ]
+      }
+    },
+    "2560x1024": {
+      "n": 257,
+      "top1": 243,
+      "top5": 256,
+      "per_set": {
+        "команды": 190,
+        "организатора": 53
+      },
+      "paired_vs_base": {
+        "fixed": 0,
+        "broken": 0,
+        "threshold": 0.0,
+        "verdict": "шум",
+        "fixed_frames": [],
+        "broken_frames": []
+      }
+    },
+    "2560x2560": {
+      "n": 257,
+      "top1": 245,
+      "top5": 255,
+      "per_set": {
+        "команды": 192,
+        "организатора": 53
+      },
+      "paired_vs_base": {
+        "fixed": 3,
+        "broken": 1,
+        "threshold": 4.0,
+        "verdict": "шум",
+        "fixed_frames": [
+          {
+            "key": "chateau-de-talu-uroki-frantsuzskogo-merlo-krasnoe-suhoe-147/own_IMG_20260919_191947.jpg",
+            "true": "chateau-de-talu-uroki-frantsuzskogo-merlo-krasnoe-suhoe-147"
+          },
+          {
+            "key": "sober-bash-rkatsiteli-beloe-suhoe-14/own_5dde68dff1db_IMG_1892.jpg",
+            "true": "sober-bash-rkatsiteli-beloe-suhoe-14"
+          },
+          {
+            "key": "zolotoe-pole-kaffa-kaberne-fran-krasnoe-suhoe-14/own_IMG_20260921_193912.jpg",
+            "true": "zolotoe-pole-kaffa-kaberne-fran-krasnoe-suhoe-14"
+          }
+        ],
+        "broken_frames": [
+          {
+            "key": "vinodelnya-krinitsa-risling-beloe-suhoe-13/own_287f22646caf_IMG_1866.jpg",
+            "true": "vinodelnya-krinitsa-risling-beloe-suhoe-13",
+            "now": "vinodelnya-krinitsa-vione-beloe-suhoe-133"
+          }
+        ]
+      }
+    }
+  },
+  "field_2083": {
+    "1024x1024": {
+      "n": 253,
+      "top1": 239,
+      "top5": 251,
+      "per_set": {
+        "команды": 189,
+        "организатора": 50
+      },
+      "paired_vs_base": null
+    },
+    "1024x2560": {
+      "n": 253,
+      "top1": 243,
+      "top5": 251,
+      "per_set": {
+        "команды": 192,
+        "организатора": 51
+      },
+      "paired_vs_base": {
+        "fixed": 5,
+        "broken": 1,
+        "threshold": 4.9,
+        "verdict": "шум",
+        "fixed_frames": [
+          {
+            "key": "chateau-de-talu-uroki-frantsuzskogo-merlo-krasnoe-suhoe-147/own_IMG_20260919_191947.jpg",
+            "true": "chateau-de-talu-uroki-frantsuzskogo-merlo-krasnoe-suhoe-147"
+          },
+          {
+            "key": "sober-bash-rkatsiteli-beloe-suhoe-14/own_5dde68dff1db_IMG_1892.jpg",
+            "true": "sober-bash-rkatsiteli-beloe-suhoe-14"
+          },
+          {
+            "key": "zhemchuzhnaya-9-aligote-czitron/own_cb7efbf980b2_84.73_07-09-2026_11-07-51.webp",
+            "true": "zhemchuzhnaya-9-aligote-czitron"
+          },
+          {
+            "key": "zolotoe-pole-kaffa-kaberne-fran-krasnoe-suhoe-14/own_IMG_20260921_193912.jpg",
+            "true": "zolotoe-pole-kaffa-kaberne-fran-krasnoe-suhoe-14"
+          },
+          {
+            "key": "84.73_07-09-2026_11-07-51.webp",
+            "true": "zhemchuzhnaya-9-aligote-czitron"
+          }
+        ],
+        "broken_frames": [
+          {
+            "key": "vinodelnya-krinitsa-risling-beloe-suhoe-13/own_287f22646caf_IMG_1866.jpg",
+            "true": "vinodelnya-krinitsa-risling-beloe-suhoe-13",
+            "now": "vinodelnya-krinitsa-vione-beloe-suhoe-133"
+          }
+        ]
+      }
+    },
+    "2560x1024": {
+      "n": 253,
+      "top1": 239,
+      "top5": 252,
+      "per_set": {
+        "команды": 189,
+        "организатора": 50
+      },
+      "paired_vs_base": {
+        "fixed": 0,
+        "broken": 0,
+        "threshold": 0.0,
+        "verdict": "шум",
+        "fixed_frames": [],
+        "broken_frames": []
+      }
+    },
+    "2560x2560": {
+      "n": 253,
+      "top1": 241,
+      "top5": 251,
+      "per_set": {
+        "команды": 191,
+        "организатора": 50
+      },
+      "paired_vs_base": {
+        "fixed": 3,
+        "broken": 1,
+        "threshold": 4.0,
+        "verdict": "шум",
+        "fixed_frames": [
+          {
+            "key": "chateau-de-talu-uroki-frantsuzskogo-merlo-krasnoe-suhoe-147/own_IMG_20260919_191947.jpg",
+            "true": "chateau-de-talu-uroki-frantsuzskogo-merlo-krasnoe-suhoe-147"
+          },
+          {
+            "key": "sober-bash-rkatsiteli-beloe-suhoe-14/own_5dde68dff1db_IMG_1892.jpg",
+            "true": "sober-bash-rkatsiteli-beloe-suhoe-14"
+          },
+          {
+            "key": "zolotoe-pole-kaffa-kaberne-fran-krasnoe-suhoe-14/own_IMG_20260921_193912.jpg",
+            "true": "zolotoe-pole-kaffa-kaberne-fran-krasnoe-suhoe-14"
+          }
+        ],
+        "broken_frames": [
+          {
+            "key": "vinodelnya-krinitsa-risling-beloe-suhoe-13/own_287f22646caf_IMG_1866.jpg",
+            "true": "vinodelnya-krinitsa-risling-beloe-suhoe-13",
+            "now": "vinodelnya-krinitsa-vione-beloe-suhoe-133"
+          }
+        ]
+      }
+    }
+  }
+}
